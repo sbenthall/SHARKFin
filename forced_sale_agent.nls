@@ -1,0 +1,58 @@
+;; Setup for Trader
+;********************************************************************************************************************************************************************************
+to FS_Setup 
+  set typeOfTrader "ForcedSale"
+  set speed (random-poisson 5)
+  set tradeSpeedAdjustment 1
+  set tradeStatus "Cancel"
+  set orderNumber 0
+  set countticks 0
+  set tradeAccount 0
+  set sharesOwned 0
+  set totalBought 1
+  set totalSold 1
+  set averageBoughtPrice 0
+  set averageSoldPrice 0
+  set totalCanceled 0
+  set buysell "B"
+  set modify 0
+  set openOrders []
+end
+;code by Mark Paddrik
+;Strategy
+;********************************************************************************************************************************************************************************
+to forcedSaleStrategy
+  foreach openorders [
+    ask ?[ 
+      if(AuditTrail = true)[
+        writetofile OrderID "Cancel" OrderPrice OrderQuantity TraderWhoType tradernumber 1 "-" HON1 HON2
+      ]
+      die
+    ]
+  ]
+  
+  set openorders []
+   
+     set tradeStatus "Sell"
+     set tradePrice price - 5
+     set tradeQuantity round ( (QuntitySale + sharesOwned) / ((PeriodtoEndExecution - ticks) / 6)) 
+  
+  hatch-orders 1 [Order_Setup tradePrice tradeStatus traderNumber tradeQuantity myself typeOfTrader]
+end
+;code by Mark Paddrik
+;*****************************************************************************************************************************
+; Reporting
+;*****************************************************************************************************************************
+
+to-report avgSharesForcedSale
+ ifelse((count turtles with [typeOfTrader = "LiquiditySupplier"]) > 0)
+ [report precision (((sum [sharesOwned] of traders with [typeOfTrader = "ForcedSale"])) / (count traders with [typeOfTrader = "ForcedSale"])) 2
+ ][report 0]
+end
+
+to-report accountValueForcedSale
+  ifelse((count turtles with [typeOfTrader = "LiquiditySupplier"]) > 0)
+  [report precision ((sum [tradeAccount] of traders with [typeOfTrader = "ForcedSale"]) / (count traders with [typeOfTrader = "ForcedSale"])) 2 
+  ][report 0]
+end
+;code by Mark Paddrik
