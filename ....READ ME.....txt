@@ -1,3 +1,13 @@
 In order to run the following model you will need Netlogo V 4.0 or later. 
-To start the model click the LiquidityModel file. 
+
+NetLogo v5.3.1. https://ccl.northwestern.edu/netlogo/5.3.1/ 
+
+   It's important to download this version; it
+   appears to be the most recent environment that will work
+   with Mark P's code. The good news is that you can install
+   multiple versions of NetLogo side by side, and pick
+   whichever one you need at runtime.
+
+Once NetLogo v5.3.1. is installed, to start the model click the LiquidityModel file. 
 For instruction on how to operate the program please see the infomation tab within netlogo.
+To use the default settings: 1. click the SetUp Model button; 2. click the go button.
