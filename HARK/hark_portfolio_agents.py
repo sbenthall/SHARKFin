@@ -1,6 +1,8 @@
 import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 import HARK.ConsumptionSaving.ConsIndShockModel as cism
 import numpy as np
+from statistics import mean
+
 
 ### Initializing agents
 
@@ -20,6 +22,7 @@ def create_agents(agent_classes, ap):
     parameterization ap and agent_classes definition.
 
     Returns a list of HARK agents.
+      - these agents will have computed starting risky shares
     """
     agents = [
         cpm.PortfolioConsumerType(
@@ -30,14 +33,28 @@ def create_agents(agent_classes, ap):
         in agent_classes
     ]
 
-    for a in agents:
-        a.track_vars += ['pLvlNow','mNrmNow','ShareNow','RiskyNow']
+    for agent in agents:
+        agent.track_vars += ['pLvlNow','mNrmNow','ShareNow','RiskyNow']
+
+        agent.AdjustPrb = 1.0
+        agent.T_sim = 1
+        agent.solve()
+        agent.initializeSim()
+        agent.simulate()
+
+        #change it back
+        agent.AdjustPrb = 0.0
 
     return agents
 
 
+### Initializing prices
+
+init_prices = np.array([1.0, 1.06, 0.98, 1.05])
+
+
 ### Estimating risky asset properties
-from statistics import mean
+
 
 def best_fit_slope_and_intercept(xs,ys):
     """
@@ -86,6 +103,20 @@ def risky_expectations(prices):
 
 ### Agent updating
 
+def simulate(agents, periods):
+    for agent in agents:
+        agent.solve()
+        agent.T_sim = 100
+        agent.initializeSim()
+
+        print(agent.mNrmNow[0])
+        print(agent.pLvlNow[0])
+
+        print(agent.RiskyAvg)
+        print(agent.RiskyStd)
+        
+        agent.simulate()
+
 def new_assets(agent, risky_share, prices):
     """
     agent - a HARK AgentType after simulation has been run for a quarter
@@ -103,7 +134,8 @@ def new_assets(agent, risky_share, prices):
 
     actual_risky_assets_now = old_risky_assets * risky_actual_return(prices)
 
-    hark_risky_assets_now = old_risky_assets * agent.history['RiskyNow'][:,0].prod()
+    hark_risky_assets_now = old_risky_assets * \
+                            agent.history['RiskyNow'][:,0].prod()
 
     actual_assets = assets + actual_risky_assets_now - hark_risky_assets_now
 
@@ -153,8 +185,19 @@ def demand(agent, prices):
         market_resources * permanent_income)
 
     return (risky_share, # proportion
-            market_resources * risky_share, # allocation to risky asset
-            market_resources * (1 - risky_share)) # allocation to risk-free asset
+            # allocation to risky asset
+            market_resources * risky_share,
+            # allocation to risk-free asset
+            market_resources * (1 - risky_share))
+
+
+def demands(agents, prices):
+    """
+    For a list of agents, returns the demands of all the agents
+     - note side effects for demand function
+    """
+    return [demand(agent, prices) for agent in agents]
+
 
 ### Aggregation
 
