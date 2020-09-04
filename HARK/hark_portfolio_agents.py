@@ -104,18 +104,21 @@ def risky_expectations(prices):
 ### Agent updating
 
 def simulate(agents, periods):
+    print("simulating macro agents")
     for agent in agents:
         agent.solve()
-        agent.T_sim = 100
+
+
+        ## Reduce variance on the HARK agent's expected
+        ## market return
+        store_RiskyStd = agent.RiskyStd
+        agent.RiskyStd = 0
+
+        agent.T_sim = periods
         agent.initializeSim()
 
-        print(agent.mNrmNow[0])
-        print(agent.pLvlNow[0])
-
-        print(agent.RiskyAvg)
-        print(agent.RiskyStd)
-        
         agent.simulate()
+        agent.RiskyStd = store_RiskyStd
 
 def new_assets(agent, risky_share, prices):
     """
@@ -125,7 +128,7 @@ def new_assets(agent, risky_share, prices):
     returns true assets following previous quarter of prices
     """
     # current assets according to HARK model.
-    assets = agent.mNrmNow / agent.pLvlNow
+    assets = agent.mNrmNow * agent.pLvlNow
 
     # old assets according to HARK model
     old_assets = agent.history['mNrmNow'][0] * agent.history['pLvlNow'][0]
@@ -150,6 +153,10 @@ def update_agent(agent, risky_share, prices):
     """
     re = risky_expectations(prices)
     assets = new_assets(agent, risky_share, prices)
+
+    # if the assets are negative--you couldn't have consumed what you did
+    # set your money to 0
+    assets[assets < 0] = 0
 
     # normalize the assets
     agent.mNrmNow = assets / agent.pLvlNow
@@ -182,7 +189,8 @@ def demand(agent, prices):
 
     # ShareFunc takes normalized market resources as argument
     risky_share = agent.solution[0].ShareFuncAdj(
-        market_resources * permanent_income)
+        market_resources
+    )
 
     return (risky_share, # proportion
             # allocation to risky asset
@@ -196,8 +204,14 @@ def demands(agents, prices):
     For a list of agents, returns the demands of all the agents
      - note side effects for demand function
     """
+    print("Getting risky asset demand for all agents")
     return [demand(agent, prices) for agent in agents]
 
+
+def no_demand(agents):
+    return [(np.zeros(a.AgentCount),
+             np.zeros(a.AgentCount),
+             np.ones(a.AgentCount)) for a in agents]
 
 ### Aggregation
 
@@ -210,6 +224,7 @@ def aggregate_buy_and_sell(old_demand, new_demand):
     Output:
       - tuple with aggregate amount (in $$$) to buy and sell of risky asset.
     """
+    print("computing aggregate buy/sell orders")
     buy = 0
     sell = 0
 
