@@ -1,0 +1,48 @@
+Hi Sebastian,
+
+Here (attached) is a reduced bit of my PyNetLogo wrapper and a matching
+NetLogo file. I have tried to strip out most of the bits (like
+parallelization) that were not related to the core task of extracting
+variable values from the running NetLogo sim.
+
+I have cc'ed John here too, because he's interested in our progress.
+(John, note that I've defaulted to putting the copyright in my name and
+releasing with a GNU public license. Ultimately, I suspect that PSU or
+Sloan should have the copyright and then release with the license of
+their choice. But we can deal with separately. )
+
+Unzip this attachment somewhere, and then open a command prompt in the
+top-level unzipped directory. Invoke the following command to make it go:
+
+ $ python3 ./py/pnl.py
+
+I have specified some full path names based on my machine, so the script
+should crash the first time you try to run it. Go into the configuration
+file, macroliquidity.ini, and change the following four parameters to
+match your local system:
+
+ pythondir=/home/mf/Projects/ABM/PNLforSebastian/py
+ logdir=/home/mf/Projects/ABM/PNLforSebastian/out/logs
+ NLhomedir=/opt/netlogo/netlogo-5.3.1-64/
+ NLmodeldir=/home/mf/Projects/ABM/PNLforSebastian/nl/
+
+BTW, all the parameters in the configuration file get passed into the
+Python code in the CFG object, which works a lot like a dict. You will
+find a bunch of references to CFG in the code.
+
+Anyway, after you fix these four settings, the pnl.py script should run
+for you. After it runs, you should find three output files in ./out/logs/.
+
+ LM_90_5.log           This is the process log
+ LMallorders_90_5.csv  The ticker of orders over time
+ LMinventory_90_5.csv  Record of traders' inventories over time
+
+To keep track of the orders for the ticker, I created a breed in the
+NetLogo file: order_updates, and instances of this breed are collected
+in a list: allOrders. There is then a special reporter that PyNetLogo
+can call to query this list: prop_allOrders.
+
+I think it's pretty straightforward, but I'm also sure there will be
+questions. Please just let me know.
+
+Thanks - Mark
