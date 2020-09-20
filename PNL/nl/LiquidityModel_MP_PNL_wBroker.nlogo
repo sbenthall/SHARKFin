@@ -59,6 +59,9 @@ Globals [
   timeserieslist
   timeserieslistcount
   resethillclimbto50       ;Used for Liquidity Demander agents
+  allOrders                ;List of all orders and order_updates hatched in the current tick cycle
+  list_orders              ;List of all orders (but not order_updates) available at the end of current tick cycle
+  list_traders             ;List of all traders at the end of the current tick cycle, for the inventory report
 ]
 ;code by Mark Paddrik
 
@@ -102,6 +105,7 @@ orders-own [
   OrderID                  ;Sequential order identifier (counts from 0 for each trader)
   OrderPrice               ;Limit price for the order
   PriceOrder               ;Clever index for price-time priority sorting: (OrderPrice * 100000000000) + OrderID
+  OrderTime                ;Time (in ticks) the order was issued
   OrderTraderID            ;The traderNumber of the trader placing this order
   OrderQuantity            ;Requested tradeQuantity for this order
   OrderB/A                 ;Buy/sell indicator ("Buy" or "Sell")
@@ -109,6 +113,18 @@ orders-own [
   TraderWhoType            ;Labeled typeOfTrader of the trader placing this order
   HON1                     ;No one knows what this is (TODO!!)
   HON2                     ;No one knows what this is (TODO!!)
+]
+
+breed [order_updates an-order_update]
+order_updates-own [
+  OrderID                  ;Sequential order identifier (counts from 0 for each trader)
+  OrderPrice               ;Limit price for the order
+  OrderTime                ;Time (in ticks) the order was issued
+  OrderTraderID            ;The traderNumber of the trader placing this order
+  OrderQuantity            ;Requested tradeQuantity for this order
+  OrderB/A                 ;Buy/sell indicator ("Buy" or "Sell")
+  TraderWho                ;NetLogo "who" number of the trader placing this order
+  TraderWhoType            ;Labeled typeOfTrader of the trader placing this order
 ]
 
 ;------------------------------------------------------------------------------
@@ -191,18 +207,22 @@ to setup-economy
 
   ;; turtles procedure for setup
   set traderListNumbers [0]
-  create-traders #_Liquidity_Demander [LiqDem_Setup]
-  create-traders #_Market_Makers [MktMkr_Setup]
-  create-traders #_Liquidity_Supplier[LiqSup_Setup]
-  create-traders 1[FrcSal_Setup]
+  create-traders #_LiqDem [LiqDem_Setup]
+  create-traders #_MktMkr [MktMkr_Setup]
+  create-traders #_LiqSup [LiqSup_Setup]
+  create-traders 1        [FrcSal_Setup]
   create-traders #_LiqBkr [LiqBkr_Setup]
+
+  set allOrders []
 
   set buyQueue []
   set sellQueue []
   set tradeWipeQueue []
   set tradeWipeQueueB []
   set tradeWipeQueueA []
+  set list_traders []
   ask traders [
+    set list_traders lput self list_traders
     if(ticks = 0) [
       checkTraderNumberUnique
       ifelse (checkTraderNumber = 1) [
@@ -212,6 +232,9 @@ to setup-economy
       ]
     ]
   ]
+  ; Sort the traders by who number, creating a list
+  ;set list_traders sort traders
+
 end
 ;code by Mark Paddrik
 ;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -235,11 +258,19 @@ end
 ;//////////////////////////////////////////////////////////////////////////////
 to Order_Setup [a b d f tdr tdrtype]
 
+  ; a       OrderPrice
+  ; b       OrderB/A
+  ; d       OrderTraderID
+  ; f       OrderQuantity
+  ; tdr     TraderWho
+  ; tdrtype TraderWhoType
+
   set orderNumber (orderNumber + 1)
 
   set OrderPrice a
   set OrderB/A b
   set OrderTraderID d
+  set OrderTime ticks
   set OrderID orderNumber
   set OrderQuantity f
   set PriceOrder (OrderPrice * 100000000000) + OrderID
@@ -261,19 +292,112 @@ to Order_Setup [a b d f tdr tdrtype]
     set bora 2
   ]
 
-  ask tdr [set openOrders lput myself openOrders set tradernum traderNumber ]
-
-  if(AuditTrail = true)[
-    writetofile OrderID OrderB/A OrderPrice OrderQuantity TraderWhoType tradernum bora "-" HON1 HON2
+  ask tdr [
+    set openOrders lput myself openOrders 
+    set tradernum traderNumber
   ]
+  set allOrders lput self allOrders
+
+;  if(AuditTrail = true)[
+;    writetofile OrderID OrderB/A OrderPrice OrderQuantity TraderWhoType tradernum bora "-" HON1 HON2
+;  ]
 end
 ;code by Mark Paddrik
 ;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 ;//////////////////////////////////////////////////////////////////////////////
+to Order_Update [OID a b d f tdr tdrtype]
+
+  set OrderPrice a
+  set OrderB/A b
+  set OrderTraderID d
+  set OrderTime ticks
+  set OrderID OID
+  set OrderQuantity f
+  set TraderWho tdr
+  set TraderWhoType tdrtype
+
+  set allOrders lput self allOrders
+
+end
+;code by Mark Flood
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+;//////////////////////////////////////////////////////////////////////////////
+to-report prop_allOrders [index factoid_name]
+
+  ifelse (index < 0) or (index >= length allOrders) [
+    report (word "Index out of range in prop_allOrders: " index)
+  ] [
+    let ord (item index allOrders)
+    if (factoid_name = "OrderID")       [ report [OrderID]            of (ord) ]
+    if (factoid_name = "OrderTime")     [ report [OrderTime]          of (ord) ]
+    if (factoid_name = "OrderPrice")    [ report [OrderPrice]         of (ord) ]
+    if (factoid_name = "OrderTraderID") [ report [OrderTraderID]      of (ord) ]
+    if (factoid_name = "OrderQuantity") [ report [OrderQuantity]      of (ord) ]
+    if (factoid_name = "OrderB/A")      [ report [OrderB/A]           of (ord) ]
+    if (factoid_name = "TraderWho")     [ report [[who] of TraderWho] of (ord) ]
+    if (factoid_name = "TraderWhoType") [ report [TraderWhoType]      of (ord) ]
+    report (word "No property in prop_allOrders for factoid_name: " factoid_name)
+  ]
+end
+;code by Mark Flood
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+;//////////////////////////////////////////////////////////////////////////////
+to-report prop_list_orders [index factoid_name]
+
+  ifelse (index < 0) or (index >= length list_orders) [
+    report (word "Index out of range in prop_list_orders: " index)
+  ] [
+    let ord (item index list_orders)
+    if (factoid_name = "OrderID")       [ report [OrderID]            of (ord) ]
+    if (factoid_name = "OrderTime")     [ report [OrderTime]          of (ord) ]
+    if (factoid_name = "OrderPrice")    [ report [OrderPrice]         of (ord) ]
+    if (factoid_name = "OrderTraderID") [ report [OrderTraderID]      of (ord) ]
+    if (factoid_name = "OrderQuantity") [ report [OrderQuantity]      of (ord) ]
+    if (factoid_name = "OrderB/A")      [ report [OrderB/A]           of (ord) ]
+    if (factoid_name = "TraderWho")     [ report [[who] of TraderWho] of (ord) ]
+    if (factoid_name = "TraderWhoType") [ report [TraderWhoType]      of (ord) ]
+    report (word "No property in prop_list_orders for factoid_name: " factoid_name)
+  ]
+end
+;code by Mark Flood
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+;//////////////////////////////////////////////////////////////////////////////
+to-report prop_list_traders [index factoid_ID]
+  let FACT_TraderNumber 1
+  let FACT_TypeOfTrader 2
+  let FACT_SharesOwned  3
+
+  ifelse (index < 0) or (index >= length list_traders) [
+    report (word "Index out of range in prop_list_traders: " index)
+  ] [
+    let trd (item index list_traders)
+    if (factoid_ID = FACT_TraderNumber) [ report [traderNumber] of (trd) ]
+    if (factoid_ID = FACT_TypeOfTrader) [ report [typeOfTrader] of (trd) ]
+    if (factoid_ID = FACT_SharesOwned)  [ report [sharesOwned]  of (trd) ]
+    report (word "No property in prop_list_traders for factoid_ID: " factoid_ID)
+  ]
+end
+;code by Mark Flood
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+;//////////////////////////////////////////////////////////////////////////////
 to go
   ;Function run for every tick of the model to advance one time step ahead
+
+  ; The allOrders list holds all orders and order_updates hatched this tick
+  ask order_updates [
+    die
+  ]
+  set allOrders []
 
   set currentBuyInterest 0
   set currentSellInterest 0
@@ -508,11 +632,11 @@ to transactionOrder
           set price currentOrderBid
         ]
 
-        if(AuditTrail = true) [
-          set MatchID (MatchID + 1)
-          writetofile orderBidID "Bought" price orderQuantityBid traderBidType traderBidNum 1 MatchID orderHON1Bid orderHON2Bid
-          writetofile orderAskID "Sold" price orderQuantityAsk traderAskType traderAskNum 2 MatchID orderHON1Ask orderHON2Ask
-        ]
+;        if(AuditTrail = true) [
+;          set MatchID (MatchID + 1)
+;          writetofile orderBidID "Bought" price orderQuantityBid traderBidType traderBidNum 1 MatchID orderHON1Bid orderHON2Bid
+;          writetofile orderAskID "Sold" price orderQuantityAsk traderAskType traderAskNum 2 MatchID orderHON1Ask orderHON2Ask
+;        ]
 
         ask traderBid [ set sharesOwned (sharesOwned + orderQuantityBid) set averageBoughtPrice ((averageBoughtPrice * totalBought + (price / 4) * orderQuantityBid) / (totalBought + orderQuantityBid)) set totalBought (totalBought + orderQuantityBid) ]
         ask traderAsk [ set sharesOwned (sharesOwned - orderQuantityAsk) set averageSoldPrice ((averageSoldPrice * totalSold + (price / 4) * orderQuantityAsk) / (totalSold + orderQuantityAsk)) set totalSold (totalSold + orderQuantityAsk)]
@@ -542,11 +666,11 @@ to transactionOrder
           set price currentOrderBid
         ]
 
-        if(AuditTrail = true) [
-          set MatchID (MatchID + 1)
-          writetofile orderBidID "Bought" price orderQuantityAsk traderBidType traderBidNum 1 MatchID orderHON1Bid orderHON2Bid
-          writetofile orderAskID "Sold" price orderQuantityAsk traderAskType traderAskNum 2 MatchID orderHON1Ask orderHON2Ask
-        ]
+;        if(AuditTrail = true) [
+;          set MatchID (MatchID + 1)
+;          writetofile orderBidID "Bought" price orderQuantityAsk traderBidType traderBidNum 1 MatchID orderHON1Bid orderHON2Bid
+;          writetofile orderAskID "Sold" price orderQuantityAsk traderAskType traderAskNum 2 MatchID orderHON1Ask orderHON2Ask
+;        ]
 
         ask traderBid [ set sharesOwned (sharesOwned + orderQuantityAsk)
           set averageBoughtPrice ((averageBoughtPrice * totalBought + (price / 4) * orderQuantityAsk) / (totalBought + orderQuantityAsk)) set totalBought (totalBought + orderQuantityAsk)]
@@ -572,11 +696,11 @@ to transactionOrder
           set price currentOrderBid
         ]
 
-        if(AuditTrail = true)[
-          set MatchID (MatchID + 1)
-          writetofile orderBidID "Bought" price orderQuantityBid traderBidType traderBidNum 1 MatchID orderHON1Bid orderHON2Bid
-          writetofile orderAskID "Sold" price orderQuantityBid traderAskType traderAskNum 2 MatchID orderHON1Ask orderHON2Ask
-        ]
+;        if(AuditTrail = true)[
+;          set MatchID (MatchID + 1)
+;          writetofile orderBidID "Bought" price orderQuantityBid traderBidType traderBidNum 1 MatchID orderHON1Bid orderHON2Bid
+;          writetofile orderAskID "Sold" price orderQuantityBid traderAskType traderAskNum 2 MatchID orderHON1Ask orderHON2Ask
+;        ]
 
         ask traderBid [ set sharesOwned (sharesOwned + orderQuantityBid) set averageBoughtPrice ((averageBoughtPrice * totalBought + (price / 4) * orderQuantityBid) / (totalBought + orderQuantityBid)) set totalBought (totalBought + orderQuantityBid)]
         ask traderAsk [ set sharesOwned (sharesOwned - orderQuantityBid) set averageSoldPrice ((averageSoldPrice * totalSold + (price / 4) * orderQuantityBid) / (totalSold + orderQuantityBid)) set totalSold (totalSold + orderQuantityBid)]
@@ -692,9 +816,10 @@ to MktMkr_strategy
             set HON2 HON1
             set HON1 (HON1 + 1)
 
-            if(AuditTrail = true) [
-              writetofile OrderID "Modify" OrderPrice OrderQuantity TraderWhoType tradernumber 1 "-" HON1 HON2
-            ]
+;            if(AuditTrail = true) [
+;              writetofile OrderID "Modify" OrderPrice OrderQuantity TraderWhoType tradernumber 1 "-" HON1 HON2
+;            ]
+            hatch-order_updates 1 [Order_Update OrderID OrderPrice "Modify" tradernumber OrderQuantity TraderWho TraderWhoType]
           ]
 
           table:remove OrderCheckList OrderPriceDelta
@@ -705,9 +830,10 @@ to MktMkr_strategy
             set totalCanceled (totalCanceled + OrderCancel)
           ]
 
-          if(AuditTrail = true) [
-            writetofile OrderID "Cancel" OrderPrice OrderQuantity TraderWhoType tradernumber 1 "-" HON1 HON2
-          ]
+;          if(AuditTrail = true) [
+;            writetofile OrderID "Cancel" OrderPrice OrderQuantity TraderWhoType tradernumber 1 "-" HON1 HON2
+;          ]
+          hatch-order_updates 1 [Order_Update OrderID OrderPrice "Cancel" tradernumber OrderQuantity TraderWho TraderWhoType]
 
           die
         ]
@@ -723,9 +849,10 @@ to MktMkr_strategy
             set HON2 HON1
             set HON1 (HON1 + 1)
 
-            if(AuditTrail = true)[
-              writetofile OrderID "Modify" OrderPrice OrderQuantity TraderWhoType tradernumber 2 "-" HON1 HON2
-            ]
+;            if(AuditTrail = true)[
+;              writetofile OrderID "Modify" OrderPrice OrderQuantity TraderWhoType tradernumber 2 "-" HON1 HON2
+;            ]
+            hatch-order_updates 1 [Order_Update OrderID OrderPrice "Modify" tradernumber OrderQuantity TraderWho TraderWhoType]
           ]
 
           table:remove OrderCheckList OrderPriceDelta
@@ -733,9 +860,10 @@ to MktMkr_strategy
           let OrderCancel OrderQuantity
           ask TraderWho [ set openorders remove ? openorders set totalCanceled (totalCanceled + OrderCancel)]
 
-          if(AuditTrail = true)[
-            writetofile OrderID "Cancel" OrderPrice OrderQuantity TraderWhoType tradernumber 2 "-" HON1 HON2
-          ]
+;          if(AuditTrail = true)[
+;            writetofile OrderID "Cancel" OrderPrice OrderQuantity TraderWhoType tradernumber 2 "-" HON1 HON2
+;          ]
+          hatch-order_updates 1 [Order_Update OrderID OrderPrice "Cancel" tradernumber OrderQuantity TraderWho TraderWhoType]
 
           die
         ]
@@ -870,9 +998,10 @@ end
 to LiqDem_strategy
   foreach openorders [
     ask ?[
-      if(AuditTrail = true)[
-        writetofile OrderID "Cancel" OrderPrice OrderQuantity TraderWhoType tradernumber 1 "-" HON1 HON2
-      ]
+;      if(AuditTrail = true)[
+;        writetofile OrderID "Cancel" OrderPrice OrderQuantity TraderWhoType tradernumber 1 "-" HON1 HON2
+;      ]
+      hatch-order_updates 1 [Order_Update OrderID OrderPrice "Cancel" tradernumber OrderQuantity myself TraderWhoType]
       die
     ]
   ]
@@ -1015,9 +1144,10 @@ end
 to LiqBkr_Strategy
   foreach openorders [
     ask ?[
-      if(AuditTrail = true)[
-        writetofile OrderID "Cancel" OrderPrice OrderQuantity TraderWhoType tradernumber 1 "-" HON1 HON2
-      ]
+;      if(AuditTrail = true)[
+;        writetofile OrderID "Cancel" OrderPrice OrderQuantity TraderWhoType tradernumber 1 "-" HON1 HON2
+;      ]
+      hatch-order_updates 1 [Order_Update OrderID OrderPrice "Cancel" tradernumber OrderQuantity myself TraderWhoType]
       die
     ]
   ]
@@ -1191,9 +1321,10 @@ end
 to LiqSup_strategy
   foreach openorders [
     ask ?[
-      if(AuditTrail = true)[
-        writetofile OrderID "Cancel" OrderPrice OrderQuantity TraderWhoType tradernumber 1 "-" HON1 HON2
-      ]
+;      if(AuditTrail = true)[
+;        writetofile OrderID "Cancel" OrderPrice OrderQuantity TraderWhoType tradernumber 1 "-" HON1 HON2
+;      ]
+      hatch-order_updates 1 [Order_Update OrderID OrderPrice "Cancel" tradernumber OrderQuantity myself TraderWhoType]
       die
     ]
   ]
@@ -1266,9 +1397,10 @@ end
 to FrcSal_strategy
   foreach openorders [
     ask ?[
-      if(AuditTrail = true)[
-        writetofile OrderID "Cancel" OrderPrice OrderQuantity TraderWhoType tradernumber 1 "-" HON1 HON2
-      ]
+;      if(AuditTrail = true)[
+;        writetofile OrderID "Cancel" OrderPrice OrderQuantity TraderWhoType tradernumber 1 "-" HON1 HON2
+;      ]
+      hatch-order_updates 1 [Order_Update OrderID OrderPrice "Cancel" tradernumber OrderQuantity myself TraderWhoType]
       die
     ]
   ]
@@ -2521,8 +2653,8 @@ SLIDER
 83
 981
 116
-#_Liquidity_Demander
-#_Liquidity_Demander
+#_LiqDem
+#_LiqDem
 0
 250
 100
@@ -2536,8 +2668,8 @@ SLIDER
 203
 982
 236
-#_Market_Makers
-#_Market_Makers
+#_MktMkr
+#_MktMkr
 0
 10
 5
@@ -2998,24 +3130,13 @@ AMPM
 1
 11
 
-SWITCH
-12
-143
-120
-176
-AuditTrail
-AuditTrail
-1
-1
--1000
-
 SLIDER
 791
 143
 981
 176
-#_Liquidity_Supplier
-#_Liquidity_Supplier
+#_LiqSup
+#_LiqSup
 0
 25
 10
@@ -3900,8 +4021,14 @@ NetLogo 5.3.1
     <enumeratedValueSet variable="timeseries">
       <value value="false"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="#_Liquidity_Supplier">
+    <enumeratedValueSet variable="#_LiqSup">
       <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#_LiqDem">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="#_MktMkr">
+      <value value="5"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="LiqSup_TradeLength">
       <value value="1020"/>
@@ -3938,15 +4065,6 @@ NetLogo 5.3.1
     </enumeratedValueSet>
     <enumeratedValueSet variable="marketMakerOrderSizeMultipler">
       <value value="1"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="#_Liquidity_Demander">
-      <value value="100"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="#_Market_Makers">
-      <value value="5"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="AuditTrail">
-      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="liquidity_Demander_Arrival_Rate">
       <value value="240"/>
