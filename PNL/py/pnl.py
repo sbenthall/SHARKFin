@@ -54,6 +54,7 @@ def run_NLsims(CFG):
     LM_file = os.path.join(CFG['pnl']['NLmodeldir'], CFG['pnl']['NLfilename'])
     LOG.warn('NetLogo model: '+LM_file)
     LM.load_model(LM_file)
+    LOG.warn('NetLogo model loaded')
     
     # Feed the parameter choices for this parallel run to our model
     LM.command(f"set #_LiqSup {CFG['pnl']['nLiqSup']}")
@@ -98,9 +99,11 @@ def run_NLsims(CFG):
     for tik in range(int(CFG['pnl']['LMtickssimruns'])):
         LM.command('go')
         ticks = int(LM.report('ticks'))
+        LOG.debug(f' -- ticks: {ticks}')
 
         # ================= ALL ORDER LOG =====================================
         ct_allorders = int(LM.report('length allOrders'))
+        LOG.debug(f' -- ct_allorders: {ct_allorders}')
         for i in range(ct_allorders):
             rdr0 = int(LM.report(f'prop_allOrders {i} "OrderID"'))
             rdr1 = float(LM.report(f'prop_allOrders {i} "OrderTime"'))
