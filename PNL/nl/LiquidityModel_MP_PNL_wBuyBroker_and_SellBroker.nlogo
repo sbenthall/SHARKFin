@@ -281,20 +281,16 @@ to go
     ]
 
     if (typeOfTrader = "LiqBuyBkr") [
-      if ( (1.1 * PeriodtoEndExecution) >= ticks) [
+      if ( (countticks >= (5 + tradeSpeedAdjustment)) and ((1.1 * PeriodtoEndExecution) >= ticks) ) [
         set tradeStatus "Transact"
-
-        if((ticks > 5000) ) [set totalCanceled (totalCanceled + tradeQuantity)]
-        set speed 0
+        set speed 5
       ]
     ]
 
     if (typeOfTrader = "LiqSellBkr") [
-      if ( (1.1 * PeriodtoEndExecution) >= ticks) [
+      if ( (countticks >= (5 + tradeSpeedAdjustment)) and ((1.1 * PeriodtoEndExecution) >= ticks) ) [
         set tradeStatus "Transact"
-
-        if((ticks > 5000) ) [set totalCanceled (totalCanceled + tradeQuantity)]
-        set speed 0
+        set speed 5
       ]
     ]
 
@@ -573,8 +569,6 @@ to calculatePriceReturns
   set priceReturns lput (ln((item (length movingAverage - 1) movingAverage) / (item (length movingAverage - 30) movingAverage)))  priceReturns
 end
 ;code by Mark Paddrik
-
-
 
 ;==============================================================================
 ;==============================================================================
@@ -904,8 +898,10 @@ end
 to LiqSellBkr_Setup
   set typeOfTrader "LiqSellBkr"
   ;Testing Speed
-  set speed 0
-  set tradeSpeedAdjustment (random 30) + 1
+  ;set speed 0
+  ;set tradeSpeedAdjustment (random 30) + 1
+  set speed (random-poisson 5)
+  set tradeSpeedAdjustment 1
   set tradeStatus "Transact"
   set orderNumber 0
   set countticks 0
@@ -1015,8 +1011,10 @@ to LiqBuyBkr_Setup
   set typeOfTrader "LiqBuyBkr"
   ;Testing Speed
   ;set speed (random-poisson LiqBuyBkr_ArrivalRate) + 1
-  set speed 0
-  set tradeSpeedAdjustment (random 30) + 1
+  set speed (random-poisson 5)
+  set tradeSpeedAdjustment 1
+  ;set speed 0
+  ;set tradeSpeedAdjustment (random 30) + 1
   set tradeStatus "Transact"
   set orderNumber 0
   set countticks 0
@@ -3192,7 +3190,7 @@ INPUTBOX
 1711
 847
 PeriodtoEndExecution
-6000
+8000
 1
 0
 Number
@@ -3417,7 +3415,7 @@ LiqBuyBkr_Limit
 LiqBuyBkr_Limit
 0
 10000
-3858
+10000
 1
 1
 NIL
@@ -3447,7 +3445,7 @@ LiqBkr_OrderSizeMultiplier
 LiqBkr_OrderSizeMultiplier
 0
 150
-100
+50
 1
 1
 NIL
@@ -3462,7 +3460,7 @@ LiqSellBkr_Limit
 LiqSellBkr_Limit
 0
 10000
-2000
+10000
 1
 1
 NIL
