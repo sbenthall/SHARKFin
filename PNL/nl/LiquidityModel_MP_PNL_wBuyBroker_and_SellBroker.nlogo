@@ -228,8 +228,8 @@ to setup-economy
       checkTraderNumberUnique
       ifelse (checkTraderNumber = 1) [
         set traderListNumbers lput traderNumber traderListNumbers
-      ] [ 
-        checkTraderNumberUnique 
+      ] [
+        checkTraderNumberUnique
       ]
     ]
   ]
@@ -294,7 +294,7 @@ to Order_Setup [a b d f tdr tdrtype]
   ]
 
   ask tdr [
-    set openOrders lput myself openOrders 
+    set openOrders lput myself openOrders
     set tradernum traderNumber
   ]
   set allOrders lput self allOrders
@@ -480,19 +480,19 @@ to go
 
     set tradeAccount ((sharesOwned * ( price / 4) - averageBoughtPrice * totalBought + averageSoldPrice * totalSold) - (transactionCost * (totalBought + totalSold)))
 
-    if((typeOfTrader = "LiquidityDemander" or 
-        typeOfTrader = "LiquiditySupplier" or 
-        typeOfTrader = "MarketMakers" or 
-        typeOfTrader = "LiqBuyBkr" or 
-        typeOfTrader = "LiqSellBkr") and 
+    if((typeOfTrader = "LiquidityDemander" or
+        typeOfTrader = "LiquiditySupplier" or
+        typeOfTrader = "MarketMakers" or
+        typeOfTrader = "LiqBuyBkr" or
+        typeOfTrader = "LiqSellBkr") and
         tradeStatus = "Buy" and tradeQuantity > 0) [
       set currentBuyInterestPrice ((currentBuyInterestPrice * currentBuyInterest + tradeQuantity * tradePrice) / (currentBuyInterest + tradeQuantity))
       set currentBuyInterest (currentBuyInterest + tradeQuantity)
     ]
 
-    if((typeOfTrader = "LiquidityDemander" or 
-        typeOfTrader = "LiquiditySupplier" or 
-        typeOfTrader = "MarketMakers" ) and 
+    if((typeOfTrader = "LiquidityDemander" or
+        typeOfTrader = "LiquiditySupplier" or
+        typeOfTrader = "MarketMakers" ) and
         tradeStatus = "Sell" and tradeQuantity > 0) [
       set currentSellInterestPrice ((currentSellInterestPrice * currentSellInterest + tradeQuantity * tradePrice) / (currentSellInterest + tradeQuantity))
       set currentSellInterest (currentSellInterest + tradeQuantity)
@@ -638,14 +638,14 @@ to transactionOrder
     if (currentOrderAsk <= currentOrderBid) [
       if ( quantityDiff = 0 ) [
 
-        ask traderBid [ 
-          set openorders remove firstInBuyQueue openorders 
-          set traderBidNum traderNumber 
+        ask traderBid [
+          set openorders remove firstInBuyQueue openorders
+          set traderBidNum traderNumber
           set traderBidType typeOfTrader
         ]
-        ask traderAsk [ 
-          set openorders remove firstInSellQueue openorders 
-          set traderAskNum traderNumber 
+        ask traderAsk [
+          set openorders remove firstInSellQueue openorders
+          set traderAskNum traderNumber
           set traderAskType typeOfTrader
         ]
         ask firstInBuyQueue [ die ]
@@ -672,17 +672,17 @@ to transactionOrder
 
       if ( quantityDiff > 0 ) [
 
-        ask firstInBuyQueue [ 
-          set OrderQuantity quantityDiff 
+        ask firstInBuyQueue [
+          set OrderQuantity quantityDiff
         ]
-        ask traderBid [ 
+        ask traderBid [
           set traderBidNum traderNumber set traderBidType typeOfTrader
         ]
-        ask traderAsk [ 
+        ask traderAsk [
           set openorders remove firstInSellQueue openorders set traderAskNum traderNumber set traderAskType typeOfTrader
         ]
         ask firstInSellQueue [
-          die 
+          die
         ]
 
         if orderBidID > orderAskID [
@@ -761,7 +761,7 @@ to MktMkr_Setup
   set speed 1000
   set tradeSpeedAdjustment random 10    set tradeStatus "Transact"
   set orderNumber 0
-  
+
   set countticks 0
   set tradeAccount 0
   set sharesOwned 0
@@ -852,8 +852,8 @@ to MktMkr_strategy
           table:remove OrderCheckList OrderPriceDelta
         ][
           let OrderCancel OrderQuantity
-          ask TraderWho [ 
-            set openorders remove ? openorders 
+          ask TraderWho [
+            set openorders remove ? openorders
             set totalCanceled (totalCanceled + OrderCancel)
           ]
 
@@ -1299,8 +1299,13 @@ to BkrSelStrategy
    set tradePrice price - 5
    let rDraw random 100
    let pctTimeLeft (PeriodtoEndExecution - ticks) / (PeriodtoEndExecution - 5000)
-   set tradeQuantity round ( ( (LiqBkr_OrderSizeMultiplier * (1 - (0.5 * pctTimeLeft))) * (pctTimeLeft * (rDraw / 100) + 1 - (0.5 * pctTimeLeft)) ) * ( (tSharesOwned - negSell_Limit) / (PeriodtoEndExecution - ticks)) )
-   ;set tradeQuantity round (LiqBkr_OrderSizeMultiplier * ( (tSharesOwned - negSell_Limit) / (PeriodtoEndExecution - ticks) ) )
+   ifelse(PeriodtoEndExecution <= ticks)[
+     set tradeQuantity round ( ( (LiqBkr_OrderSizeMultiplier * (1 - (0.5 * pctTimeLeft))) * (pctTimeLeft * (rDraw / 100) + 1 - (0.5 * pctTimeLeft)) ) * ( (tSharesOwned - negSell_Limit)) )
+     ;set tradeQuantity round (LiqBkr_OrderSizeMultiplier * ( (tSharesOwned - negSell_Limit) ) )
+   ][
+     set tradeQuantity round ( ( (LiqBkr_OrderSizeMultiplier * (1 - (0.5 * pctTimeLeft))) * (pctTimeLeft * (rDraw / 100) + 1 - (0.5 * pctTimeLeft)) ) * ( (tSharesOwned - negSell_Limit) / (PeriodtoEndExecution - ticks)) )
+     ;set tradeQuantity round (LiqBkr_OrderSizeMultiplier * ( (tSharesOwned - negSell_Limit) / (PeriodtoEndExecution - ticks) ) )
+   ]
 
    ;ifelse ( tSharesOwned >= negSell_Limit  )[
    ;  set tradeQuantity 100
@@ -1402,9 +1407,13 @@ to BkrBuyStrategy
    set tradePrice price + 5
    let rDraw random 100
    let pctTimeLeft (PeriodtoEndExecution - ticks) / (PeriodtoEndExecution - 5000)
-   set tradeQuantity round ( ( (LiqBkr_OrderSizeMultiplier * (1 - (0.5 * pctTimeLeft))) * (pctTimeLeft * (rDraw / 100) + 1 - (0.5 * pctTimeLeft)) ) * ( (BkrBuy_Limit - (tSharesOwned)) / (PeriodtoEndExecution - ticks)) )
-   ;set tradeQuantity round (LiqBkr_OrderSizeMultiplier * ( (BkrBuy_Limit - (tSharesOwned)) / (PeriodtoEndExecution - ticks) ) )
-
+   ifelse(PeriodtoEndExecution <= ticks)[
+     set tradeQuantity round ( ( (LiqBkr_OrderSizeMultiplier * (1 - (0.5 * pctTimeLeft))) * (pctTimeLeft * (rDraw / 100) + 1 - (0.5 * pctTimeLeft)) ) * ( (BkrBuy_Limit - (tSharesOwned))) )
+     ;set tradeQuantity round (LiqBkr_OrderSizeMultiplier * ( (BkrBuy_Limit - (tSharesOwned)) ) )
+   ][
+     set tradeQuantity round ( ( (LiqBkr_OrderSizeMultiplier * (1 - (0.5 * pctTimeLeft))) * (pctTimeLeft * (rDraw / 100) + 1 - (0.5 * pctTimeLeft)) ) * ( (BkrBuy_Limit - (tSharesOwned)) / (PeriodtoEndExecution - ticks)) )
+     ;set tradeQuantity round (LiqBkr_OrderSizeMultiplier * ( (BkrBuy_Limit - (tSharesOwned)) / (PeriodtoEndExecution - ticks) ) )
+   ]
    ; Prevent Broker from crossing inventory limit
    if(tradeQuantity + (tSharesOwned)  > BkrBuy_Limit)[
     set tradeQuantity (BkrBuy_Limit - (tSharesOwned))
@@ -2638,7 +2647,6 @@ end
 ;==============================================================================
 ;==============================================================================
 ;==============================================================================
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 534
@@ -3653,7 +3661,7 @@ LiqBkr_OrderSizeMultiplier
 LiqBkr_OrderSizeMultiplier
 0
 10
-5
+10
 1
 1
 NIL
@@ -3699,10 +3707,6 @@ BkrSel_Limit
 NIL
 HORIZONTAL
 
-
-
-
-
 @#$#@#$#@
 ## ## WHAT IS IT?
 
@@ -3747,7 +3751,6 @@ Paddrik, M., Hayes, R., Todd, A., Yang, S., Scherer, W.  & Beling, P.  (2012).  
 Paddrik, M., Hayes, R., Scherer, W.  & Beling, P.  (2014).  Effects of Limit Order Book Information Level on Market Stability Metrics.  OFR Working Paper Series.
 
 Paddrik, M. & Bookstaber R. (2015).  An Agnet-based Model for for Crisis Liquidity Dynamics.  OFR Working Paper Series.
-
 
 
 
@@ -4039,9 +4042,6 @@ Polygon -7500403 true true 30 75 75 30 270 225 225 270
 NetLogo 5.3.1
 @#$#@#$#@
 @#$#@#$#@
-
-
-
 @#$#@#$#@
 <experiments>
   <experiment name="experiment" repetitions="100" runMetricsEveryStep="false">
