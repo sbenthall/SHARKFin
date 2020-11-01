@@ -58,7 +58,12 @@ def run_NLsims(CFG):
     
     # Feed the parameter choices for this parallel run to our model
     LM.command(f"set #_LiqSup {CFG['pnl']['nLiqSup']}")
+    LM.command(f"set #_LiqDem {CFG['pnl']['nLiqDem']}")
     LM.command(f"set #_MktMkr {CFG['pnl']['nMktMkr']}")
+    LM.command(f"set BkrBuy_Limit {CFG['pnl']['BkrBuy_Limit']}")
+    LM.command(f"set BkrSel_Limit {CFG['pnl']['BkrSel_Limit']}")
+    LM.command(f"set LiqBkr_OrderSizeMultiplier {CFG['pnl']['LiqBkr_OrderSizeMultiplier']}")
+    LM.command(f"set PeriodtoEndExecution {CFG['pnl']['PeriodtoEndExecution']}")
 
     # Run the setup function for the NetLogo model
     LOG.warn('NetLogo model -- setup begin')
@@ -138,6 +143,7 @@ def run_NLsims(CFG):
            
     toc0 = time.clock()
     print('Elapsed (sys clock): ', toc0-tic0)
+
 
 
 def main(argv=None):
