@@ -62,6 +62,7 @@ Globals [
   allOrders                ;List of all orders and order_updates hatched in the current tick cycle
   list_orders              ;List of all orders (but not order_updates) available at the end of current tick cycle
   list_traders             ;List of all traders at the end of the current tick cycle, for the inventory report
+  endBurninTime            ;Number of burnin ticks -- used to be hard coded as 5,000 -
 ]
 ;code by Mark Paddrik
 
@@ -154,6 +155,7 @@ to setup
   random-seed 1
   setup-economy
   file-close-all
+  set endBurninTime 2000    ;Added by John Liechty 11/17/2020
   set currentMA 100
   set volatility [1 2 3 5 7]
   set pastPrices [1 2 3 5 7]
@@ -405,7 +407,7 @@ to go
   set currentBuyInterestPrice 0
   set currentSellInterestPrice 0
 
-  if((ticks - 5000) mod 1440 = 1439 and ticks > 5000) [
+  if((ticks - endBurninTime) mod 1440 = 1439 and ticks > endBurninTime) [
     set timeserieslistcount (timeserieslistcount + 1)
     ]
 
@@ -422,7 +424,7 @@ to go
     if (typeOfTrader = "LiquidityDemander") [
       if countticks >= (LiqDem_TradeLength + tradeSpeedAdjustment) [
         set tradeStatus "Transact"
-        if(ticks > 5000) [
+        if(ticks > endBurninTime) [
           set totalCanceled (totalCanceled + tradeQuantity)
         ]
         set speed int(random-poisson liquidity_Demander_Arrival_Rate) + 1
@@ -446,7 +448,7 @@ to go
 ;    if (typeOfTrader = "LiqBkr") [
 ;      if countticks >= (LiqBkr_TradeLength + tradeSpeedAdjustment) [
 ;        set tradeStatus "Transact"
-;        if(ticks > 5000) [
+;        if(ticks > endBurninTime) [
 ;          set totalCanceled (totalCanceled + tradeQuantity)
 ;        ]
 ;        set speed int(random-poisson LiqBkr_ArrivalRate) + 1
@@ -463,7 +465,7 @@ to go
     if (typeOfTrader = "LiquiditySupplier") [
       if countticks >= (LiqSup_TradeLength + tradeSpeedAdjustment)  [
         set tradeStatus "Transact"
-        if(ticks > 5000) [
+        if(ticks > endBurninTime) [
           set totalCanceled (totalCanceled + tradeQuantity)
         ]
         set speed int(random-poisson liquidity_Supplier_Arrival_Rate) + 1
@@ -539,7 +541,7 @@ to go
 
       let transactionVar 0
 
-      if (ticks > 5000 ) [
+      if (ticks > endBurninTime ) [
         transactionOrder
       ]
     ]
@@ -558,7 +560,7 @@ to go
 
   do-plots
 
-  if(ticks >= 5000) [
+  if(ticks >= endBurninTime) [
     if((ticks - 4700) mod 600 = 0 ) [
       calculatePriceReturns
     ]
@@ -1035,7 +1037,7 @@ to LiqDem_strategy
 
   set openorders []
 
-  if(timeseries = True and ticks > 5000)
+  if(timeseries = True and ticks > endBurninTime)
   [
     if sum [sharesOwned] of traders with [typeOfTrader = "LiquidityDemander"] < timeseriesvalue [
        if (resethillclimbto50 = -1)[
@@ -1298,7 +1300,7 @@ to BkrSelStrategy
    set tradeStatus "Sell"
    set tradePrice price - 5
    let rDraw random 100
-   let pctTimeLeft (PeriodtoEndExecution - ticks) / (PeriodtoEndExecution - 5000)
+   let pctTimeLeft (PeriodtoEndExecution - ticks) / (PeriodtoEndExecution - endBurninTime)
    ifelse(PeriodtoEndExecution <= ticks)[
      set tradeQuantity round ( ( (LiqBkr_OrderSizeMultiplier * (1 - (0.5 * pctTimeLeft))) * (pctTimeLeft * (rDraw / 100) + 1 - (0.5 * pctTimeLeft)) ) * ( (tSharesOwned - negSell_Limit)) )
      ;set tradeQuantity round (LiqBkr_OrderSizeMultiplier * ( (tSharesOwned - negSell_Limit) ) )
@@ -1406,7 +1408,7 @@ to BkrBuyStrategy
    set tradeStatus "Buy"
    set tradePrice price + 5
    let rDraw random 100
-   let pctTimeLeft (PeriodtoEndExecution - ticks) / (PeriodtoEndExecution - 5000)
+   let pctTimeLeft (PeriodtoEndExecution - ticks) / (PeriodtoEndExecution - endBurninTime)
    ifelse(PeriodtoEndExecution <= ticks)[
      set tradeQuantity round ( ( (LiqBkr_OrderSizeMultiplier * (1 - (0.5 * pctTimeLeft))) * (pctTimeLeft * (rDraw / 100) + 1 - (0.5 * pctTimeLeft)) ) * ( (BkrBuy_Limit - (tSharesOwned))) )
      ;set tradeQuantity round (LiqBkr_OrderSizeMultiplier * ( (BkrBuy_Limit - (tSharesOwned)) ) )
@@ -2360,7 +2362,6 @@ to setup-plot10
 end
 ;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-
 ;//////////////////////////////////////////////////////////////////////////////
 to setup-plot11
   set-current-plot "Averages Shared Owned"
@@ -2401,7 +2402,7 @@ to do-plots
   histogram a2
   set-histogram-num-bars 100
 
-  if(ticks > 5000)
+  if(ticks > endBurninTime)
   [
     set-current-plot "Price Returns"
     plot-pen-reset
@@ -2411,14 +2412,14 @@ to do-plots
     histogram priceReturns
   ]
 
-  if(ticks > 5000)
+  if(ticks > endBurninTime)
   [
     set-current-plot "Price"
     plot (price / 4)
 
       set-current-plot "Daily Price"
       plot (price / 4)
-      set-plot-x-range (ticks - 6440) (ticks - 5000)
+      set-plot-x-range (ticks - 6440) (ticks - endBurninTime)
 
 
     if((ticks mod 10) = 8)[
@@ -2435,7 +2436,7 @@ to do-plots
      set volatility lput ((price / 4) ) volatility
      set pastPrices lput price pastPrices
      let lengthVola length volatility
-     if(ticks  > 5000)[
+     if(ticks  > endBurninTime)[
        let subVL sublist volatility (lengthVola - 29) lengthVola
        let avgVL mean subVL
        set movingAverage lput avgVL movingAverage
@@ -2448,13 +2449,13 @@ to do-plots
   ]
 
   set currentVol 0
-  if(ticks >= 5600)[
+  if(ticks >= (endBurninTime + 600))[
     let lengthVol length volatility
     let subVol sublist volatility (lengthVol - 10) lengthVol
     let maxVol max subVol
     let minVol min subVol
     set currentVol ln (maxVol / minVol)
-    if(((ticks - 5000) mod 60) = 0)[
+    if(((ticks - endBurninTime) mod 60) = 0)[
       set-current-plot "Volatility"
       let lPR length priceReturns
       plot (sqrt(abs (item (lPR - 1) priceReturns)) * 15.87)
@@ -2463,7 +2464,7 @@ to do-plots
   ]
 
   set-current-plot "Ten Minute Moving Average Price"
-  if(ticks > 5000)[
+  if(ticks > endBurninTime)[
     let lengthMA length volatility
     let lengthMB length pastPrices
     let subMA sublist volatility (lengthMA - 29) lengthMA
@@ -2477,7 +2478,7 @@ to do-plots
 
   set-current-plot "Ten Minute Moving Average Volume"
   set currentMAV 2
-  if(ticks >= 5000)[
+  if(ticks >= endBurninTime)[
     let lengthMAV length movingAverageV
     let subMAV sublist movingAverageV (lengthMAV - 29) lengthMAV
     let avgMAV mean subMAV
@@ -2489,7 +2490,7 @@ to do-plots
   set-current-plot "Market Depth"
   set currentBQD 2
   set currentSQD 2
-  if(ticks >= 5000)[
+  if(ticks >= endBurninTime)[
     set-current-plot-pen "Bid"
     plot sum [OrderQuantity] of orders with [OrderB/A = "Buy"]
     set-current-plot-pen "Ask"
@@ -2497,7 +2498,7 @@ to do-plots
   ]
 
   set-current-plot "Bid-Ask Spread"
-  if(ticks >= 5000)[
+  if(ticks >= endBurninTime)[
     ifelse ((currentOrderAsk - currentOrderBid) / 2 >= 0)[
       plot (currentOrderAsk - currentOrderBid) / 2
     ][
@@ -2506,18 +2507,18 @@ to do-plots
   ]
 
   set-current-plot "Turnover Rate"
-  if(ticks >= 5000)[
+  if(ticks >= endBurninTime)[
     plot (currentMAV / (sum [OrderQuantity] of orders with [OrderB/A = "Sell"] + 1))
   ]
 
-  if(ticks >= 5000)[
+  if(ticks >= endBurninTime)[
     if((ticks mod 10) = 9)[
       set-current-plot "Aggressive Trades"
       plot (aggressiveBid - aggressiveAsk)
     ]
   ]
 
-  if(ticks >= 5000)[
+  if(ticks >= endBurninTime)[
     set-current-plot "Averages Shared Owned"
     set-current-plot-pen "MM"
     plot MktMkr_avgShares
@@ -2533,7 +2534,7 @@ to do-plots
     plot avgSharesBkrSel
   ]
 
-  if(ticks >= 5000)[
+  if(ticks >= endBurninTime)[
     set-current-plot "Average Profit-Loss"
     set-current-plot-pen "MM"
     plot MktMkr_accountValue
@@ -2577,19 +2578,19 @@ end
 
 ;//////////////////////////////////////////////////////////////////////////////
 to-report day
-  report (int (((ticks) / 60) + 9.5 - ((5000) / 60)) / 24 )
+  report (int (((ticks) / 60) + 9.5 - ((endBurninTime) / 60)) / 24 )
 end
 ;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 ;//////////////////////////////////////////////////////////////////////////////
 to-report hour
-  ifelse (int (((ticks ) / 60) + 9.5 - ((5000) / 60))) mod 24 > 12 [ report (int (((ticks) / 60) + 9.5 - ((5000) / 60)) mod 24) - 12
+  ifelse (int (((ticks ) / 60) + 9.5 - ((endBurninTime) / 60))) mod 24 > 12 [ report (int (((ticks) / 60) + 9.5 - ((endBurninTime) / 60)) mod 24) - 12
     ][
-      ifelse (int (((ticks ) / 60) + 9.5 - ((5000) / 60)) mod 24 = 0)[
+      ifelse (int (((ticks ) / 60) + 9.5 - ((endBurninTime) / 60)) mod 24 = 0)[
         report 12
         ][
-        report int (((ticks ) / 60) + 9.5 - ((5000) / 60)) mod 24]
+        report int (((ticks ) / 60) + 9.5 - ((endBurninTime) / 60)) mod 24]
     ]
 end
 ;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -2597,21 +2598,21 @@ end
 
 ;//////////////////////////////////////////////////////////////////////////////
 to-report hourOutput
-    report int (((ticks ) / 60) + 9.5 - ((5000) / 60))
+    report int (((ticks ) / 60) + 9.5 - ((endBurninTime) / 60))
 end
 ;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 ;//////////////////////////////////////////////////////////////////////////////
 to-report minute
-  report int(((((ticks ) / 60) + 9.5 - ((5000) / 60)) mod 1)* 60)
+  report int(((((ticks ) / 60) + 9.5 - ((endBurninTime) / 60)) mod 1)* 60)
 end
 ;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 ;//////////////////////////////////////////////////////////////////////////////
 to-report AMPM
-    ifelse (int (((ticks) / 60) + 9.5 - ((5000) / 60))) mod 24 > 11 [ report "AM"
+    ifelse (int (((ticks) / 60) + 9.5 - ((endBurninTime) / 60))) mod 24 > 11 [ report "AM"
     ][
       report "PM"
     ]
@@ -3751,7 +3752,6 @@ Paddrik, M., Hayes, R., Todd, A., Yang, S., Scherer, W.  & Beling, P.  (2012).  
 Paddrik, M., Hayes, R., Scherer, W.  & Beling, P.  (2014).  Effects of Limit Order Book Information Level on Market Stability Metrics.  OFR Working Paper Series.
 
 Paddrik, M. & Bookstaber R. (2015).  An Agnet-based Model for for Crisis Liquidity Dynamics.  OFR Working Paper Series.
-
 
 
 
