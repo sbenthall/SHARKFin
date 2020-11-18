@@ -3709,6 +3709,17 @@ BkrSel_Limit
 NIL
 HORIZONTAL
 
+INPUTBOX
+1541
+371
+1702
+431
+endBurninTime
+2000
+1
+0
+Number
+
 @#$#@#$#@
 ## ## WHAT IS IT?
 
