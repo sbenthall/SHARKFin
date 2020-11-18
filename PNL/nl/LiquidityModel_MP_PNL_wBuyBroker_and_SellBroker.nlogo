@@ -62,7 +62,7 @@ Globals [
   allOrders                ;List of all orders and order_updates hatched in the current tick cycle
   list_orders              ;List of all orders (but not order_updates) available at the end of current tick cycle
   list_traders             ;List of all traders at the end of the current tick cycle, for the inventory report
-  endBurninTime            ;Number of burnin ticks -- used to be hard coded as 5,000 -
+  ; endBurninTime            ;Number of burnin ticks -- used to be hard coded as 5,000 -
 ]
 ;code by Mark Paddrik
 
@@ -155,7 +155,7 @@ to setup
   random-seed 1
   setup-economy
   file-close-all
-  set endBurninTime 2000    ;Added by John Liechty 11/17/2020
+  ; set endBurninTime 2000    ;Added by John Liechty 11/17/2020
   set currentMA 100
   set volatility [1 2 3 5 7]
   set pastPrices [1 2 3 5 7]
@@ -335,6 +335,7 @@ to-report prop_allOrders [index factoid_name]
     report (word "Index out of range in prop_allOrders: " index)
   ] [
     let ord (item index allOrders)
+    if (not is-an-order? ord)         [ report (word index " is dead")       ]
     if (factoid_name = "OrderID")       [ report [OrderID]            of (ord) ]
     if (factoid_name = "OrderTime")     [ report [OrderTime]          of (ord) ]
     if (factoid_name = "OrderPrice")    [ report [OrderPrice]         of (ord) ]

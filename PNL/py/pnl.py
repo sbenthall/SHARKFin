@@ -70,6 +70,9 @@ def run_NLsims(CFG):
     LM.command('setup')
     LOG.warn('NetLogo model -- setup end')
 
+    # new and local only right now:
+    LM.command(f"set endBurninTime {CFG['pnl']['LMtickswarmups']}")
+
     # Run the warmup iterations for the NetLogo model
     LOG.warn('NetLogo model -- warmups begin: '+str(CFG['pnl']['LMtickswarmups']))
     LM.repeat_command('go', int(CFG['pnl']['LMtickswarmups']))
@@ -110,17 +113,21 @@ def run_NLsims(CFG):
         ct_allorders = int(LM.report('length allOrders'))
         LOG.debug(f' -- ct_allorders: {ct_allorders}')
         for i in range(ct_allorders):
-            rdr0 = int(LM.report(f'prop_allOrders {i} "OrderID"'))
-            rdr1 = float(LM.report(f'prop_allOrders {i} "OrderTime"'))
-            rdr2 = float(LM.report(f'prop_allOrders {i} "OrderPrice"'))
-            rdr3 = int(LM.report(f'prop_allOrders {i} "OrderTraderID"'))
-            rdr4 = float(LM.report(f'prop_allOrders {i} "OrderQuantity"'))
-            rdr5 = str(LM.report(f'prop_allOrders {i} "OrderB/A"'))
-#            rdr6 = int(LM.report(f'prop_allOrders {i} "TraderWho"'))
-            rdr7 = str(LM.report(f'prop_allOrders {i} "TraderWhoType"'))
-            AOcsvw.writerow([ticks,rdr0,rdr1,rdr2,rdr3,rdr4,rdr5,  rdr7])
+            try:
+                rdr0 = int(LM.report(f'prop_allOrders {i} "OrderID"'))
+                rdr1 = float(LM.report(f'prop_allOrders {i} "OrderTime"'))
+                rdr2 = float(LM.report(f'prop_allOrders {i} "OrderPrice"'))
+                rdr3 = int(LM.report(f'prop_allOrders {i} "OrderTraderID"'))
+                rdr4 = float(LM.report(f'prop_allOrders {i} "OrderQuantity"'))
+                rdr5 = str(LM.report(f'prop_allOrders {i} "OrderB/A"'))
+                # rdr6 = int(LM.report(f'prop_allOrders {i} "TraderWho"'))
+                rdr7 = str(LM.report(f'prop_allOrders {i} "TraderWhoType"'))
+                AOcsvw.writerow([ticks,rdr0,rdr1,rdr2,rdr3,rdr4,rdr5,  rdr7])
+            except:
+                pass
+
         LOG.debug('Completed allorders for tick:'+str(tik))
-        
+
         # ================== INVENTORY LOG ====================================
         ct_lsttrders = int(LM.report('length list_traders'))
         for i in range(ct_lsttrders):
@@ -161,11 +168,11 @@ def main(argv=None):
     """
     config = UTIL.parse_command_line(argv, __file__)
 
-    try:
-        run_NLsims(config)
-    except Exception as e:
-        print('Exception: ', e)
-    
+    #try:
+    run_NLsims(config)
+    #except Exception as e:
+    #    print('Exception: ', e)
+
 # This tests whether the module is being run from the command line
 if __name__ == "__main__":
     main()
