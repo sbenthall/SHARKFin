@@ -21,13 +21,13 @@ import util as UTIL
 
 def run_NLsims(CFG):
     tic0 = time.clock()
-    
+
     sns.set_style('white')
     sns.set_context('talk')
-    
+
     sys.path.append(CFG['DEFAULT']['pythondir'])
     import util as UTIL
-    
+
     # Set up logging
     sid = f"{CFG['pnl']['nLiqSup']}_{CFG['pnl']['nMktMkr']}"
     LOG = logging.getLogger(sid)
@@ -39,7 +39,7 @@ def run_NLsims(CFG):
     log_fh.setFormatter(logging.Formatter(CFG['pnl']['logformat']))
     LOG.addHandler(log_fh)
     LOG.warn(f'Sim ID: {sid}')
-    
+
     # Log the configuration dictionary
     UTIL.log_config(LOG, CFG, 'pnl')
 
@@ -49,13 +49,13 @@ def run_NLsims(CFG):
     LM = pnl.NetLogoLink(gui=False,
                          netlogo_home=CFG['pnl']['NLhomedir'],
                          netlogo_version=str(CFG['pnl']['NLver']))
-    
+
     # Find the NetLogo script for our LiquidityModel, and load it
     LM_file = os.path.join(CFG['pnl']['NLmodeldir'], CFG['pnl']['NLfilename'])
     LOG.warn('NetLogo model: '+LM_file)
     LM.load_model(LM_file)
     LOG.warn('NetLogo model loaded')
-    
+
     # Feed the parameter choices for this parallel run to our model
     LM.command(f"set #_LiqSup {CFG['pnl']['nLiqSup']}")
     LM.command(f"set #_LiqDem {CFG['pnl']['nLiqDem']}")
@@ -82,7 +82,7 @@ def run_NLsims(CFG):
     # ===================== TIME-SERIES LOGS ==================================
     # =========================================================================
     csvflushinterval = int(CFG['pnl']['csvflushinterval'])
-    
+
     AOfile = CFG['pnl']['LMallorderpfx']+sid+'.'+CFG['pnl']['LMallordersfx']
     AOfile = os.path.join(CFG['pnl']['logdir'], AOfile)
     LOG.warn('Opening all-order (audit) log:'+AOfile)
@@ -91,17 +91,17 @@ def run_NLsims(CFG):
     AOcsvw.writerow(["Tick","OrderID","OrderTime","OrderPrice","OrderTraderID",
                      "OrderQuantity","OrderBA","TraderWhoType"])
 
-    IVfile = CFG['pnl']['LMinventorypfx']+sid+CFG['pnl']['LMinventorysfx']
+    IVfile = CFG['pnl']['LMinventorypfx']+sid+'.'+CFG['pnl']['LMinventorysfx']
     IVfile = os.path.join(CFG['pnl']['logdir'], IVfile)
     LOG.warn('Opening inventory log:'+IVfile)
     IVcsvf = open(IVfile, mode='w')
     IVcsvw = csv.writer(IVcsvf, delimiter='\t')
     IVcsvw.writerow(["Tick","TraderID","TraderWhoType","SharesOwned"])
-    
+
     FACT_TraderNumber=1
     FACT_TypeOfTrader=2
     FACT_SharesOwned =3
-    
+
     # Run the simulation for fullrun ticks, recording as we go
     LOG.warn('NetLogo model -- simruns begin: '+str(CFG['pnl']['LMtickssimruns']))
     for tik in range(int(CFG['pnl']['LMtickssimruns'])):
@@ -145,9 +145,9 @@ def run_NLsims(CFG):
     AOcsvf.close()
     LOG.warn('Closing inventory log:'+IVfile)
     IVcsvf.close()
-    
+
     LOG.warn('=============== END OF NetLogo RUN ============================')
-           
+
     toc0 = time.clock()
     print('Elapsed (sys clock): ', toc0-tic0)
 
@@ -155,12 +155,12 @@ def run_NLsims(CFG):
 
 def main(argv=None):
     """A main function for command line execution
-    
+
     This function parses the command line, loads the configuration, and 
     invokes the local functions:
-        
+
          * run_NLsims(config)
-         
+
     Parameters
     ----------
     argv : dict
