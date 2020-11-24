@@ -19,8 +19,12 @@ import pyNetLogo as pnl
 import util as UTIL
 
 
-def run_NLsims(CFG):
-    tic0 = time.clock()
+def run_NLsims(
+        CFG,
+        broker_buy_limit = None,
+        broker_sell_limit = None
+):
+    tic0 = time.process_time()
 
     sns.set_style('white')
     sns.set_context('talk')
@@ -60,8 +64,13 @@ def run_NLsims(CFG):
     LM.command(f"set #_LiqSup {CFG['pnl']['nLiqSup']}")
     LM.command(f"set #_LiqDem {CFG['pnl']['nLiqDem']}")
     LM.command(f"set #_MktMkr {CFG['pnl']['nMktMkr']}")
-    LM.command(f"set BkrBuy_Limit {CFG['pnl']['BkrBuy_Limit']}")
-    LM.command(f"set BkrSel_Limit {CFG['pnl']['BkrSel_Limit']}")
+
+    broker_buy_limit = broker_buy_limit if broker_buy_limit else CFG['pnl']['BkrBuy_Limit']
+    LM.command(f"set BkrBuy_Limit {broker_buy_limit}")
+
+    broker_sell_limit = broker_sell_limit if broker_sell_limit else CFG['pnl']['BkrSel_Limit']
+    LM.command(f"set BkrSel_Limit {broker_sell_limit}")
+
     LM.command(f"set LiqBkr_OrderSizeMultiplier {CFG['pnl']['LiqBkr_OrderSizeMultiplier']}")
     LM.command(f"set PeriodtoEndExecution {CFG['pnl']['PeriodtoEndExecution']}")
 
@@ -148,7 +157,7 @@ def run_NLsims(CFG):
 
     LOG.warn('=============== END OF NetLogo RUN ============================')
 
-    toc0 = time.clock()
+    toc0 = time.process_time()
     print('Elapsed (sys clock): ', toc0-tic0)
 
 
