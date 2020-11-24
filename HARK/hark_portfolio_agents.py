@@ -128,7 +128,7 @@ def new_assets(agent, risky_share, prices):
     returns true assets following previous quarter of prices
     """
     # current assets according to HARK model.
-    assets = agent.mNrmNow * agent.pLvlNow
+    assets = agent.state_now['mNrmNow'] * agent.state_now['pLvlNow']
 
     # old assets according to HARK model
     old_assets = agent.history['mNrmNow'][0] * agent.history['pLvlNow'][0]
@@ -159,7 +159,7 @@ def update_agent(agent, risky_share, prices):
     assets[assets < 0] = 0
 
     # normalize the assets
-    agent.mNrmNow = assets / agent.pLvlNow
+    agent.mNrmNow = assets / agent.state_now['pLvlNow']
 
     agent.assignParameters(**re)
 
@@ -184,8 +184,8 @@ def demand(agent, prices):
     update_agent(agent, agent.history['ShareNow'][0], prices)
     agent.solve()
 
-    market_resources = agent.mNrmNow
-    permanent_income = agent.pLvlNow
+    market_resources = agent.state_now['mNrmNow']
+    permanent_income = agent.state_now['pLvlNow']
 
     # ShareFunc takes normalized market resources as argument
     risky_share = agent.solution[0].ShareFuncAdj(
