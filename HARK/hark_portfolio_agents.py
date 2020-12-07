@@ -27,6 +27,7 @@ def create_agents(agent_classes, ap):
     agents = [
         cpm.PortfolioConsumerType(
             AgentCount = ac[1],
+            aNrmInitMean = ac[2],
             **update_return(ap, ac[0])
         )
         for ac
@@ -43,7 +44,7 @@ def create_agents(agent_classes, ap):
         agent.simulate()
 
         #change it back
-        agent.AdjustPrb = 0.0
+        # agent.AdjustPrb = 0.0
 
     return agents
 
@@ -71,9 +72,11 @@ def estimated_rate_of_return(prices):
     """
     Estimates quarterly rate of return on prices
     """
-    m, b = best_fit_slope_and_intercept(np.arange(prices.size), prices)
+    #m, b = best_fit_slope_and_intercept(np.arange(prices.size), prices)
 
-    return 1 + m * prices.size
+    #return 1 + m * prices.size
+
+    return prices[-1] / prices[0]
 
 def estimated_std_of_return(prices):
     """
@@ -81,17 +84,24 @@ def estimated_std_of_return(prices):
     """
     return np.std(prices)
 
-def risky_actual_return(prices):
+def risky_actual_return(orders):
     """
     Actual return on investment in risky asset in the last quarter.
     """
+
+    ## TODO: This needs to be a bit more sophisticated
+    prices = orders['OrderPrice'].values
+
     return prices[-1] / prices[0]
 
-def risky_expectations(prices):
+def risky_expectations(orders):
     """
     A parameter dictionary with expected properties
     of the risky asset based on historical prices.
     """
+
+    ## TODO: This needs to be a bit more sophisticated
+    prices = orders['OrderPrice'].values
 
     risky_params = {
         'RiskyAvg': estimated_rate_of_return(prices),
@@ -120,7 +130,7 @@ def simulate(agents, periods):
         agent.simulate()
         agent.RiskyStd = store_RiskyStd
 
-def new_assets(agent, risky_share, prices):
+def new_assets(agent, risky_share, orders):
     """
     agent - a HARK AgentType after simulation has been run for a quarter
     prices - prices from the previous quarter
@@ -131,11 +141,11 @@ def new_assets(agent, risky_share, prices):
     assets = agent.state_now['mNrmNow'] * agent.state_now['pLvlNow']
 
     # old assets according to HARK model
-    old_assets = agent.history['mNrmNow'][0] * agent.history['pLvlNow'][0]
+    old_assets = agent.history['mNrmNow'][0][0] * agent.history['pLvlNow'][0][0]
 
     old_risky_assets = old_assets * risky_share
 
-    actual_risky_assets_now = old_risky_assets * risky_actual_return(prices)
+    actual_risky_assets_now = old_risky_assets * risky_actual_return(orders)
 
     hark_risky_assets_now = old_risky_assets * \
                             agent.history['RiskyNow'][:,0].prod()
@@ -145,43 +155,43 @@ def new_assets(agent, risky_share, prices):
     return actual_assets
 
 
-def update_agent(agent, risky_share, prices):
+def update_agent(agent, risky_share, orders):
     """
     Given an agent, their risky share, and quarterly prices...
         - give the agent new risky expectations based on prices
         - compute and set the agent's market resources
     """
-    re = risky_expectations(prices)
-    assets = new_assets(agent, risky_share, prices)
+    re = risky_expectations(orders)
+    assets = new_assets(agent, risky_share, orders)
 
     # if the assets are negative--you couldn't have consumed what you did
     # set your money to 0
     assets[assets < 0] = 0
 
     # normalize the assets
-    agent.mNrmNow = assets / agent.state_now['pLvlNow']
+    agent.state_now['mNrmNow'] = assets / agent.state_now['pLvlNow']
 
     agent.assignParameters(**re)
 
 
+def update_agents(agents, orders):
+    for agent in agents:
+        update_agent(agent, agent.history['ShareNow'][0], orders)
+
+
 ##### Computing demand
 
-def demand(agent, prices):
+def demand(agent, orders):
     '''
     Input:
       - an agent
       - a price list
 
-    Side Effects:
-      - updates the agent's assets and risky expectations
-
-    Returns:
+   Returns:
       - the risky share
       - the dollar value of risky assets
       - the dollar value of non-risky market assets
     '''
-
-    update_agent(agent, agent.history['ShareNow'][0], prices)
     agent.solve()
 
     market_resources = agent.state_now['mNrmNow']
@@ -199,13 +209,13 @@ def demand(agent, prices):
             market_resources * (1 - risky_share))
 
 
-def demands(agents, prices):
+def demands(agents, orders):
     """
     For a list of agents, returns the demands of all the agents
      - note side effects for demand function
     """
     print("Getting risky asset demand for all agents")
-    return [demand(agent, prices) for agent in agents]
+    return [demand(agent, orders) for agent in agents]
 
 
 def no_demand(agents):
@@ -235,6 +245,6 @@ def aggregate_buy_and_sell(old_demand, new_demand):
             if dr > 0: # if dr > 0
                 buy += dr  # add the dr to the buys
             else:
-                sell += dr # add the dr to the sell side
+                sell -= dr # add the dr to the sell side
 
     return buy, sell
