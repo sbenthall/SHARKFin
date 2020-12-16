@@ -62,7 +62,7 @@ Globals [
   allOrders                ;List of all orders and order_updates hatched in the current tick cycle
   list_orders              ;List of all orders (but not order_updates) available at the end of current tick cycle
   list_traders             ;List of all traders at the end of the current tick cycle, for the inventory report
-  ; endBurninTime            ;Number of burnin ticks -- used to be hard coded as 5,000 -
+  endBurninTime            ;Number of burnin ticks -- used to be hard coded as 5,000 -
 ]
 ;code by Mark Paddrik
 
@@ -155,7 +155,7 @@ to setup
   random-seed 1
   setup-economy
   file-close-all
-  ; set endBurninTime 2000    ;Added by John Liechty 11/17/2020
+  set endBurninTime 5000    ;Added by John Liechty 11/17/2020
   set currentMA 100
   set volatility [1 2 3 5 7]
   set pastPrices [1 2 3 5 7]
@@ -335,7 +335,6 @@ to-report prop_allOrders [index factoid_name]
     report (word "Index out of range in prop_allOrders: " index)
   ] [
     let ord (item index allOrders)
-    if (not is-an-order? ord)         [ report (word index " is dead")       ]
     if (factoid_name = "OrderID")       [ report [OrderID]            of (ord) ]
     if (factoid_name = "OrderTime")     [ report [OrderTime]          of (ord) ]
     if (factoid_name = "OrderPrice")    [ report [OrderPrice]         of (ord) ]
@@ -3473,7 +3472,7 @@ INPUTBOX
 1711
 847
 PeriodtoEndExecution
-7440
+7000
 1
 0
 Number
@@ -3587,7 +3586,7 @@ SWITCH
 176
 DepthFile
 DepthFile
-1
+0
 1
 -1000
 
@@ -3688,7 +3687,7 @@ BkrBuy_Limit
 BkrBuy_Limit
 0
 10000
-10000
+1733
 1
 1
 NIL
@@ -3703,22 +3702,11 @@ BkrSel_Limit
 BkrSel_Limit
 0
 10000
-10000
+4406
 1
 1
 NIL
 HORIZONTAL
-
-INPUTBOX
-1541
-371
-1702
-431
-endBurninTime
-2000
-1
-0
-Number
 
 @#$#@#$#@
 ## ## WHAT IS IT?
@@ -3764,7 +3752,6 @@ Paddrik, M., Hayes, R., Todd, A., Yang, S., Scherer, W.  & Beling, P.  (2012).  
 Paddrik, M., Hayes, R., Scherer, W.  & Beling, P.  (2014).  Effects of Limit Order Book Information Level on Market Stability Metrics.  OFR Working Paper Series.
 
 Paddrik, M. & Bookstaber R. (2015).  An Agnet-based Model for for Crisis Liquidity Dynamics.  OFR Working Paper Series.
-
 
 
 @#$#@#$#@
