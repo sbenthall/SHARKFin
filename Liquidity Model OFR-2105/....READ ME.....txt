@@ -1,0 +1,3 @@
+In order to run the following model you will need Netlogo V 4.0 or later. 
+To start the model click the LiquidityModel file. 
+For instruction on how to operate the program please see the infomation tab within netlogo.
