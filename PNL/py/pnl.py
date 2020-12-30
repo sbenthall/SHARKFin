@@ -29,8 +29,8 @@ def run_NLsims(
     sns.set_style('white')
     sns.set_context('talk')
 
-    sys.path.append(CFG['DEFAULT']['pythondir'])
-    import util as UTIL
+    if 'pythondir' in CFG['DEFAULT']:
+        sys.path.append(CFG['DEFAULT']['pythondir'])
 
     # Set up logging
     sid = f"{CFG['pnl']['nLiqSup']}_{CFG['pnl']['nMktMkr']}"
