@@ -335,15 +335,27 @@ to-report prop_allOrders [index factoid_name]
     report (word "Index out of range in prop_allOrders: " index)
   ] [
     let ord (item index allOrders)
-    if (factoid_name = "OrderID")       [ report [OrderID]            of (ord) ]
-    if (factoid_name = "OrderTime")     [ report [OrderTime]          of (ord) ]
-    if (factoid_name = "OrderPrice")    [ report [OrderPrice]         of (ord) ]
-    if (factoid_name = "OrderTraderID") [ report [OrderTraderID]      of (ord) ]
-    if (factoid_name = "OrderQuantity") [ report [OrderQuantity]      of (ord) ]
-    if (factoid_name = "OrderB/A")      [ report [OrderB/A]           of (ord) ]
-    if (factoid_name = "TraderWho")     [ report [[who] of TraderWho] of (ord) ]
-    if (factoid_name = "TraderWhoType") [ report [TraderWhoType]      of (ord) ]
-    report (word "No property in prop_allOrders for factoid_name: " factoid_name)
+    ifelse (ord != nobody) [
+      if (factoid_name = "OrderID")       [ report [OrderID]            of (ord) ]
+      if (factoid_name = "OrderTime")     [ report [OrderTime]          of (ord) ]
+      if (factoid_name = "OrderPrice")    [ report [OrderPrice]         of (ord) ]
+      if (factoid_name = "OrderTraderID") [ report [OrderTraderID]      of (ord) ]
+      if (factoid_name = "OrderQuantity") [ report [OrderQuantity]      of (ord) ]
+      if (factoid_name = "OrderB/A")      [ report [OrderB/A]           of (ord) ]
+      if (factoid_name = "TraderWho")     [ report [[who] of TraderWho] of (ord) ]
+      if (factoid_name = "TraderWhoType") [ report [TraderWhoType]      of (ord) ]
+      report (word "No property in prop_allOrders for factoid_name: " factoid_name)
+    ] [
+      if (factoid_name = "OrderID")       [ report -1 ]
+      if (factoid_name = "OrderTime")     [ report ticks ]
+      if (factoid_name = "OrderPrice")    [ report -1 ]
+      if (factoid_name = "OrderTraderID") [ report -1 ]
+      if (factoid_name = "OrderQuantity") [ report -1 ]
+      if (factoid_name = "OrderB/A")      [ report "DEAD" ]
+      if (factoid_name = "TraderWho")     [ report "UNKNOWN" ]
+      if (factoid_name = "TraderWhoType") [ report "UNKNOWN" ]
+      report (word "No property in prop_list_orders for factoid_name: " factoid_name)
+    ]
   ]
 end
 ;code by Mark Flood
@@ -356,16 +368,28 @@ to-report prop_list_orders [index factoid_name]
   ifelse (index < 0) or (index >= length list_orders) [
     report (word "Index out of range in prop_list_orders: " index)
   ] [
-    let ord (item index list_orders)
-    if (factoid_name = "OrderID")       [ report [OrderID]            of (ord) ]
-    if (factoid_name = "OrderTime")     [ report [OrderTime]          of (ord) ]
-    if (factoid_name = "OrderPrice")    [ report [OrderPrice]         of (ord) ]
-    if (factoid_name = "OrderTraderID") [ report [OrderTraderID]      of (ord) ]
-    if (factoid_name = "OrderQuantity") [ report [OrderQuantity]      of (ord) ]
-    if (factoid_name = "OrderB/A")      [ report [OrderB/A]           of (ord) ]
-    if (factoid_name = "TraderWho")     [ report [[who] of TraderWho] of (ord) ]
-    if (factoid_name = "TraderWhoType") [ report [TraderWhoType]      of (ord) ]
-    report (word "No property in prop_list_orders for factoid_name: " factoid_name)
+;    ifelse ((item index list_orders) != nobody) [
+      let ord (item index list_orders)
+      if (factoid_name = "OrderID")       [ report [OrderID]            of (ord) ]
+      if (factoid_name = "OrderTime")     [ report [OrderTime]          of (ord) ]
+      if (factoid_name = "OrderPrice")    [ report [OrderPrice]         of (ord) ]
+      if (factoid_name = "OrderTraderID") [ report [OrderTraderID]      of (ord) ]
+      if (factoid_name = "OrderQuantity") [ report [OrderQuantity]      of (ord) ]
+      if (factoid_name = "OrderB/A")      [ report [OrderB/A]           of (ord) ]
+      if (factoid_name = "TraderWho")     [ report [[who] of TraderWho] of (ord) ]
+      if (factoid_name = "TraderWhoType") [ report [TraderWhoType]      of (ord) ]
+      report (word "No property in prop_list_orders for factoid_name: " factoid_name)
+;    ] [
+;      if (factoid_name = "OrderID")       [ report -1 ]
+;      if (factoid_name = "OrderTime")     [ report ticks ]
+;      if (factoid_name = "OrderPrice")    [ report -1 ]
+;      if (factoid_name = "OrderTraderID") [ report -1 ]
+;      if (factoid_name = "OrderQuantity") [ report -1 ]
+;      if (factoid_name = "OrderB/A")      [ report "DEAD" ]
+;      if (factoid_name = "TraderWho")     [ report "UNKNOWN" ]
+;      if (factoid_name = "TraderWhoType") [ report "UNKNOWN" ]
+;      report (word "No property in prop_list_orders for factoid_name: " factoid_name)
+;    ]
   ]
 end
 ;code by Mark Flood

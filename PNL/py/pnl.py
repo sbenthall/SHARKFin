@@ -18,12 +18,65 @@ import pyNetLogo as pnl
 
 import util as UTIL
 
+LOG=None
+LM=None
+
+def set_NLvar(
+        varname,
+        value
+):
+    LOG.debug(f"SETTING: {varname}:={value}")
+    LM.command(f"set {varname} {value}")
+
+
+def log_NLvar(
+        varname
+):
+    value = LM.report(f"{varname}")
+    LOG.debug(f"VARIABLE: {varname}=={value}")
+
+def stateCheck():
+    LOG.debug('----------------------- LM STATE ------------------------------')
+    log_NLvar("ticks")
+    log_NLvar("#_LiqSup")
+    log_NLvar("#_LiqDem")
+    log_NLvar("#_MktMkr")
+    log_NLvar("BkrBuy_Limit")
+    log_NLvar("BkrSel_Limit")
+    log_NLvar("LiqBkr_OrderSizeMultiplier")
+    log_NLvar("PeriodtoEndExecution")
+    log_NLvar("endBurninTime")
+    
+    log_NLvar("AgentFile")
+    log_NLvar("DepthFile")
+    log_NLvar("FrcSal_QuantSale")
+    log_NLvar("LiqDem_TradeLength")
+    log_NLvar("LiqSup_TradeLength")
+    log_NLvar("liquidity_Supplier_Arrival_Rate")
+    log_NLvar("liquiditySupplierOrderSizeMultipler")
+    log_NLvar("liquidity_Demander_Arrival_Rate")
+    log_NLvar("liquidityDemanderOrderSizeMultipler")
+    log_NLvar("marketMakerOrderSizeMultipler")
+    log_NLvar("market_Makers_Arrival_Rate")
+    log_NLvar("MarketMakerInventoryLimit")
+    log_NLvar("MktMkr_TradeLength")
+    log_NLvar("PercentPriceChangetoOrderSizeMultiple")
+    log_NLvar("PeriodtoStartExecution")
+    log_NLvar("PeriodtoEndExecution")
+    log_NLvar("ProbabilityBuyofLiqyuidityDemander")
+    log_NLvar("timeseries")
+    log_NLvar("timeseriesvalue")
+    LOG.debug('---------------------------------------------------------------')
+
 
 def run_NLsims(
         CFG,
         broker_buy_limit = None,
         broker_sell_limit = None
 ):
+    global LOG
+    global LM
+    
     tic0 = time.process_time()
 
     sns.set_style('white')
@@ -42,59 +95,66 @@ def run_NLsims(
     log_fh.setLevel(CFG['pnl']['loglevel'])
     log_fh.setFormatter(logging.Formatter(CFG['pnl']['logformat']))
     LOG.addHandler(log_fh)
-    LOG.warn(f'Sim ID: {sid}')
+    LOG.warning(f'Sim ID: {sid}')
 
     # Log the configuration dictionary
     UTIL.log_config(LOG, CFG, 'pnl')
 
     # Locate the NetLogo executable and create a pyNetLogo link to it
-    LOG.warn('NetLogoLink: '+CFG['pnl']['NLhomedir'])
-    LOG.warn('NetLogoLink version: '+str(CFG['pnl']['NLver']))
+    LOG.warning('NetLogoLink: '+CFG['pnl']['NLhomedir'])
+    LOG.warning('NetLogoLink version: '+str(CFG['pnl']['NLver']))
     LM = pnl.NetLogoLink(gui=False,
                          netlogo_home=CFG['pnl']['NLhomedir'],
                          netlogo_version=str(CFG['pnl']['NLver']))
 
     # Find the NetLogo script for our LiquidityModel, and load it
     LM_file = os.path.join(CFG['pnl']['NLmodeldir'], CFG['pnl']['NLfilename'])
-    LOG.warn('NetLogo model: '+LM_file)
+    LOG.warning('NL model: '+LM_file)
     LM.load_model(LM_file)
-    LOG.warn('NetLogo model loaded')
+    LOG.warning('NL model loaded')
 
     # Feed the parameter choices for this parallel run to our model
-    LM.command(f"set #_LiqSup {CFG['pnl']['nLiqSup']}")
-    LM.command(f"set #_LiqDem {CFG['pnl']['nLiqDem']}")
-    LM.command(f"set #_MktMkr {CFG['pnl']['nMktMkr']}")
+#    LM.command(f"set #_LiqSup {CFG['pnl']['nLiqSup']}")
+#    LM.command(f"set #_LiqDem {CFG['pnl']['nLiqDem']}")
+#    LM.command(f"set #_MktMkr {CFG['pnl']['nMktMkr']}")
+    set_NLvar("#_LiqSup", f"{CFG['pnl']['nLiqSup']}")
+    set_NLvar("#_LiqDem", f"{CFG['pnl']['nLiqDem']}")
+    set_NLvar("#_MktMkr", f"{CFG['pnl']['nMktMkr']}")
 
-    broker_buy_limit = broker_buy_limit if broker_buy_limit else CFG['pnl']['BkrBuy_Limit']
-    LM.command(f"set BkrBuy_Limit {broker_buy_limit}")
+#    broker_buy_limit = broker_buy_limit if broker_buy_limit else CFG['pnl']['BkrBuy_Limit']
+#    LM.command(f"set BkrBuy_Limit {CFG['pnl']['BkrBuy_Limit']}")
+    set_NLvar("BkrBuy_Limit", f"{CFG['pnl']['BkrBuy_Limit']}")
 
-    broker_sell_limit = broker_sell_limit if broker_sell_limit else CFG['pnl']['BkrSel_Limit']
-    LM.command(f"set BkrSel_Limit {broker_sell_limit}")
+#    broker_sell_limit = broker_sell_limit if broker_sell_limit else CFG['pnl']['BkrSel_Limit']
+#    LM.command(f"set BkrSel_Limit {CFG['pnl']['BkrSel_Limit']}")
+    set_NLvar("BkrSel_Limit", f"{CFG['pnl']['BkrSel_Limit']}")
 
-    LM.command(f"set LiqBkr_OrderSizeMultiplier {CFG['pnl']['LiqBkr_OrderSizeMultiplier']}")
-    LM.command(f"set PeriodtoEndExecution {CFG['pnl']['PeriodtoEndExecution']}")
+    set_NLvar("LiqBkr_OrderSizeMultiplier", 
+              f"{CFG['pnl']['LiqBkr_OrderSizeMultiplier']}")
+    set_NLvar("PeriodtoEndExecution", f"{CFG['pnl']['PeriodtoEndExecution']}")
 
-    # Run the setup function for the NetLogo model
-    LOG.warn('NetLogo model -- setup begin')
+    # Run the setup function for the NL model
+    LOG.warning('NL model -- setup begin')
     LM.command('setup')
-    LOG.warn('NetLogo model -- setup end')
+    LOG.warning('NL model -- setup end')
 
     # new and local only right now:
-    LM.command(f"set endBurninTime {CFG['pnl']['LMtickswarmups']}")
+#    LM.command(f"set endBurninTime {CFG['pnl']['LMtickswarmups']}")
+    set_NLvar("endBurninTime", f"{CFG['pnl']['LMtickswarmups']}")
 
-    # Run the warmup iterations for the NetLogo model
-    LOG.warn('NetLogo model -- warmups begin: '+str(CFG['pnl']['LMtickswarmups']))
+    # Run the warmup iterations for the NL model
+    LOG.warning('NL model -- warmups begin: '+str(CFG['pnl']['LMtickswarmups']))
     LM.repeat_command('go', int(CFG['pnl']['LMtickswarmups']))
-    LOG.warn('NetLogo model -- warmups end')
+    LOG.warning('NL model -- warmups end')
 
-    # =========================================================================
-    # ===================== TIME-SERIES LOGS ==================================
-    # =========================================================================
+    # ==========================================================================
+    # ====================== TIME-SERIES LOGS ==================================
+    # ==========================================================================
     csvflushinterval = int(CFG['pnl']['csvflushinterval'])
 
     AOfile = CFG['pnl']['LMallorderpfx']+sid+'.'+CFG['pnl']['LMallordersfx']
     AOfile = os.path.join(CFG['pnl']['logdir'], AOfile)
-    LOG.warn('Opening all-order (audit) log:'+AOfile)
+    LOG.warning('Opening all-order (audit) log:'+AOfile)
     AOcsvf = open(AOfile, mode='w')
     AOcsvw = csv.writer(AOcsvf, delimiter='\t')
     AOcsvw.writerow(["Tick","OrderID","OrderTime","OrderPrice","OrderTraderID",
@@ -102,7 +162,7 @@ def run_NLsims(
 
     IVfile = CFG['pnl']['LMinventorypfx']+sid+'.'+CFG['pnl']['LMinventorysfx']
     IVfile = os.path.join(CFG['pnl']['logdir'], IVfile)
-    LOG.warn('Opening inventory log:'+IVfile)
+    LOG.warning('Opening inventory log:'+IVfile)
     IVcsvf = open(IVfile, mode='w')
     IVcsvw = csv.writer(IVcsvf, delimiter='\t')
     IVcsvw.writerow(["Tick","TraderID","TraderWhoType","SharesOwned"])
@@ -112,17 +172,20 @@ def run_NLsims(
     FACT_SharesOwned =3
 
     # Run the simulation for fullrun ticks, recording as we go
-    LOG.warn('NetLogo model -- simruns begin: '+str(CFG['pnl']['LMtickssimruns']))
+    stateCheck()
+    LOG.warning('NL model -- simruns begin: '+str(CFG['pnl']['LMtickssimruns']))
     for tik in range(int(CFG['pnl']['LMtickssimruns'])):
         LM.command('go')
         ticks = int(LM.report('ticks'))
         LOG.debug(f' -- ticks: {ticks}')
 
-        # ================= ALL ORDER LOG =====================================
+        # ================== ALL ORDER LOG =====================================
         ct_allorders = int(LM.report('length allOrders'))
         LOG.debug(f' -- ct_allorders: {ct_allorders}')
+#        print(f'ticks={ticks}, ct_allorders={ct_allorders}:')
         for i in range(ct_allorders):
             try:
+#                print(f'    i={i}')
                 rdr0 = int(LM.report(f'prop_allOrders {i} "OrderID"'))
                 rdr1 = float(LM.report(f'prop_allOrders {i} "OrderTime"'))
                 rdr2 = float(LM.report(f'prop_allOrders {i} "OrderPrice"'))
@@ -132,12 +195,13 @@ def run_NLsims(
                 # rdr6 = int(LM.report(f'prop_allOrders {i} "TraderWho"'))
                 rdr7 = str(LM.report(f'prop_allOrders {i} "TraderWhoType"'))
                 AOcsvw.writerow([ticks,rdr0,rdr1,rdr2,rdr3,rdr4,rdr5,  rdr7])
+#                print(f'       OrderID={rdr0},OrderTime={rdr1},OrderPrice={rdr2},OrderTraderID={rdr3},OrderQuantity={rdr4},OrderB/A={rdr5},TraderWhoType={rdr7}')
             except:
                 pass
 
         LOG.debug('Completed allorders for tick:'+str(tik))
 
-        # ================== INVENTORY LOG ====================================
+        # =================== INVENTORY LOG ====================================
         ct_lsttrders = int(LM.report('length list_traders'))
         for i in range(ct_lsttrders):
             tdr0 = int(LM.report(f'prop_list_traders {i} {FACT_TraderNumber}'))
@@ -150,12 +214,12 @@ def run_NLsims(
             AOcsvf.flush()
             IVcsvf.flush()
 
-    LOG.warn('Closing all-order (audit) log:'+AOfile)
+    LOG.warning('Closing all-order (audit) log:'+AOfile)
     AOcsvf.close()
-    LOG.warn('Closing inventory log:'+IVfile)
+    LOG.warning('Closing inventory log:'+IVfile)
     IVcsvf.close()
 
-    LOG.warn('=============== END OF NetLogo RUN ============================')
+    LOG.warning('=============== END OF NetLogo RUN ==========================')
 
     toc0 = time.process_time()
     print('Elapsed (sys clock): ', toc0-tic0)
