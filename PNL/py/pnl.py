@@ -13,6 +13,7 @@ import time
 import sys
 import logging
 import csv
+import multiprocessing as mp
 
 import pyNetLogo as pnl
 
@@ -21,59 +22,7 @@ import util as UTIL
 LOG=None
 LM=None
 
-def set_NLvar(
-        varname,
-        value
-):
-    LOG.debug(f"SETTING: {varname}:={value}")
-    LM.command(f"set {varname} {value}")
-
-
-def log_NLvar(
-        varname
-):
-    value = LM.report(f"{varname}")
-    LOG.debug(f"VARIABLE: {varname}=={value}")
-
-def stateCheck():
-    LOG.debug('----------------------- LM STATE ------------------------------')
-    log_NLvar("ticks")
-    log_NLvar("#_LiqSup")
-    log_NLvar("#_LiqDem")
-    log_NLvar("#_MktMkr")
-    log_NLvar("BkrBuy_Limit")
-    log_NLvar("BkrSel_Limit")
-    log_NLvar("LiqBkr_OrderSizeMultiplier")
-    log_NLvar("PeriodtoEndExecution")
-    log_NLvar("endBurninTime")
-    
-    log_NLvar("AgentFile")
-    log_NLvar("DepthFile")
-    log_NLvar("FrcSal_QuantSale")
-    log_NLvar("LiqDem_TradeLength")
-    log_NLvar("LiqSup_TradeLength")
-    log_NLvar("liquidity_Supplier_Arrival_Rate")
-    log_NLvar("liquiditySupplierOrderSizeMultipler")
-    log_NLvar("liquidity_Demander_Arrival_Rate")
-    log_NLvar("liquidityDemanderOrderSizeMultipler")
-    log_NLvar("marketMakerOrderSizeMultipler")
-    log_NLvar("market_Makers_Arrival_Rate")
-    log_NLvar("MarketMakerInventoryLimit")
-    log_NLvar("MktMkr_TradeLength")
-    log_NLvar("PercentPriceChangetoOrderSizeMultiple")
-    log_NLvar("PeriodtoStartExecution")
-    log_NLvar("PeriodtoEndExecution")
-    log_NLvar("ProbabilityBuyofLiqyuidityDemander")
-    log_NLvar("timeseries")
-    log_NLvar("timeseriesvalue")
-    LOG.debug('---------------------------------------------------------------')
-
-
-def run_NLsims(
-        CFG,
-        broker_buy_limit = None,
-        broker_sell_limit = None
-):
+def run_NLsims(CFG, SEED=1):
     global LOG
     global LM
     
@@ -86,7 +35,8 @@ def run_NLsims(
         sys.path.append(CFG['DEFAULT']['pythondir'])
 
     # Set up logging
-    sid = f"{CFG['pnl']['nLiqSup']}_{CFG['pnl']['nMktMkr']}"
+    sid = f"{SEED}"
+    #sid = f"{CFG['pnl']['nLiqSup']}_{CFG['pnl']['nMktMkr']}"
     LOG = logging.getLogger(sid)
     LOG.setLevel(CFG['pnl']['loglevel'])
     logfile = CFG['pnl']['logfilepfx']+sid+'.'+CFG['pnl']['logfilesfx']
@@ -95,7 +45,7 @@ def run_NLsims(
     log_fh.setLevel(CFG['pnl']['loglevel'])
     log_fh.setFormatter(logging.Formatter(CFG['pnl']['logformat']))
     LOG.addHandler(log_fh)
-    LOG.warning(f'Sim ID: {sid}')
+    LOG.warning(f'Sim ID (SEED): {sid}')
 
     # Log the configuration dictionary
     UTIL.log_config(LOG, CFG, 'pnl')
@@ -114,19 +64,15 @@ def run_NLsims(
     LOG.warning('NL model loaded')
 
     # Feed the parameter choices for this parallel run to our model
-#    LM.command(f"set #_LiqSup {CFG['pnl']['nLiqSup']}")
-#    LM.command(f"set #_LiqDem {CFG['pnl']['nLiqDem']}")
-#    LM.command(f"set #_MktMkr {CFG['pnl']['nMktMkr']}")
+    set_NLvar("SEED", f"{SEED}")
     set_NLvar("#_LiqSup", f"{CFG['pnl']['nLiqSup']}")
     set_NLvar("#_LiqDem", f"{CFG['pnl']['nLiqDem']}")
     set_NLvar("#_MktMkr", f"{CFG['pnl']['nMktMkr']}")
 
 #    broker_buy_limit = broker_buy_limit if broker_buy_limit else CFG['pnl']['BkrBuy_Limit']
-#    LM.command(f"set BkrBuy_Limit {CFG['pnl']['BkrBuy_Limit']}")
     set_NLvar("BkrBuy_Limit", f"{CFG['pnl']['BkrBuy_Limit']}")
 
 #    broker_sell_limit = broker_sell_limit if broker_sell_limit else CFG['pnl']['BkrSel_Limit']
-#    LM.command(f"set BkrSel_Limit {CFG['pnl']['BkrSel_Limit']}")
     set_NLvar("BkrSel_Limit", f"{CFG['pnl']['BkrSel_Limit']}")
 
     set_NLvar("LiqBkr_OrderSizeMultiplier", 
@@ -160,6 +106,14 @@ def run_NLsims(
     AOcsvw.writerow(["Tick","OrderID","OrderTime","OrderPrice","OrderTraderID",
                      "OrderQuantity","OrderBA","TraderWhoType"])
 
+    TRfile = CFG['pnl']['LMtransactpfx']+sid+'.'+CFG['pnl']['LMtransactsfx']
+    TRfile = os.path.join(CFG['pnl']['logdir'], TRfile)
+    LOG.warning('Opening transaction log:'+TRfile)
+    TRcsvf = open(TRfile, mode='w')
+    TRcsvw = csv.writer(TRcsvf, delimiter='\t')
+    TRcsvw.writerow(["Tick","TrdID","TrdPrice","TrdTime","TrdQuant",
+                     "TrdWhoBid","TrdWhoAsk","TrdWhoBidType","TrdWhoAskType"])
+
     IVfile = CFG['pnl']['LMinventorypfx']+sid+'.'+CFG['pnl']['LMinventorysfx']
     IVfile = os.path.join(CFG['pnl']['logdir'], IVfile)
     LOG.warning('Opening inventory log:'+IVfile)
@@ -177,11 +131,11 @@ def run_NLsims(
     for tik in range(int(CFG['pnl']['LMtickssimruns'])):
         LM.command('go')
         ticks = int(LM.report('ticks'))
-        LOG.debug(f' -- ticks: {ticks}')
+        LOG.info(f' -- Ticks: {ticks}')
 
         # ================== ALL ORDER LOG =====================================
         ct_allorders = int(LM.report('length allOrders'))
-        LOG.debug(f' -- ct_allorders: {ct_allorders}')
+        LOG.debug(f'     -- ct_allorders: {ct_allorders}')
 #        print(f'ticks={ticks}, ct_allorders={ct_allorders}:')
         for i in range(ct_allorders):
             try:
@@ -198,8 +152,26 @@ def run_NLsims(
 #                print(f'       OrderID={rdr0},OrderTime={rdr1},OrderPrice={rdr2},OrderTraderID={rdr3},OrderQuantity={rdr4},OrderB/A={rdr5},TraderWhoType={rdr7}')
             except:
                 pass
+        LOG.debug(f'     -- Completed allorders for tick: {tik}')
 
-        LOG.debug('Completed allorders for tick:'+str(tik))
+
+        # ================== TRANSACTION LOG =====================================
+        ct_transactions = int(LM.report('length list_transactions'))
+        LOG.debug(f'     -- ct_transactions: {ct_transactions}')
+        for i in range(ct_transactions):
+            try:
+                trd0 = int(LM.report(f'prop_list_transactions {i} "TrdID"'))
+                trd1 = float(LM.report(f'prop_list_transactions {i} "TrdPrice"'))
+                trd2 = float(LM.report(f'prop_list_transactions {i} "TrdTime"'))
+                trd3 = int(LM.report(f'prop_list_transactions {i} "TrdQuant"'))
+                trd4 = float(LM.report(f'prop_list_transactions {i} "TrdWhoBid"'))
+                trd5 = str(LM.report(f'prop_list_transactions {i} "TrdWhoAsk"'))
+                trd6 = int(LM.report(f'prop_list_transactions {i} "TrdWhoBidType"'))
+                trd7 = str(LM.report(f'prop_list_transactions {i} "TrdWhoAskType"'))
+                TRcsvw.writerow([ticks,trd0,trd1,trd2,trd3,trd4,trd5,trd6,trd7])
+            except:
+                pass
+        LOG.debug(f'     -- Completed transactions for tick: {tik}')
 
         # =================== INVENTORY LOG ====================================
         ct_lsttrders = int(LM.report('length list_traders'))
@@ -208,21 +180,67 @@ def run_NLsims(
             tdr1 = str(LM.report(f'prop_list_traders {i} {FACT_TypeOfTrader}'))
             tdr2 = float(LM.report(f'prop_list_traders {i} {FACT_SharesOwned}'))
             IVcsvw.writerow([ticks,tdr0,tdr1,tdr2])
-        LOG.debug('Completed lsttrders for tick:'+str(tik))
+        LOG.debug(f'     -- Completed lsttrders for tick: {tik}')
 
         if ((ticks % csvflushinterval) == 0):
             AOcsvf.flush()
             IVcsvf.flush()
+            TRcsvf.flush()
 
     LOG.warning('Closing all-order (audit) log:'+AOfile)
     AOcsvf.close()
     LOG.warning('Closing inventory log:'+IVfile)
     IVcsvf.close()
+    LOG.warning('Closing transaction log:'+TRfile)
+    TRcsvf.close()
 
     LOG.warning('=============== END OF NetLogo RUN ==========================')
 
     toc0 = time.process_time()
-    print('Elapsed (sys clock): ', toc0-tic0)
+    print(f'Elapsed (sys clock), run {SEED}: ', toc0-tic0)
+
+def set_NLvar(varname,value):
+    LOG.debug(f"SETTING: {varname}:={value}")
+    LM.command(f"set {varname} {value}")
+
+def log_NLvar(varname):
+    value = LM.report(f"{varname}")
+    LOG.debug(f"REPORTING: {varname}=={value}")
+
+def stateCheck():
+    LOG.debug('----------------------- LM STATE ------------------------------')
+    log_NLvar("SEED")
+    log_NLvar("ticks")
+    log_NLvar("#_LiqSup")
+    log_NLvar("#_LiqDem")
+    log_NLvar("#_MktMkr")
+    log_NLvar("BkrBuy_Limit")
+    log_NLvar("BkrSel_Limit")
+    log_NLvar("LiqBkr_OrderSizeMultiplier")
+    log_NLvar("PeriodtoEndExecution")
+    log_NLvar("endBurninTime")
+    
+    log_NLvar("AgentFile")
+    log_NLvar("DepthFile")
+    log_NLvar("FrcSal_QuantSale")
+    log_NLvar("LiqDem_TradeLength")
+    log_NLvar("LiqSup_TradeLength")
+    log_NLvar("liquidity_Supplier_Arrival_Rate")
+    log_NLvar("liquiditySupplierOrderSizeMultipler")
+    log_NLvar("liquidity_Demander_Arrival_Rate")
+    log_NLvar("liquidityDemanderOrderSizeMultipler")
+    log_NLvar("marketMakerOrderSizeMultipler")
+    log_NLvar("market_Makers_Arrival_Rate")
+    log_NLvar("MarketMakerInventoryLimit")
+    log_NLvar("MktMkr_TradeLength")
+    log_NLvar("PercentPriceChangetoOrderSizeMultiple")
+    log_NLvar("PeriodtoStartExecution")
+    log_NLvar("PeriodtoEndExecution")
+    log_NLvar("ProbabilityBuyofLiqyuidityDemander")
+    log_NLvar("timeseries")
+    log_NLvar("timeseriesvalue")
+    LOG.debug('---------------------------------------------------------------')
+
 
 
 
@@ -241,8 +259,21 @@ def main(argv=None):
     """
     config = UTIL.parse_command_line(argv, __file__)
 
+    NLruncount = int(config['pnl']['NLruncount'])
+    pcount = pcount = min(int(config['DEFAULT']['parallelcores']), 
+                          os.cpu_count(), NLruncount)
+    if (pcount > 0):
+        pool = mp.Pool(processes=pcount)
+        for i in range(NLruncount):
+            pool.apply_async(run_NLsims, (config, i))
+        pool.close()
+        pool.join()
+    else:
+        for i in range(NLruncount):
+            run_NLsims(config, i)
+
     #try:
-    run_NLsims(config)
+#    run_NLsims(config)
     #except Exception as e:
     #    print('Exception: ', e)
 

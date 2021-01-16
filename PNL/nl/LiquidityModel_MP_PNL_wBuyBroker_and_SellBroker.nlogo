@@ -11,7 +11,7 @@ Globals [
   buyQueue                 ;Bid side of the order book
   sellQueue                ;Ask side of the order book
   orderNumber
-  tradeWipeQueue           ;Coding wipe queue for transactions
+;  tradeWipeQueue           ;Coding wipe queue for transactions
   tradeMatch               ;Trade match id variable
   currentAsk               ;Current best ask price
   currentBid               ;Current best bid price
@@ -37,8 +37,8 @@ Globals [
   randNumOT
   pastPrices               ;Keeps track of previous prices
   period                   ;Allows tracking of a sequence in a trade strategy
-  tradeWipeQueueB          ;List of all bid trades that occured in a tick period, used for updating the order book
-  tradeWipeQueueA          ;List of all ask trades that occured in a tick period, used for updating the order book
+;  tradeWipeQueueB          ;List of all bid trades that occured in a tick period, used for updating the order book
+;  tradeWipeQueueA          ;List of all ask trades that occured in a tick period, used for updating the order book
   arrayQ                   ;Array contraining the quantities for each order
   tradeExNumber            ;Helps track the sequence of actions in the audit trail book
   traderListNumbers        ;Used in verfying that each trader has a unique trader account number
@@ -59,16 +59,22 @@ Globals [
   timeserieslist
   timeserieslistcount
   resethillclimbto50       ;Used for Liquidity Demander agents
+;  SEED                     ;Random number seed, which may be passed in at runtime
   allOrders                ;List of all orders and order_updates hatched in the current tick cycle
+  list_transactions        ;List of all order_transaction turtles hatched in the current tick cycle
   list_orders              ;List of all orders (but not order_updates) available at the end of current tick cycle
   list_traders             ;List of all traders at the end of the current tick cycle, for the inventory report
   endBurninTime            ;Number of burnin ticks -- used to be hard coded as 5,000 -
 ]
 ;code by Mark Paddrik
 
-;*****************************************************************************************************
-;Agents' Variables
-;*****************************************************************************************************
+;==============================================================================
+;==============================================================================
+;==============================================================================
+;================ DEFINITIONS OF TURTLE BREEDS ================================
+;==============================================================================
+;==============================================================================
+;==============================================================================
 
 ;------------------------------------------------------------------------------
 ; Variables available to all turtles
@@ -128,6 +134,18 @@ order_updates-own [
   TraderWhoType            ;Labeled typeOfTrader of the trader placing this order
 ]
 
+breed [order_transactions an-order_transaction]
+order_transactions-own [
+  TrdID                    ;Sequential order identifier (counts from 1)
+  TrdPrice                 ;Price for the trade
+  TrdTime                  ;Time (in ticks) the order was transacted
+  TrdQuant                 ;Quantity traded in this transaction
+  TrdWhoBid                ;NetLogo "who" number of the trader placing this order
+  TrdWhoAsk                ;NetLogo "who" number of the trader placing this order
+  TrdWhoBidType            ;Labeled typeOfTrader of the trader placing this order
+  TrdWhoAskType            ;Labeled typeOfTrader of the trader placing this order
+]
+
 ;------------------------------------------------------------------------------
 ; Structure of traders -- a special subtype of turtles
 ;------------------------------------------------------------------------------
@@ -137,126 +155,9 @@ traders-own [
   PriceOrder               ;NEED A COMMENT HERE (TODO!!)
 ]
 
-;code by Mark Paddrik
-;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
 ;==============================================================================
+;============ INSTANTIATION METHODS, TO HATCH TURTLES =========================
 ;==============================================================================
-;==============================================================================
-;============ GENERAL SIMULATION SETUP AND RUN ================================
-;==============================================================================
-;==============================================================================
-;==============================================================================
-
-;//////////////////////////////////////////////////////////////////////////////
-to setup
-  __clear-all-and-reset-ticks
-  random-seed 1
-  setup-economy
-  file-close-all
-  set endBurninTime 5000    ;Added by John Liechty 11/17/2020
-  set currentMA 100
-  set volatility [1 2 3 5 7]
-  set pastPrices [1 2 3 5 7]
-  set movingAverage []
-  set movingAverageV []
-  set priceReturns []
-  set currentPriceVol 1
-  set currentBQD 2
-  set currentSQD 2
-  set transactionCost 0
-  set pastMA 400
-  set ProbabilityBuyofLiqyuidityDemander 49
-
-  set currentOrderBid 399
-  set currentOrderAsk 401
-  set price 400
-
-  set timeserieslist [200 300 200 0 200 500 300 0 -100 100 100 0 0]
-  set timeserieslistcount 0
-  set resethillclimbto50 0
-
-  my-setup-plots
-  set arrayQ array:from-list n-values 10000 ["B"]
-  carefully [file-delete "OrderBook.csv"][]
-  carefully [file-delete "OrderBookDepth.csv"][]
-  set randNumOT 0
-  set period 0
-  set tradeExNumber 0
-  set numberAsk []
-  set numberBid []
-
-  set BuyOrderQueue []
-  set SellOrderQueue []
-  set numberOrderAsk []
-  set numberOrderBid []
-
-  carefully [file-delete "OrderBook.csv"][]
-  carefully [file-delete "OrderBookDepth.csv"][]
-  carefully [file-delete "AgentData.csv"][]
-  carefully [writeFileTitles][]
-  carefully [writeFileTitleDepth][]
-  carefully [writeFileTitleAgent][]
-end
-;code by Mark Paddrik
-;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-;//////////////////////////////////////////////////////////////////////////////
-to setup-economy
-  ;Initial Model and Agent Conditions
-
-  ;; turtles procedure for setup
-  set traderListNumbers [0]
-  create-traders #_LiqDem [LiqDem_Setup]
-  create-traders #_MktMkr [MktMkr_Setup]
-  create-traders #_LiqSup [LiqSup_Setup]
-  create-traders 1        [BkrBuy_Setup]
-  create-traders 1        [BkrSel_Setup]
-  create-traders 1        [FrcSal_Setup]
-
-  set allOrders []
-
-  set buyQueue []
-  set sellQueue []
-  set tradeWipeQueue []
-  set tradeWipeQueueB []
-  set tradeWipeQueueA []
-  set list_traders []
-  ask traders [
-    set list_traders lput self list_traders
-    if(ticks = 0) [
-      checkTraderNumberUnique
-      ifelse (checkTraderNumber = 1) [
-        set traderListNumbers lput traderNumber traderListNumbers
-      ] [
-        checkTraderNumberUnique
-      ]
-    ]
-  ]
-  ; Sort the traders by who number, creating a list
-  ;set list_traders sort traders
-
-end
-;code by Mark Paddrik
-;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-;//////////////////////////////////////////////////////////////////////////////
-to checkTraderNumberUnique
-  let countTradersintradelist length traderListNumbers - 1
-  set traderNumber  10 + random 9990
-  let countTraderNumber 0
-  set checkTraderNumber 1
-  loop [
-   if(item countTraderNumber traderListNumbers = traderNumber)[set checkTraderNumber 0]
-   if(countTraderNumber = countTradersintradelist) [stop]
-   set countTraderNumber (countTraderNumber + 1)
-  ]
-end
-;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 
 ;//////////////////////////////////////////////////////////////////////////////
 to Order_Setup [a b d f tdr tdrtype]
@@ -312,11 +213,11 @@ end
 ;//////////////////////////////////////////////////////////////////////////////
 to Order_Update [OID a b d f tdr tdrtype]
 
+  set OrderID OID
   set OrderPrice a
   set OrderB/A b
   set OrderTraderID d
   set OrderTime ticks
-  set OrderID OID
   set OrderQuantity f
   set TraderWho tdr
   set TraderWhoType tdrtype
@@ -327,6 +228,28 @@ end
 ;code by Mark Flood
 ;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+
+;//////////////////////////////////////////////////////////////////////////////
+to TransactionHatcher [TID P T Q wb wa wbt wat]
+
+  set TrdID TID
+  set TrdPrice P
+  set TrdTime T
+  set TrdQuant Q
+  set TrdWhoBid wb
+  set TrdWhoAsk wa
+  set TrdWhoBidType wbt
+  set TrdWhoAskType wat
+
+  set list_transactions lput self list_transactions
+
+end
+;code by Mark Flood
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+;==============================================================================
+;============ REPORTER METHODS, TO LEARN ABOUT TURTLES ========================
+;==============================================================================
 
 ;//////////////////////////////////////////////////////////////////////////////
 to-report prop_allOrders [index factoid_name]
@@ -354,42 +277,8 @@ to-report prop_allOrders [index factoid_name]
       if (factoid_name = "OrderB/A")      [ report "DEAD" ]
       if (factoid_name = "TraderWho")     [ report "UNKNOWN" ]
       if (factoid_name = "TraderWhoType") [ report "UNKNOWN" ]
-      report (word "No property in prop_list_orders for factoid_name: " factoid_name)
+      report (word "No property in prop_allOrders for factoid_name: " factoid_name)
     ]
-  ]
-end
-;code by Mark Flood
-;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-;//////////////////////////////////////////////////////////////////////////////
-to-report prop_list_orders [index factoid_name]
-
-  ifelse (index < 0) or (index >= length list_orders) [
-    report (word "Index out of range in prop_list_orders: " index)
-  ] [
-;    ifelse ((item index list_orders) != nobody) [
-      let ord (item index list_orders)
-      if (factoid_name = "OrderID")       [ report [OrderID]            of (ord) ]
-      if (factoid_name = "OrderTime")     [ report [OrderTime]          of (ord) ]
-      if (factoid_name = "OrderPrice")    [ report [OrderPrice]         of (ord) ]
-      if (factoid_name = "OrderTraderID") [ report [OrderTraderID]      of (ord) ]
-      if (factoid_name = "OrderQuantity") [ report [OrderQuantity]      of (ord) ]
-      if (factoid_name = "OrderB/A")      [ report [OrderB/A]           of (ord) ]
-      if (factoid_name = "TraderWho")     [ report [[who] of TraderWho] of (ord) ]
-      if (factoid_name = "TraderWhoType") [ report [TraderWhoType]      of (ord) ]
-      report (word "No property in prop_list_orders for factoid_name: " factoid_name)
-;    ] [
-;      if (factoid_name = "OrderID")       [ report -1 ]
-;      if (factoid_name = "OrderTime")     [ report ticks ]
-;      if (factoid_name = "OrderPrice")    [ report -1 ]
-;      if (factoid_name = "OrderTraderID") [ report -1 ]
-;      if (factoid_name = "OrderQuantity") [ report -1 ]
-;      if (factoid_name = "OrderB/A")      [ report "DEAD" ]
-;      if (factoid_name = "TraderWho")     [ report "UNKNOWN" ]
-;      if (factoid_name = "TraderWhoType") [ report "UNKNOWN" ]
-;      report (word "No property in prop_list_orders for factoid_name: " factoid_name)
-;    ]
   ]
 end
 ;code by Mark Flood
@@ -417,6 +306,148 @@ end
 
 
 ;//////////////////////////////////////////////////////////////////////////////
+to-report prop_list_transactions [index factoid_name]
+
+  ifelse (index < 0) or (index >= length list_transactions) [
+    report (word "Index out of range in prop_list_transactions: " index)
+  ] [
+    let trd (item index list_transactions)
+    if (factoid_name = "TrdID")         [ report [TrdID]         of (trd) ]
+    if (factoid_name = "TrdPrice")      [ report [TrdPrice]      of (trd) ]
+    if (factoid_name = "TrdTime")       [ report [TrdTime]       of (trd) ]
+    if (factoid_name = "TrdQuant")      [ report [TrdQuant]      of (trd) ]
+    if (factoid_name = "TrdWhoBid")     [ report [TrdWhoBid]     of (trd) ]
+    if (factoid_name = "TrdWhoAsk")     [ report [TrdWhoAsk]     of (trd) ]
+    if (factoid_name = "TrdWhoBidType") [ report [TrdWhoBidType] of (trd) ]
+    if (factoid_name = "TrdWhoAskType") [ report [TrdWhoAskType] of (trd) ]
+    report (word "No property in prop_list_transactions for factoid_name: " factoid_name)
+  ]
+end
+;code by Mark Flood
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+;==============================================================================
+;==============================================================================
+;==============================================================================
+;============ GENERAL SIMULATION SETUP AND RUN ================================
+;==============================================================================
+;==============================================================================
+;==============================================================================
+
+;//////////////////////////////////////////////////////////////////////////////
+to setup
+  __clear-all-and-reset-ticks
+  random-seed SEED
+  setup-economy
+  file-close-all
+  set endBurninTime 5000    ;Added by John Liechty 11/17/2020
+  set currentMA 100
+  set volatility [1 2 3 5 7]
+  set pastPrices [1 2 3 5 7]
+  set movingAverage []
+  set movingAverageV []
+  set priceReturns []
+  set currentPriceVol 1
+  set currentBQD 2
+  set currentSQD 2
+  set transactionCost 0
+  set pastMA 400
+  set ProbabilityBuyofLiqyuidityDemander 49
+
+  ; MatchID is the sequential ID for transactions over the course of the full simulation
+  set MatchID 0
+
+  set currentOrderBid 399
+  set currentOrderAsk 401
+  set price 400
+
+  set timeserieslist [200 300 200 0 200 500 300 0 -100 100 100 0 0]
+  set timeserieslistcount 0
+  set resethillclimbto50 0
+
+  my-setup-plots
+  set arrayQ array:from-list n-values 10000 ["B"]
+  carefully [file-delete "OrderBook.csv"][]
+  carefully [file-delete "OrderBookDepth.csv"][]
+  set randNumOT 0
+  set period 0
+  set tradeExNumber 0
+  set numberAsk []
+  set numberBid []
+
+  set BuyOrderQueue []
+  set SellOrderQueue []
+  set numberOrderAsk []
+  set numberOrderBid []
+
+  carefully [file-delete "OrderBook.csv"][]
+  carefully [file-delete "OrderBookDepth.csv"][]
+  carefully [file-delete "AgentData.csv"][]
+  carefully [writeFileTitles][]
+  carefully [writeFileTitleDepth][]
+  carefully [writeFileTitleAgent][]
+end
+;code by Mark Paddrik
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+;//////////////////////////////////////////////////////////////////////////////
+to setup-economy
+  ;Initial Model and Agent Conditions
+
+  ;; turtles procedure for setup
+  set traderListNumbers [0]
+  create-traders #_LiqDem [LiqDem_Setup]
+  create-traders #_MktMkr [MktMkr_Setup]
+  create-traders #_LiqSup [LiqSup_Setup]
+  create-traders 1        [BkrBuy_Setup]
+  create-traders 1        [BkrSel_Setup]
+  create-traders 1        [FrcSal_Setup]
+
+  set allOrders []
+
+  set buyQueue []
+  set sellQueue []
+;  set tradeWipeQueue []
+;  set tradeWipeQueueB []
+;  set tradeWipeQueueA []
+  set list_traders []
+  ask traders [
+    set list_traders lput self list_traders
+    if(ticks = 0) [
+      checkTraderNumberUnique
+      ifelse (checkTraderNumber = 1) [
+        set traderListNumbers lput traderNumber traderListNumbers
+      ] [
+        checkTraderNumberUnique
+      ]
+    ]
+  ]
+  ; Sort the traders by who number, creating a list
+  ;set list_traders sort traders
+
+end
+;code by Mark Paddrik
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+;//////////////////////////////////////////////////////////////////////////////
+to checkTraderNumberUnique
+  let countTradersintradelist length traderListNumbers - 1
+  set traderNumber  10 + random 9990
+  let countTraderNumber 0
+  set checkTraderNumber 1
+  loop [
+   if(item countTraderNumber traderListNumbers = traderNumber)[set checkTraderNumber 0]
+   if(countTraderNumber = countTradersintradelist) [stop]
+   set countTraderNumber (countTraderNumber + 1)
+  ]
+end
+;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+;//////////////////////////////////////////////////////////////////////////////
 to go
   ;Function run for every tick of the model to advance one time step ahead
 
@@ -425,6 +456,9 @@ to go
     die
   ]
   set allOrders []
+
+  ; Reset the list of trades for this tick
+  set list_transactions []
 
   set currentBuyInterest 0
   set currentSellInterest 0
@@ -617,7 +651,8 @@ end
 ;//////////////////////////////////////////////////////////////////////////////
 to transactionOrder
   ;Function for transacting Trades to be run in the Market
-  if ( count orders with [OrderB/A = "Buy"] > 0 and count orders with [OrderB/A = "Sell"] > 0) [
+
+  if (count orders with [OrderB/A = "Buy"] > 0 and count orders with [OrderB/A = "Sell"] > 0) [
     let firstInBuyQueue first (sort-on [(- PriceOrder)] orders with [OrderB/A = "Buy"] )
     let firstInSellQueue first (sort-on [PriceOrder] orders with [OrderB/A = "Sell"])
 
@@ -689,9 +724,21 @@ to transactionOrder
 ;          writetofile orderBidID "Bought" price orderQuantityBid traderBidType traderBidNum 1 MatchID orderHON1Bid orderHON2Bid
 ;          writetofile orderAskID "Sold" price orderQuantityAsk traderAskType traderAskNum 2 MatchID orderHON1Ask orderHON2Ask
 ;        ]
+        ; Recording the transaction.
+        ; Note that orderQuantityBid==orderQuantityAsk
+        set MatchID (MatchID + 1)
+        hatch-order_transactions 1 [TransactionHatcher MatchID price ticks orderQuantityBid traderBidNum traderBidType traderAskNum traderAskType]
 
-        ask traderBid [ set sharesOwned (sharesOwned + orderQuantityBid) set averageBoughtPrice ((averageBoughtPrice * totalBought + (price / 4) * orderQuantityBid) / (totalBought + orderQuantityBid)) set totalBought (totalBought + orderQuantityBid) ]
-        ask traderAsk [ set sharesOwned (sharesOwned - orderQuantityAsk) set averageSoldPrice ((averageSoldPrice * totalSold + (price / 4) * orderQuantityAsk) / (totalSold + orderQuantityAsk)) set totalSold (totalSold + orderQuantityAsk)]
+        ask traderBid [
+          set sharesOwned (sharesOwned + orderQuantityBid)
+          set averageBoughtPrice ((averageBoughtPrice * totalBought + (price / 4) * orderQuantityBid) / (totalBought + orderQuantityBid))
+          set totalBought (totalBought + orderQuantityBid)
+        ]
+        ask traderAsk [
+          set sharesOwned (sharesOwned - orderQuantityAsk)
+          set averageSoldPrice ((averageSoldPrice * totalSold + (price / 4) * orderQuantityAsk) / (totalSold + orderQuantityAsk))
+          set totalSold (totalSold + orderQuantityAsk)
+        ]
         set volume (volume + orderQuantityAsk)
 
       ]
@@ -723,6 +770,10 @@ to transactionOrder
 ;          writetofile orderBidID "Bought" price orderQuantityAsk traderBidType traderBidNum 1 MatchID orderHON1Bid orderHON2Bid
 ;          writetofile orderAskID "Sold" price orderQuantityAsk traderAskType traderAskNum 2 MatchID orderHON1Ask orderHON2Ask
 ;        ]
+        ; Recording the transaction.
+        ; Note that orderQuantityBid==orderQuantityAsk
+        set MatchID (MatchID + 1)
+        hatch-order_transactions 1 [TransactionHatcher MatchID price ticks orderQuantityBid traderBidNum traderBidType traderAskNum traderAskType]
 
         ask traderBid [ set sharesOwned (sharesOwned + orderQuantityAsk)
           set averageBoughtPrice ((averageBoughtPrice * totalBought + (price / 4) * orderQuantityAsk) / (totalBought + orderQuantityAsk)) set totalBought (totalBought + orderQuantityAsk)]
@@ -753,9 +804,21 @@ to transactionOrder
 ;          writetofile orderBidID "Bought" price orderQuantityBid traderBidType traderBidNum 1 MatchID orderHON1Bid orderHON2Bid
 ;          writetofile orderAskID "Sold" price orderQuantityBid traderAskType traderAskNum 2 MatchID orderHON1Ask orderHON2Ask
 ;        ]
+        ; Recording the transaction.
+        ; Note that orderQuantityBid==orderQuantityAsk
+        set MatchID (MatchID + 1)
+        hatch-order_transactions 1 [TransactionHatcher MatchID price ticks orderQuantityBid traderBidNum traderBidType traderAskNum traderAskType]
 
-        ask traderBid [ set sharesOwned (sharesOwned + orderQuantityBid) set averageBoughtPrice ((averageBoughtPrice * totalBought + (price / 4) * orderQuantityBid) / (totalBought + orderQuantityBid)) set totalBought (totalBought + orderQuantityBid)]
-        ask traderAsk [ set sharesOwned (sharesOwned - orderQuantityBid) set averageSoldPrice ((averageSoldPrice * totalSold + (price / 4) * orderQuantityBid) / (totalSold + orderQuantityBid)) set totalSold (totalSold + orderQuantityBid)]
+        ask traderBid [
+          set sharesOwned (sharesOwned + orderQuantityBid)
+          set averageBoughtPrice ((averageBoughtPrice * totalBought + (price / 4) * orderQuantityBid) / (totalBought + orderQuantityBid))
+          set totalBought (totalBought + orderQuantityBid)
+        ]
+        ask traderAsk [
+          set sharesOwned (sharesOwned - orderQuantityBid)
+          set averageSoldPrice ((averageSoldPrice * totalSold + (price / 4) * orderQuantityBid) / (totalSold + orderQuantityBid))
+          set totalSold (totalSold + orderQuantityBid)
+        ]
         set volume (volume + orderQuantityBid)
 
         transactionOrder
@@ -911,7 +974,10 @@ to MktMkr_strategy
           table:remove OrderCheckList OrderPriceDelta
         ][
           let OrderCancel OrderQuantity
-          ask TraderWho [ set openorders remove ? openorders set totalCanceled (totalCanceled + OrderCancel)]
+          ask TraderWho [
+            set openorders remove ? openorders
+            set totalCanceled (totalCanceled + OrderCancel)
+          ]
 
 ;          if(AuditTrail = true)[
 ;            writetofile OrderID "Cancel" OrderPrice OrderQuantity TraderWhoType tradernumber 2 "-" HON1 HON2
@@ -1349,11 +1415,9 @@ to BkrSelStrategy
    ]
 
   ][
-
     set tradeStatus "Buy"
     set tradePrice price + 5
     set tradeQuantity (negSell_Limit - tSharesOwned)
-
   ]
 
   hatch-orders 1 [Order_Setup tradePrice tradeStatus traderNumber tradeQuantity myself typeOfTrader]
@@ -3195,10 +3259,10 @@ Current Bid
 11
 
 MONITOR
-53
-217
-186
-262
+107
+218
+240
+263
 Current Order ID
 ordernumber
 0
@@ -3206,10 +3270,10 @@ ordernumber
 11
 
 MONITOR
-53
-262
-185
-307
+107
+263
+239
+308
 Number of Active Orders
 count orders
 0
@@ -3604,10 +3668,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-122
-143
-230
-176
+120
+147
+228
+180
 DepthFile
 DepthFile
 0
@@ -3615,10 +3679,10 @@ DepthFile
 -1000
 
 SWITCH
-65
-177
-173
-210
+120
+180
+228
+213
 AgentFile
 AgentFile
 0
@@ -3732,6 +3796,17 @@ BkrSel_Limit
 NIL
 HORIZONTAL
 
+INPUTBOX
+9
+142
+78
+202
+SEED
+0
+1
+0
+Number
+
 @#$#@#$#@
 ## ## WHAT IS IT?
 
@@ -3776,7 +3851,6 @@ Paddrik, M., Hayes, R., Todd, A., Yang, S., Scherer, W.  & Beling, P.  (2012).  
 Paddrik, M., Hayes, R., Scherer, W.  & Beling, P.  (2014).  Effects of Limit Order Book Information Level on Market Stability Metrics.  OFR Working Paper Series.
 
 Paddrik, M. & Bookstaber R. (2015).  An Agnet-based Model for for Crisis Liquidity Dynamics.  OFR Working Paper Series.
-
 
 @#$#@#$#@
 default
@@ -4072,6 +4146,9 @@ NetLogo 5.3.1
     <go>go</go>
     <timeLimit steps="10000"/>
     <metric>price</metric>
+    <enumeratedValueSet variable="SEED">
+      <value value="1"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="FrcSal_QuantSale">
       <value value="2"/>
     </enumeratedValueSet>
