@@ -43,25 +43,28 @@ def parse_command_line(argv, modulefile):
         * -c   Print the config dictionary for this module to stdout
         * -l <loglevel_file>      Set the logging threshold for file output
         * -L <loglevel_console>   Set the logging threshold for console output
-        * -C <configfile>   Read custom configuration from a separate file
+        * -C <configfile>   Read configuration from a specific file
+        * -O <configlocal>   Read local override configuration from a file
         * -h | --help   Print usage help and quit
         * -p <paramkey>:<paramval>  Override/set individual config parameters
     """
     usagestring = ('python '+modulefile+
                   ' [-c]'+
                   ' [-C <configfile>]'+
+                  ' [-O <configlocal>]'+
                   ' [-l <loglevel_file>]'+
                   ' [-L <loglevel_console>]'+
                   ' [-h | --help]'+
                   ' [-p <paramkey>:<paramval>]')
     section = os.path.splitext(os.path.basename(modulefile))[0]
     config = None
+    config_local = None
     showconfig = False
     if argv is None:
         argv = sys.argv
     try:
         try:
-            opts, args = getopt.getopt(argv[1:], "hcl:L:C:p:", ["help"])
+            opts, args = getopt.getopt(argv[1:], "hcl:L:C:O:p:", ["help"])
         except getopt.error as msg:
             raise Usage(msg)
         for o, a in opts:
@@ -70,13 +73,17 @@ def parse_command_line(argv, modulefile):
                 print(usagestring)
                 sys.exit()
         for o, a in opts:
+            # Scan through once, to see if a special config_local is named
+            if "-O"==o:
+                config_local = a
+        for o, a in opts:
             # Scan through once, to see if a special config is named
             if "-C"==o:
                 cfgfile = a
-                config = read_config(cfgfile)
-        # If we still have no config, attempt to read the default
+                config = read_config(cfgfile, config_local)
         if (None==config):
-            config = read_config()
+            # If we still have no config, attempt to read the default
+            config = read_config(config_local_file=config_local)
         for o, a in opts:
             # Now we have the right config file, get the parameters
             if "-p"==o:
@@ -108,18 +115,28 @@ class Usage(Exception):
 
 
 
-def read_config(config_file='macroliquidity.ini'):
+def read_config(config_file='macroliquidity.ini',
+                config_local_file=None):
     """Reads the application parameters from a local configuration file
     
     Parameters
     ----------
     config_file : filename
-        The name of a local configuration file. The default value is
+        The name of a configuration file. The default value is
         macroliquidity.ini, which should reside in the same directory with
         the Python source code.
+    config_local_file : filename
+        The name of a local configuration file. These configuration 
+        parameters will override any values set in the main config_file. 
+        The default value is "macroliquidity_local.ini", which should reside 
+        in the same directory with the Python source code.
     """
     config = cp.ConfigParser(interpolation=cp.ExtendedInterpolation())
-    config.read(config_file)
+    if (None==config_local_file):
+        config_local_file=config_file.split('.')[0]+'_local.ini'
+    print(f'config_file: {config_file}')
+    print(f'config_local_file: {config_local_file}')
+    config.read([config_file, config_local_file])
 #    configure_logger()
     return config
 
