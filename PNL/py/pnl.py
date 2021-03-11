@@ -19,6 +19,8 @@ import pyNetLogo as pnl
 
 import util as UTIL
 
+import random
+
 LOG=None
 LM=None
 
@@ -27,6 +29,8 @@ def run_NLsims(CFG, SEED=1):
     global LM
     
     tic0 = time.process_time()
+    
+    SEED = random.randrange(10000000)
 
     sns.set_style('white')
     sns.set_context('talk')
@@ -257,20 +261,41 @@ def main(argv=None):
     argv : dict
         The collection of arguments submitted on the command line
     """
+    print("Hello World")
     config = UTIL.parse_command_line(argv, __file__)
 
     NLruncount = int(config['pnl']['NLruncount'])
-    pcount = pcount = min(int(config['DEFAULT']['parallelcores']), 
-                          os.cpu_count(), NLruncount)
+    parallelcores = int(config['DEFAULT']['parallelcores'])
+    pcount = int(NLruncount/parallelcores)
+    pcountLeftOver = NLruncount%parallelcores
+    print("pcount: ", pcount, ", pcountLeftOver: ", pcountLeftOver)
+
     if (pcount > 0):
-        pool = mp.Pool(processes=pcount)
-        for i in range(NLruncount):
-            pool.apply_async(run_NLsims, (config, i))
-        pool.close()
-        pool.join()
-    else:
-        for i in range(NLruncount):
-            run_NLsims(config, i)
+        for i in range(pcount):
+            pool = mp.Pool(processes=parallelcores)
+            for j in range(parallelcores):
+                pool.apply_async(run_NLsims, (config, j))
+            pool.close()
+            pool.join()
+            print("End of batch: ",i)
+    if (pcountLeftOver > 0):
+        for i in range(pcountLeftOver):
+            run_NLsims(config, i)   
+    
+    print("End of simulatin run!")
+
+
+#    pcount = min(int(config['DEFAULT']['parallelcores']), 
+#                          os.cpu_count(), NLruncount)
+#    if (pcount > 0):
+#        pool = mp.Pool(processes=pcount)
+#        for i in range(NLruncount):
+#            pool.apply_async(run_NLsims, (config, i))
+#        pool.close()
+#        pool.join()
+#    else:
+#        for i in range(NLruncount):
+#            run_NLsims(config, i)
 
     #try:
 #    run_NLsims(config)
