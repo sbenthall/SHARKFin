@@ -188,7 +188,6 @@ def configure_logger(logger_name=None, logconfig_file='logging.ini'):
 
 
 
-
 def print_config(config, modulefile):
     """Prints the parameters for a specific configuration section
     

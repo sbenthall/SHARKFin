@@ -100,15 +100,17 @@ def run_NLsims(CFG, SEED=1):
     # ==========================================================================
     # ====================== TIME-SERIES LOGS ==================================
     # ==========================================================================
-    csvflushinterval = int(CFG['pnl']['csvflushinterval'])
+     # JCL 3/16/21 Cutting out reports to try and get speed ups
+#    csvflushinterval = int(CFG['pnl']['csvflushinterval'])
 
-    AOfile = CFG['pnl']['LMallorderpfx']+sid+'.'+CFG['pnl']['LMallordersfx']
-    AOfile = os.path.join(CFG['pnl']['logdir'], AOfile)
-    LOG.warning('Opening all-order (audit) log:'+AOfile)
-    AOcsvf = open(AOfile, mode='w')
-    AOcsvw = csv.writer(AOcsvf, delimiter='\t')
-    AOcsvw.writerow(["Tick","OrderID","OrderTime","OrderPrice","OrderTraderID",
-                     "OrderQuantity","OrderBA","TraderWhoType"])
+    # JCL 3/16/21 Cutting out reports to try and get speed ups
+#    AOfile = CFG['pnl']['LMallorderpfx']+sid+'.'+CFG['pnl']['LMallordersfx']
+#    AOfile = os.path.join(CFG['pnl']['logdir'], AOfile)
+#    LOG.warning('Opening all-order (audit) log:'+AOfile)
+#    AOcsvf = open(AOfile, mode='w')
+#    AOcsvw = csv.writer(AOcsvf, delimiter='\t')
+#    AOcsvw.writerow(["Tick","OrderID","OrderTime","OrderPrice","OrderTraderID",
+#                     "OrderQuantity","OrderBA","TraderWhoType"])
 
     TRfile = CFG['pnl']['LMtransactpfx']+sid+'.'+CFG['pnl']['LMtransactsfx']
     TRfile = os.path.join(CFG['pnl']['logdir'], TRfile)
@@ -118,83 +120,105 @@ def run_NLsims(CFG, SEED=1):
     TRcsvw.writerow(["Tick","TrdID","TrdPrice","TrdTime","TrdQuant",
                      "TrdWhoBid","TrdWhoAsk","TrdWhoBidType","TrdWhoAskType"])
 
-    IVfile = CFG['pnl']['LMinventorypfx']+sid+'.'+CFG['pnl']['LMinventorysfx']
-    IVfile = os.path.join(CFG['pnl']['logdir'], IVfile)
-    LOG.warning('Opening inventory log:'+IVfile)
-    IVcsvf = open(IVfile, mode='w')
-    IVcsvw = csv.writer(IVcsvf, delimiter='\t')
-    IVcsvw.writerow(["Tick","TraderID","TraderWhoType","SharesOwned"])
+    # JCL 3/16/21 Cutting out reports to try and get speed ups
+#    IVfile = CFG['pnl']['LMinventorypfx']+sid+'.'+CFG['pnl']['LMinventorysfx']
+#    IVfile = os.path.join(CFG['pnl']['logdir'], IVfile)
+#    LOG.warning('Opening inventory log:'+IVfile)
+#    IVcsvf = open(IVfile, mode='w')
+#    IVcsvw = csv.writer(IVcsvf, delimiter='\t')
+#    IVcsvw.writerow(["Tick","TraderID","TraderWhoType","SharesOwned"])
 
-    FACT_TraderNumber=1
-    FACT_TypeOfTrader=2
-    FACT_SharesOwned =3
+    # JCL 3/16/21 Cutting out reports to try and get speed ups
+#    FACT_TraderNumber=1
+#    FACT_TypeOfTrader=2
+#    FACT_SharesOwned =3
 
     # Run the simulation for fullrun ticks, recording as we go
     stateCheck()
     LOG.warning('NL model -- simruns begin: '+str(CFG['pnl']['LMtickssimruns']))
     for tik in range(int(CFG['pnl']['LMtickssimruns'])):
         LM.command('go')
-        ticks = int(LM.report('ticks'))
-        LOG.info(f' -- Ticks: {ticks}')
+
+        #if tik > 100
+        # JCL 3/16/21 Cutting out reports to try and get speed ups
+        if (tik > (int(CFG['pnl']['LMtickssimruns'])-10)):
+            try:
+                ticks = int(LM.report('ticks'))
+                LOG.info(f' -- Ticks: {ticks}')
+            except:
+                print(f'past end grab, tik: ',tik)
 
         # ================== ALL ORDER LOG =====================================
-        ct_allorders = int(LM.report('length allOrders'))
-        LOG.debug(f'     -- ct_allorders: {ct_allorders}')
+        # JCL 3/16/21 Cutting out reports to try and get speed ups
+#        ct_allorders = int(LM.report('length allOrders'))
+#        LOG.debug(f'     -- ct_allorders: {ct_allorders}')
 #        print(f'ticks={ticks}, ct_allorders={ct_allorders}:')
-        for i in range(ct_allorders):
-            try:
+#        for i in range(ct_allorders):
+#            try:
 #                print(f'    i={i}')
-                rdr0 = int(LM.report(f'prop_allOrders {i} "OrderID"'))
-                rdr1 = float(LM.report(f'prop_allOrders {i} "OrderTime"'))
-                rdr2 = float(LM.report(f'prop_allOrders {i} "OrderPrice"'))
-                rdr3 = int(LM.report(f'prop_allOrders {i} "OrderTraderID"'))
-                rdr4 = float(LM.report(f'prop_allOrders {i} "OrderQuantity"'))
-                rdr5 = str(LM.report(f'prop_allOrders {i} "OrderB/A"'))
+#                rdr0 = int(LM.report(f'prop_allOrders {i} "OrderID"'))
+#                rdr1 = float(LM.report(f'prop_allOrders {i} "OrderTime"'))
+#                rdr2 = float(LM.report(f'prop_allOrders {i} "OrderPrice"'))
+#                rdr3 = int(LM.report(f'prop_allOrders {i} "OrderTraderID"'))
+#                rdr4 = float(LM.report(f'prop_allOrders {i} "OrderQuantity"'))
+#                rdr5 = str(LM.report(f'prop_allOrders {i} "OrderB/A"'))
                 # rdr6 = int(LM.report(f'prop_allOrders {i} "TraderWho"'))
-                rdr7 = str(LM.report(f'prop_allOrders {i} "TraderWhoType"'))
-                AOcsvw.writerow([ticks,rdr0,rdr1,rdr2,rdr3,rdr4,rdr5,  rdr7])
+#                rdr7 = str(LM.report(f'prop_allOrders {i} "TraderWhoType"'))
+#                AOcsvw.writerow([ticks,rdr0,rdr1,rdr2,rdr3,rdr4,rdr5,  rdr7])
 #                print(f'       OrderID={rdr0},OrderTime={rdr1},OrderPrice={rdr2},OrderTraderID={rdr3},OrderQuantity={rdr4},OrderB/A={rdr5},TraderWhoType={rdr7}')
-            except:
-                pass
-        LOG.debug(f'     -- Completed allorders for tick: {tik}')
+#            except:
+#                pass
+#        LOG.debug(f'     -- Completed allorders for tick: {tik}')
 
 
         # ================== TRANSACTION LOG =====================================
-        ct_transactions = int(LM.report('length list_transactions'))
-        LOG.debug(f'     -- ct_transactions: {ct_transactions}')
-        for i in range(ct_transactions):
+        # JCL 3/16/21 Cutting out reports and only print at the end to try and get speed ups
+        if (tik > (int(CFG['pnl']['LMtickssimruns'])-10)):
             try:
-                trd0 = int(LM.report(f'prop_list_transactions {i} "TrdID"'))
-                trd1 = float(LM.report(f'prop_list_transactions {i} "TrdPrice"'))
-                trd2 = float(LM.report(f'prop_list_transactions {i} "TrdTime"'))
-                trd3 = int(LM.report(f'prop_list_transactions {i} "TrdQuant"'))
-                trd4 = float(LM.report(f'prop_list_transactions {i} "TrdWhoBid"'))
-                trd5 = str(LM.report(f'prop_list_transactions {i} "TrdWhoAsk"'))
-                trd6 = int(LM.report(f'prop_list_transactions {i} "TrdWhoBidType"'))
-                trd7 = str(LM.report(f'prop_list_transactions {i} "TrdWhoAskType"'))
-                TRcsvw.writerow([ticks,trd0,trd1,trd2,trd3,trd4,trd5,trd6,trd7])
+                ct_transactions = int(LM.report('length list_transactions'))
+                # JCL 3/16/21 Cutting out reports to try and get speed ups
+        #        LOG.debug(f'     -- ct_transactions: {ct_transactions}')
+                for i in range(ct_transactions):
+                    try:
+                        trd0 = int(LM.report(f'prop_list_transactions {i} "TrdID"'))
+                        trd1 = float(LM.report(f'prop_list_transactions {i} "TrdPrice"'))
+                        trd2 = float(LM.report(f'prop_list_transactions {i} "TrdTime"'))
+                        trd3 = int(LM.report(f'prop_list_transactions {i} "TrdQuant"'))
+                        trd4 = float(LM.report(f'prop_list_transactions {i} "TrdWhoBid"'))
+                        trd5 = str(LM.report(f'prop_list_transactions {i} "TrdWhoAsk"'))
+                        trd6 = int(LM.report(f'prop_list_transactions {i} "TrdWhoBidType"'))
+                        trd7 = str(LM.report(f'prop_list_transactions {i} "TrdWhoAskType"'))
+                        TRcsvw.writerow([ticks,trd0,trd1,trd2,trd3,trd4,trd5,trd6,trd7])
+                    except:
+                        pass
+                    # JCL 3/16/21 Cutting out reports to try and get speed ups            
+            #        LOG.debug(f'     -- Completed transactions for tick: {tik}')
             except:
                 pass
-        LOG.debug(f'     -- Completed transactions for tick: {tik}')
-
         # =================== INVENTORY LOG ====================================
-        ct_lsttrders = int(LM.report('length list_traders'))
-        for i in range(ct_lsttrders):
-            tdr0 = int(LM.report(f'prop_list_traders {i} {FACT_TraderNumber}'))
-            tdr1 = str(LM.report(f'prop_list_traders {i} {FACT_TypeOfTrader}'))
-            tdr2 = float(LM.report(f'prop_list_traders {i} {FACT_SharesOwned}'))
-            IVcsvw.writerow([ticks,tdr0,tdr1,tdr2])
-        LOG.debug(f'     -- Completed lsttrders for tick: {tik}')
+        # JCL 3/16/21 Cutting out reports to try and get speed ups
+#        ct_lsttrders = int(LM.report('length list_traders'))
+#        for i in range(ct_lsttrders):
+#            tdr0 = int(LM.report(f'prop_list_traders {i} {FACT_TraderNumber}'))
+#            tdr1 = str(LM.report(f'prop_list_traders {i} {FACT_TypeOfTrader}'))
+#            tdr2 = float(LM.report(f'prop_list_traders {i} {FACT_SharesOwned}'))
+#            IVcsvw.writerow([ticks,tdr0,tdr1,tdr2])
+#        LOG.debug(f'     -- Completed lsttrders for tick: {tik}')
 
-        if ((ticks % csvflushinterval) == 0):
-            AOcsvf.flush()
-            IVcsvf.flush()
-            TRcsvf.flush()
+        if (tik > (int(CFG['pnl']['LMtickssimruns'])-21)):
+            try:
+#        if ((ticks % csvflushinterval) == 0):
+#            AOcsvf.flush()
+#            IVcsvf.flush()
+                TRcsvf.flush()
+            except:
+                pass
 
-    LOG.warning('Closing all-order (audit) log:'+AOfile)
-    AOcsvf.close()
-    LOG.warning('Closing inventory log:'+IVfile)
-    IVcsvf.close()
+        # JCL 3/16/21 Cutting out reports to try and get speed ups
+#    LOG.warning('Closing all-order (audit) log:'+AOfile)
+#    AOcsvf.close()
+#    LOG.warning('Closing inventory log:'+IVfile)
+#    IVcsvf.close()
     LOG.warning('Closing transaction log:'+TRfile)
     TRcsvf.close()
 
@@ -244,9 +268,6 @@ def stateCheck():
     log_NLvar("timeseries")
     log_NLvar("timeseriesvalue")
     LOG.debug('---------------------------------------------------------------')
-
-
-
 
 
 def main(argv=None):
