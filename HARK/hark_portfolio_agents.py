@@ -35,12 +35,12 @@ def create_agents(agent_classes, ap):
     ]
 
     for agent in agents:
-        agent.track_vars += ['pLvlNow','mNrmNow','ShareNow','RiskyNow']
+        agent.track_vars += ['pLvl','mNrm','Share','Risky']
 
         agent.AdjustPrb = 1.0
         agent.T_sim = 1
         agent.solve()
-        agent.initializeSim()
+        agent.initialize_sim()
         agent.simulate()
 
         #change it back
@@ -69,90 +69,66 @@ def best_fit_slope_and_intercept(xs,ys):
 
     return m, b
 
-def estimated_rate_of_return(orders):
+def estimated_rate_of_return(transactions):
     """
     Estimates rate of return on prices
     """
 
-    buys = orders[(orders['OrderBA'] == "Buy") & \
-                  (orders['OrderQuantity'] > 0)]
-    sells = orders[(orders['OrderBA'] == "Sell") & \
-                   (orders['OrderQuantity'] > 0)]
-
     # volume adjusted average order price
-    # WARNING: This is based on the order book, NOT
-    #          the transaction history
-    avg_price = (orders['OrderPrice'] * orders['OrderQuantity']).sum() \
-                / orders['OrderQuantity'].sum()
+    avg_price = (transactions['TrdPrice'] * transactions['TrdQuant']).sum() \
+                / transactions['TrdQuant'].sum()
 
     # using midpoint of first buy/sell order book prices
     # to get the "starting price"
-    first_price = (buys['OrderPrice'].values[0] + \
-                   sells['OrderPrice'].values[0]) / 2
+    first_price = transactions['TrdPrice'].values[0]
 
     return avg_price / first_price
 
-def estimated_std_of_return(orders):
+def estimated_std_of_return(transactions):
     """
     Empirical standard deviation of prices.
     """
-
-    orders = orders[orders['OrderQuantity'] > 0]
 
     ## WARNING: This way of computing expected standard
     ##          deviations from the order book makes little sense
     ##          Should be volume-weighted based on transactions, probably.
 
-    return np.std(orders['OrderPrice'].values)
+    return np.std(transactions['TrdPrice'].values)
 
 
-def risky_expectations(orders):
+def risky_expectations(transactions):
     """
     A parameter dictionary with expected properties
     of the risky asset based on historical prices.
     """
 
     risky_params = {
-        'RiskyAvg': estimated_rate_of_return(orders),
-        'RiskyStd': estimated_std_of_return(orders),
+        'RiskyAvg': estimated_rate_of_return(transactions),
+        'RiskyStd': estimated_std_of_return(transactions),
     }
 
     return risky_params
 
-def risky_actual_return(orders):
+def risky_actual_return(transactions):
     """
     Actual return on investment in risky asset in the last quarter.
 
     Returns: (mid return, buy return, sell return)
+    For now, all these values will be the same.
     """
 
-    ## WARNING: This is using the order book, not the transactions
-    ##          as it should be.
-    buys = orders[(orders['OrderBA'] == "Buy") & \
-                  (orders['OrderQuantity'] > 0)]
-    sells = orders[(orders['OrderBA'] == "Sell") & \
-                   (orders['OrderQuantity'] > 0)]
+    first_price = transactions['TrdPrice'].values[0]
 
-    buy_price = (buys['OrderPrice'] * \
-                 buys['OrderQuantity']).sum() \
-                 / buys['OrderQuantity'].sum()
+    avg_price = (transactions['TrdPrice'] * transactions['TrdQuant']).sum() \
+                / transactions['TrdQuant'].sum()
 
-    sell_price = (sells['OrderPrice'] * \
-                  sells['OrderQuantity']).sum() \
-                  / sells['OrderQuantity'].sum()
-
-    # using midpoint of first buy/sell order book prices
-    # to get the "starting price"
-    first_price = (buys['OrderPrice'].values[0] + \
-                   sells['OrderPrice'].values[0]) / 2
+    avg_return = avg_price / first_price
 
     return (
-        (buy_price + sell_price) / (2 * first_price),
-        buy_price / first_price,
-        sell_price / first_price
+        avg_return,
+        avg_return,
+        avg_return
     )
-
-
 
 ### Agent updating
 
@@ -167,38 +143,38 @@ def simulate(agents, periods):
         agent.RiskyStd = 0
 
         agent.T_sim = periods
-        agent.initializeSim()
+        agent.initialize_sim()
 
         agent.simulate()
         agent.RiskyStd = store_RiskyStd
 
-def update_agent(agent, risky_share, orders):
+def update_agent(agent, risky_share, transactions):
     """
     Given an agent, their risky share, and quarterly prices...
         - give the agent new risky expectations based on prices
         - compute and set the agent's market resources
     """
-    re = risky_expectations(orders)
+    re = risky_expectations(transactions)
 
     # agent market resources ('m') are normalized ('Nrm')
     # by the level of permanent income ('pLvl').
     # This constitutes the real assets of the simulated agent.
-    assets = agent.state_now['mNrmNow'] * agent.state_now['pLvlNow']
+    assets = agent.state_now['mNrm'] * agent.state_now['pLvl']
 
     # initial assets held by the agent this past period.
-    initial_assets = agent.history['mNrmNow'][0] \
-                     * agent.history['pLvlNow'][0]
+    initial_assets = agent.history['mNrm'][0] \
+                     * agent.history['pLvl'][0]
 
     # initial market resources held in the risky asset.
     initial_risky_assets = initial_assets * risky_share
 
     # value of risky assets according to their current market price.
     risky_assets_actual_value = initial_risky_assets * \
-                                risky_actual_return(orders)[0]
+                                risky_actual_return(transactions)[0]
 
     # The appreciated value of the risk asset for the simulated agent.
     risky_assets_simulated_value = initial_risky_assets * \
-                                   agent.history['RiskyNow'][:,0].prod()
+                                   agent.history['Risky'][:,0].prod()
 
     actual_assets = assets \
                     + risky_assets_actual_value \
@@ -209,19 +185,19 @@ def update_agent(agent, risky_share, orders):
     assets[assets < 0] = 0
 
     # normalize the assets and assign them back to the agent.
-    agent.state_now['mNrmNow'] = assets / agent.state_now['pLvlNow']
+    agent.state_now['mNrm'] = assets / agent.state_now['pLvl']
 
-    agent.assignParameters(**re)
+    agent.assign_parameters(**re)
 
 
-def update_agents(agents, orders):
+def update_agents(agents, transactions):
     for agent in agents:
-        update_agent(agent, agent.history['ShareNow'][0], orders)
+        update_agent(agent, agent.history['Share'][0], transactions)
 
 
 ##### Computing demand
 
-def demand(agent, orders):
+def demand(agent, transactions):
     '''
     Input:
       - an agent
@@ -234,8 +210,8 @@ def demand(agent, orders):
     '''
     agent.solve()
 
-    market_resources = agent.state_now['mNrmNow']
-    permanent_income = agent.state_now['pLvlNow']
+    market_resources = agent.state_now['mNrm']
+    permanent_income = agent.state_now['pLvl']
 
     # ShareFunc takes normalized market resources as argument
     risky_share = agent.solution[0].ShareFuncAdj(
@@ -249,13 +225,13 @@ def demand(agent, orders):
             market_resources * (1 - risky_share))
 
 
-def demands(agents, orders):
+def demands(agents, transactions):
     """
     For a list of agents, returns the demands of all the agents
      - note side effects for demand function
     """
     print("Getting risky asset demand for all agents")
-    return [demand(agent, orders) for agent in agents]
+    return [demand(agent, transactions) for agent in agents]
 
 
 def no_demand(agents):
@@ -274,7 +250,7 @@ def aggregate_buy_and_sell(old_demand, new_demand):
     Output:
       - tuple with aggregate amount (in $$$) to buy and sell of risky asset.
     """
-    print("computing aggregate buy/sell orders")
+    print("computing aggregate buy/sell transactions")
     buy = 0
     sell = 0
 
