@@ -267,9 +267,10 @@ def main(argv=None):
 
     NLruncount = int(config['pnl']['NLruncount'])
     parallelcores = int(config['DEFAULT']['parallelcores'])
+    nTickWarmUp = int(config['pnl']['LMtickswarmups'])
     pcount = int(NLruncount/parallelcores)
     pcountLeftOver = NLruncount%parallelcores
-    print("pcount: ", pcount, ", pcountLeftOver: ", pcountLeftOver)
+    print("pcount: ", pcount, ", pcountLeftOver: ", pcountLeftOver,", nTickWarmUp: ",nTickWarmUp)
 
     if (pcount > 0):
         for i in range(pcount):
