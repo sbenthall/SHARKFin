@@ -289,11 +289,15 @@ def main(argv=None):
     NLruncount = int(config['pnl']['NLruncount'])
     parallelcores = int(config['DEFAULT']['parallelcores'])
     nTickWarmUp = int(config['pnl']['LMtickswarmups'])
-    pcount = int(NLruncount/parallelcores)
-    pcountLeftOver = NLruncount%parallelcores
-    print("pcount: ", pcount, ", pcountLeftOver: ", pcountLeftOver,", nTickWarmUp: ",nTickWarmUp)
 
-    if (pcount > 0):
+    if (parallelcores > 0):
+        pcount = int(NLruncount/parallelcores)
+        pcountLeftOver = NLruncount%parallelcores
+
+        print("pcount: ", pcount,
+              ", pcountLeftOver: ", pcountLeftOver,
+              ", nTickWarmUp: ",nTickWarmUp)
+
         for i in range(pcount):
             pool = mp.Pool(processes=parallelcores)
             for j in range(parallelcores):
@@ -301,24 +305,17 @@ def main(argv=None):
             pool.close()
             pool.join()
             print("End of batch: ",i)
-    if (pcountLeftOver > 0):
-        for i in range(pcountLeftOver):
-            run_NLsims(config, i)   
+
+            if (pcountLeftOver > 0):
+                for i in range(pcountLeftOver):
+                    run_NLsims(config, i)   
+    else:
+        print("No parallel cores.")
+        print("nTickWarmUp: ", nTickWarmUp)
+        for i in range(NLruncount):
+            run_NLsims(config, i)
     
-    print("End of simulatin run!")
-
-
-#    pcount = min(int(config['DEFAULT']['parallelcores']), 
-#                          os.cpu_count(), NLruncount)
-#    if (pcount > 0):
-#        pool = mp.Pool(processes=pcount)
-#        for i in range(NLruncount):
-#            pool.apply_async(run_NLsims, (config, i))
-#        pool.close()
-#        pool.join()
-#    else:
-#        for i in range(NLruncount):
-#            run_NLsims(config, i)
+    print("End of simulation run!")
 
     #try:
 #    run_NLsims(config)
