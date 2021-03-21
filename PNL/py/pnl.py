@@ -141,7 +141,7 @@ def run_NLsims(CFG, SEED=1):
 
         #if tik > 100
         # JCL 3/16/21 Cutting out reports to try and get speed ups
-        if (tik > (int(CFG['pnl']['LMtickssimruns'])-20)):
+        if (tik > (int(CFG['pnl']['LMtickssimruns'])-50)):
             try:
                 ticks = int(LM.report('ticks'))
                 LOG.info(f' -- Ticks: {ticks}')
@@ -173,7 +173,7 @@ def run_NLsims(CFG, SEED=1):
 
         # ================== TRANSACTION LOG =====================================
         # JCL 3/16/21 Cutting out reports and only print at the end to try and get speed ups
-        if (tik > (int(CFG['pnl']['LMtickssimruns'])-20)):
+        if (tik > (int(CFG['pnl']['LMtickssimruns'])-50)):
             try:
                 ct_transactions = int(LM.report('length list_transactions'))
                 # JCL 3/16/21 Cutting out reports to try and get speed ups
