@@ -226,6 +226,7 @@ def run_NLsims(CFG, SEED=1):
 
     toc0 = time.process_time()
     print(f'Elapsed (sys clock), run {SEED}: ', toc0-tic0)
+    LM.kill_workspace()
 
 def set_NLvar(varname,value):
     LOG.debug(f"SETTING: {varname}:={value}")
