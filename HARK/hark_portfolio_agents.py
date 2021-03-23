@@ -16,24 +16,34 @@ def update_return(dict1, dict2):
 
     return dict3
 
-def create_agents(agent_classes, ap):
+def create_agents(agent_classes, agent_parameters):
     """
     Initialize the agent objects according to standard
-    parameterization ap and agent_classes definition.
+    parameterization agent_parameters and agent_classes definition.
 
-    Returns a list of HARK agents.
-      - these agents will have computed starting risky shares
+    Parameters
+    ----------
+
+    agent_classes: list of dicts
+        Parameters for each HARK AgentType
+        # TODO: Rename, conflict with Python 'class' term
+
+    agent_parameters: dict
+        Parameters shared by all agents (unless overwritten).
+
+    Returns
+    -------
+        agents: a list of HARK agents.
     """
     agents = [
         cpm.PortfolioConsumerType(
-            AgentCount = ac[1],
-            aNrmInitMean = ac[2],
-            **update_return(ap, ac[0])
+            **update_return(agent_parameters, ac)
         )
         for ac
         in agent_classes
     ]
 
+    # TODO: Revisit. Why simulate the agents 1 period here?
     for agent in agents:
         agent.track_vars += ['pLvl','mNrm','Share','Risky']
 
@@ -49,86 +59,16 @@ def create_agents(agent_classes, ap):
     return agents
 
 
-### Initializing prices
+### Initializing financial values
+
 ### These are used for the agent's starting estimations
 ### of the risky asset
-init_prices = np.array([1.0, 1.06, 0.98, 1.05])
+
+market_rate_of_return = 0.000628
+market_standard_deviation = 0.011988
 
 
-### Estimating risky asset properties
 
-
-def best_fit_slope_and_intercept(xs,ys):
-    """
-    Fits a line to the (x,y) data.
-    """
-    m = (((mean(xs)*mean(ys)) - mean(xs*ys)) /
-         ((mean(xs)*mean(xs)) - mean(xs*xs)))
-
-    b = mean(ys) - m*mean(xs)
-
-    return m, b
-
-def estimated_rate_of_return(transactions):
-    """
-    Estimates rate of return on prices
-    """
-
-    # volume adjusted average order price
-    avg_price = (transactions['TrdPrice'] * transactions['TrdQuant']).sum() \
-                / transactions['TrdQuant'].sum()
-
-    # using midpoint of first buy/sell order book prices
-    # to get the "starting price"
-    first_price = transactions['TrdPrice'].values[0]
-
-    return avg_price / first_price
-
-def estimated_std_of_return(transactions):
-    """
-    Empirical standard deviation of prices.
-    """
-
-    ## WARNING: This way of computing expected standard
-    ##          deviations from the order book makes little sense
-    ##          Should be volume-weighted based on transactions, probably.
-
-    return np.std(transactions['TrdPrice'].values)
-
-
-def risky_expectations(transactions):
-    """
-    A parameter dictionary with expected properties
-    of the risky asset based on historical prices.
-    """
-
-    risky_params = {
-        'RiskyAvg': estimated_rate_of_return(transactions),
-        'RiskyStd': estimated_std_of_return(transactions),
-    }
-
-    return risky_params
-
-def risky_actual_return(transactions):
-    """
-    Actual return on investment in risky asset in the last quarter.
-
-    Returns: (mid return, buy return, sell return)
-    For now, all these values will be the same.
-    """
-
-    first_price = transactions['TrdPrice'].values[0]
-
-    avg_price = (transactions['TrdPrice'] * transactions['TrdQuant']).sum() \
-                / transactions['TrdQuant'].sum()
-
-    avg_return = avg_price / first_price
-
-    return (
-        avg_return,
-        avg_return,
-        avg_return
-    )
 
 ### Agent updating
 
@@ -264,3 +204,80 @@ def aggregate_buy_and_sell(old_demand, new_demand):
                 sell -= dr # add the dr to the sell side
 
     return buy, sell
+
+
+### DEPRECATED
+### Estimating risky asset properties
+
+
+def best_fit_slope_and_intercept(xs,ys):
+    """
+    Fits a line to the (x,y) data.
+    """
+    m = (((mean(xs)*mean(ys)) - mean(xs*ys)) /
+         ((mean(xs)*mean(xs)) - mean(xs*xs)))
+
+    b = mean(ys) - m*mean(xs)
+
+    return m, b
+
+def estimated_rate_of_return(transactions):
+    """
+    Estimates rate of return on prices
+    """
+
+    # volume adjusted average order price
+    avg_price = (transactions['TrdPrice'] * transactions['TrdQuant']).sum() \
+                / transactions['TrdQuant'].sum()
+
+    # using midpoint of first buy/sell order book prices
+    # to get the "starting price"
+    first_price = transactions['TrdPrice'].values[0]
+
+    return avg_price / first_price
+
+def estimated_std_of_return(transactions):
+    """
+    Empirical standard deviation of prices.
+    """
+
+    ## WARNING: This way of computing expected standard
+    ##          deviations from the order book makes little sense
+    ##          Should be volume-weighted based on transactions, probably.
+
+    return np.std(transactions['TrdPrice'].values)
+
+
+def risky_expectations(transactions):
+    """
+    A parameter dictionary with expected properties
+    of the risky asset based on historical prices.
+    """
+
+    risky_params = {
+        'RiskyAvg': estimated_rate_of_return(transactions),
+        'RiskyStd': estimated_std_of_return(transactions),
+    }
+
+    return risky_params
+
+def risky_actual_return(transactions):
+    """
+    Actual return on investment in risky asset in the last quarter.
+
+    Returns: (mid return, buy return, sell return)
+    For now, all these values will be the same.
+    """
+
+    first_price = transactions['TrdPrice'].values[0]
+
+    avg_price = (transactions['TrdPrice'] * transactions['TrdQuant']).sum() \
+                / transactions['TrdQuant'].sum()
+
+    avg_return = avg_price / first_price
+
+    return (
+        avg_return,
+        avg_return,
+        avg_return
+    )

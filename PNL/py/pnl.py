@@ -24,13 +24,17 @@ import random
 LOG=None
 LM=None
 
-def run_NLsims(CFG, SEED=1):
+def run_NLsims(CFG, SEED=None, broker_buy_limit=None, broker_sell_limit=None):
+    """
+    Note: SEED is used as both random seed and filename of output.
+    """
     global LOG
     global LM
     
     tic0 = time.process_time()
     
-    SEED = random.randrange(10000000)
+    if SEED is None:
+        SEED = random.randrange(10000000)
 
     sns.set_style('white')
     sns.set_context('talk')
@@ -73,11 +77,11 @@ def run_NLsims(CFG, SEED=1):
     set_NLvar("#_LiqDem", f"{CFG['pnl']['nLiqDem']}")
     set_NLvar("#_MktMkr", f"{CFG['pnl']['nMktMkr']}")
 
-#    broker_buy_limit = broker_buy_limit if broker_buy_limit else CFG['pnl']['BkrBuy_Limit']
-    set_NLvar("BkrBuy_Limit", f"{CFG['pnl']['BkrBuy_Limit']}")
+    broker_buy_limit = str(broker_buy_limit) if broker_buy_limit else CFG['pnl']['BkrBuy_Limit']
+    set_NLvar("BkrBuy_Limit", f"{broker_buy_limit}")
 
-#    broker_sell_limit = broker_sell_limit if broker_sell_limit else CFG['pnl']['BkrSel_Limit']
-    set_NLvar("BkrSel_Limit", f"{CFG['pnl']['BkrSel_Limit']}")
+    broker_sell_limit = str(broker_sell_limit) if broker_sell_limit else CFG['pnl']['BkrSel_Limit']
+    set_NLvar("BkrSel_Limit", f"{broker_sell_limit}")
 
     set_NLvar("LiqBkr_OrderSizeMultiplier", 
               f"{CFG['pnl']['LiqBkr_OrderSizeMultiplier']}")
