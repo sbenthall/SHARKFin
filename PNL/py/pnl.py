@@ -24,15 +24,43 @@ import random
 LOG=None
 LM=None
 
-def run_NLsims(CFG, SEED=None, broker_buy_limit=None, broker_sell_limit=None):
+def logfile_name(config, seed, bbl, bsl):
+    """
+    The name of the logfile for a NetLogo simulation run.
+    """
+    logfile = config['pnl']['logfilepfx'] \
+              + f"SD{seed}BL{bbl}SL{bsl}" + '.' \
+              + config['pnl']['logfilesfx']
+    logfile = os.path.join(config['pnl']['logdir'], logfile)
+
+    return logfile
+
+def transaction_file_name(config, seed, bbl, bsl):
+    """
+    The name of the logfile for a NetLogo simulation run.
+    """
+    TRfile = config['pnl']['LMtransactpfx'] \
+             + f"SD{seed}BL{bbl}SL{bsl}" + '.' \
+             + config['pnl']['LMtransactsfx']
+    TRfile = os.path.join(config['pnl']['logdir'], TRfile)
+ 
+    return TRfile
+
+def run_NLsims(
+        CFG,
+        SEED=None,
+        broker_buy_limit=None,
+        broker_sell_limit=None,
+        use_cache = False
+):
     """
     Note: SEED is used as both random seed and filename of output.
     """
     global LOG
     global LM
-    
+
     tic0 = time.process_time()
-    
+
     if SEED is None:
         SEED = random.randrange(10000000)
 
@@ -44,11 +72,26 @@ def run_NLsims(CFG, SEED=None, broker_buy_limit=None, broker_sell_limit=None):
 
     # Set up logging
     sid = f"{SEED}"
+    broker_buy_limit = str(broker_buy_limit) \
+                       if broker_buy_limit is not None \
+                          else CFG['pnl']['BkrBuy_Limit']
+    broker_sell_limit = str(broker_sell_limit) \
+                        if broker_sell_limit is not None \
+                           else CFG['pnl']['BkrSel_Limit']
+
+    logfile = logfile_name(
+        CFG, SEED, broker_buy_limit, broker_sell_limit
+    )
+
+    if use_cache and os.path.exists(logfile):
+        print(f"Output for S:{SEED},BL:{broker_buy_limit},SL:{broker_sell_limit} already exists.")
+        print("Will use cache.")
+        return
+
     #sid = f"{CFG['pnl']['nLiqSup']}_{CFG['pnl']['nMktMkr']}"
     LOG = logging.getLogger(sid)
     LOG.setLevel(CFG['pnl']['loglevel'])
-    logfile = CFG['pnl']['logfilepfx']+sid+'.'+CFG['pnl']['logfilesfx']
-    logfile = os.path.join(CFG['pnl']['logdir'], logfile)
+
     log_fh = logging.FileHandler(logfile, mode='w')
     log_fh.setLevel(CFG['pnl']['loglevel'])
     log_fh.setFormatter(logging.Formatter(CFG['pnl']['logformat']))
@@ -77,10 +120,7 @@ def run_NLsims(CFG, SEED=None, broker_buy_limit=None, broker_sell_limit=None):
     set_NLvar("#_LiqDem", f"{CFG['pnl']['nLiqDem']}")
     set_NLvar("#_MktMkr", f"{CFG['pnl']['nMktMkr']}")
 
-    broker_buy_limit = str(broker_buy_limit) if broker_buy_limit else CFG['pnl']['BkrBuy_Limit']
     set_NLvar("BkrBuy_Limit", f"{broker_buy_limit}")
-
-    broker_sell_limit = str(broker_sell_limit) if broker_sell_limit else CFG['pnl']['BkrSel_Limit']
     set_NLvar("BkrSel_Limit", f"{broker_sell_limit}")
 
     set_NLvar("LiqBkr_OrderSizeMultiplier", 
@@ -116,8 +156,10 @@ def run_NLsims(CFG, SEED=None, broker_buy_limit=None, broker_sell_limit=None):
 #    AOcsvw.writerow(["Tick","OrderID","OrderTime","OrderPrice","OrderTraderID",
 #                     "OrderQuantity","OrderBA","TraderWhoType"])
 
-    TRfile = CFG['pnl']['LMtransactpfx']+sid+'.'+CFG['pnl']['LMtransactsfx']
-    TRfile = os.path.join(CFG['pnl']['logdir'], TRfile)
+    TRfile = transaction_file_name(
+        CFG, SEED, broker_buy_limit, broker_sell_limit
+    )
+
     LOG.warning('Opening transaction log:'+TRfile)
     TRcsvf = open(TRfile, mode='w')
     TRcsvw = csv.writer(TRcsvf, delimiter='\t')
