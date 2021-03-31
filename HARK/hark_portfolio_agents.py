@@ -48,10 +48,10 @@ def create_agents(agent_classes, agent_parameters):
         agent.track_vars += ['pLvl','mNrm','Share','Risky']
 
         agent.AdjustPrb = 1.0
-        agent.T_sim = 1
+        agent.T_sim = 1000 # arbitrary!
         agent.solve()
         agent.initialize_sim()
-        agent.simulate()
+        agent.simulate(sim_periods = 1)
 
         #change it back
         # agent.AdjustPrb = 0.0
