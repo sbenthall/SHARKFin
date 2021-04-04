@@ -1,5 +1,7 @@
 import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 import HARK.ConsumptionSaving.ConsIndShockModel as cism
+from HARK.core import distribute_params
+from HARK.distribution import Uniform
 import numpy as np
 from statistics import mean
 
@@ -42,6 +44,33 @@ def create_agents(agent_classes, agent_parameters):
         for ac
         in agent_classes
     ]
+
+    # This is hacky. Should streamline this in HARK.
+    agents_distributed = [
+        distribute_params(
+            agent,
+            'DiscFac',
+            5,
+            Uniform(bot=0.936, top=0.978)
+        ) 
+        for agent in agents
+    ]
+
+    # distribute the discount factors/time preference/beta
+    # from CSTW "Distribution of Wealth"
+    agents = [
+        agent
+        for agent_dist in agents_distributed
+        for agent in agent_dist
+    ]
+
+
+    # should be unecessary but a hack to cover a HARK bug
+    for agent in agents:
+        agent.assign_parameters(
+            DiscFac = agent.DiscFac,
+            AgentCount = agent.AgentCount
+        )
 
     # TODO: Revisit. Why simulate the agents 1 period here?
     for agent in agents:
