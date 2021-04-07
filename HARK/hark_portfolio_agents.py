@@ -74,13 +74,13 @@ def create_agents(agent_classes, agent_parameters):
 
     # TODO: Revisit. Why simulate the agents 1 period here?
     for agent in agents:
-        agent.track_vars += ['pLvl','mNrm','Share','Risky']
+        agent.track_vars += ['pLvl','mNrm','cNrm','Share','Risky']
 
-        agent.AdjustPrb = 1.0
+        agent.assign_parameters(AdjustPrb = 1.0)
         agent.T_sim = 1000 # arbitrary!
         agent.solve()
         agent.initialize_sim()
-        agent.simulate(sim_periods = 1)
+        #agent.simulate(sim_periods = 1)
 
         #change it back
         # agent.AdjustPrb = 0.0
