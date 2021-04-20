@@ -79,7 +79,19 @@ def create_agents(agent_classes, agent_parameters):
         agent.assign_parameters(AdjustPrb = 1.0)
         agent.T_sim = 1000 # arbitrary!
         agent.solve()
+
+        ### make and equivalent PF model and solve it
+        ### to get the steady-state wealth
+
+        pf_clone = cism.PerfForesightConsumerType(**agent.parameters)
+        pf_clone.solve()
+
         agent.initialize_sim()
+
+        # set normalize assets to steady state market resources.
+        agent.state_now['aNrm'][:] = pf_clone.solution[0].mNrmStE
+        agent.state_now['aLvl'] = agent.state_now['aNrm'] * agent.state_now['pLvl']
+
         #agent.simulate(sim_periods = 1)
 
         #change it back
