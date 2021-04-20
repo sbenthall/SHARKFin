@@ -83,7 +83,11 @@ def run_NLsims(
         CFG, SEED, broker_buy_limit, broker_sell_limit
     )
 
-    if use_cache and os.path.exists(logfile):
+    TRfile = transaction_file_name(
+        CFG, SEED, broker_buy_limit, broker_sell_limit
+    )
+
+    if use_cache and os.path.exists(TRfile):
         print(f"Output for S:{SEED},BL:{broker_buy_limit},SL:{broker_sell_limit} already exists.")
         print("Will use cache.")
         return
@@ -155,10 +159,6 @@ def run_NLsims(
 #    AOcsvw = csv.writer(AOcsvf, delimiter='\t')
 #    AOcsvw.writerow(["Tick","OrderID","OrderTime","OrderPrice","OrderTraderID",
 #                     "OrderQuantity","OrderBA","TraderWhoType"])
-
-    TRfile = transaction_file_name(
-        CFG, SEED, broker_buy_limit, broker_sell_limit
-    )
 
     LOG.warning('Opening transaction log:'+TRfile)
     TRcsvf = open(TRfile, mode='w')
