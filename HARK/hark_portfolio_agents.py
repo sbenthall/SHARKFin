@@ -84,6 +84,7 @@ def create_agents(agent_classes, agent_parameters):
         ### to get the steady-state wealth
 
         pf_clone = cism.PerfForesightConsumerType(**agent.parameters)
+        pf_clone.assign_parameters(Rfree = pf_clone.parameters['RiskyAvg'])
         pf_clone.solve()
 
         agent.initialize_sim()
