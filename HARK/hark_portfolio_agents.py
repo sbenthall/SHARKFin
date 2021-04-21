@@ -89,7 +89,8 @@ def create_agents(agent_classes, agent_parameters):
         agent.initialize_sim()
 
         # set normalize assets to steady state market resources.
-        agent.state_now['aNrm'][:] = pf_clone.solution[0].mNrmStE
+        agent.state_now['mNrm'][:] = pf_clone.solution[0].mNrmStE
+        agent.state_now['aNrm'] = agent.state_now['mNrm'] - agent.solution[0].cFuncAdj(agent.state_now['mNrm'])
         agent.state_now['aLvl'] = agent.state_now['aNrm'] * agent.state_now['pLvl']
 
         #agent.simulate(sim_periods = 1)
