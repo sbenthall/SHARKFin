@@ -2,8 +2,24 @@ import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 import HARK.ConsumptionSaving.ConsIndShockModel as cism
 from HARK.core import distribute_params
 from HARK.distribution import Uniform
+import math
 import numpy as np
+import pandas as pd
 from statistics import mean
+
+
+import sys
+
+sys.path.append('.')
+## TODO configuration file for this value!
+sys.path.append('../PNL/py')
+
+import util as UTIL
+import pnl as pnl
+
+import logging
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
 ### Initializing agents
@@ -109,3 +125,113 @@ def create_agents(agent_classes, agent_parameters):
 
 market_rate_of_return = 0.000628
 market_standard_deviation = 0.011988
+
+
+
+######
+#   Math Utilities
+######
+
+def ror_quarterly(ror, n_q):
+    """
+    Convert a daily rate of return to a rate for (n_q) days.
+    """
+    return pow(1 + ror, n_q) - 1
+
+def sig_quarterly(std, n_q):
+    """
+    Convert a daily standard deviation to a standard deviation for (n_q) days.
+
+    This formula only holds for special cases (see paper by Andrew Lo), 
+    but since we are generating the data we meet this special case.
+    """
+    return math.sqrt(n_q) * std
+
+def lognormal_moments_to_normal(mu_x, std_x):
+    """
+    Given a mean and standard deviation of a lognormal distribution,
+    return the corresponding mu and sigma for the distribution.
+    (That is, the mean and standard deviation of the "underlying"
+    normal distribution.)
+    """
+    mu = np.log(mu_x ** 2 / math.sqrt(mu_x ** 2 + std_x ** 2))
+
+    sigma = math.sqrt(np.log(1 + std_x ** 2 / mu_x ** 2))
+
+    return mu, sigma
+
+def combine_lognormal_rates(ror1, std1, ror2, std2):
+    """
+    Given two mean rates of return and standard deviations
+    of two lognormal processes (ror1, std1, ror2, std2),
+    return a third ror/sigma pair corresponding to the
+    moments of the multiplication of the two original processes.
+    """
+    mean1 = 1 + ror1
+    mean2 = 1 + ror2
+
+    mu1, sigma1 = lognormal_moments_to_normal(mean1, std1)
+    mu2, sigma2 = lognormal_moments_to_normal(mean2, std2)
+
+    mu3 = mu1 + mu2
+    var3 = sigma1 **2 + sigma2 ** 2
+
+    ror3 = math.exp(mu3 + var3 / 2) - 1
+    sigma3 = math.sqrt((math.exp(var3) - 1) * math.exp(2 * mu3 + var3))
+
+    return ror3, sigma3
+
+
+######
+#   PNL Interface methods
+######
+
+import os
+
+def run_market(config, buy_sell, seed = None):    
+    """
+    Runs the NetLogo market simulation with a given
+    configuration (config), a tuple with the quantities
+    for the brokers to buy/sell (buy_sell), and
+    optionally a random seed (seed)
+    """
+    pnl.run_NLsims(
+        config,
+        broker_buy_limit = buy_sell[0],
+        broker_sell_limit = buy_sell[1],
+        SEED = seed,
+        use_cache = True
+    )
+
+def get_transactions(config, seed = 0, buy_sell = (0,0)):
+    """
+    Given a PNL configuration (config), a random seed (seed)
+    and a tuple of buy/sell (buy_sell), look up the transactions
+    from the associated output file and return it as a pandas DataFrame.
+    """
+    logfile = pnl.transaction_file_name(config, seed, buy_sell[0], buy_sell[1])
+    
+    # use run_market() first to create logs
+    transactions = pd.read_csv(
+        logfile,
+        delimiter='\t'
+    )
+    return transactions
+
+def get_last_simulation_price(config, seed = 0, buy_sell = (0,0)):
+    """
+    Get the last price from the simulation.
+    Returns None if the transaction file was empty for some reason.
+
+    TODO: Better docstring
+    """
+
+    transactions = get_transactions(config, seed=seed, buy_sell = buy_sell)
+    prices = transactions['TrdPrice']
+
+    if len(prices.index) == 0:
+        ## BUG FIX HACK
+        print("ERROR in PNL script: zero transactions. Reporting no change")
+        return None
+
+    return prices[prices.index.values[-1]]
