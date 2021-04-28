@@ -144,8 +144,9 @@ def init_simulations(agents):
 
         if not hasattr(pf_clone.solution[0],'mNrmStE'):
             # See https://github.com/econ-ark/HARK/issues/1005
-            print("Agent has no steady state normalized market resources. Using 1.0 as stopgap.")
-            pf_clone.solution[0].mNrmStE = 1.0 # A hack.
+            x = 0.7
+            print(f"Agent has no steady state normalized market resources. Using {x} as stopgap.")
+            pf_clone.solution[0].mNrmStE = x # A hack.
 
         # set normalize assets to steady state market resources.
         agent.state_now['mNrm'][:] = pf_clone.solution[0].mNrmStE
