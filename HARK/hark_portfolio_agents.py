@@ -34,7 +34,12 @@ def update_return(dict1, dict2):
 
     return dict3
 
-def create_agents(agent_classes, agent_parameters):
+import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
+import HARK.ConsumptionSaving.ConsIndShockModel as cism
+from HARK.core import distribute_params
+from HARK.distribution import Uniform
+
+def initialize_agents(agent_classes, agent_parameters):
     """
     Initialize the agent objects according to standard
     parameterization agent_parameters and agent_classes definition.
@@ -60,7 +65,26 @@ def create_agents(agent_classes, agent_parameters):
         for ac
         in agent_classes
     ]
+    
+    return agents
 
+def distribute_beta(agents):
+    """
+    Distribue the discount rate among a set of agents according
+    the distribution from Carroll et al., "Distribution of Wealth"
+    paper.
+
+    Parameters
+    ----------
+
+    agents: list of AgentType
+        A list of AgentType
+
+    Returns
+    -------
+        agents: A list of AgentType
+    """
+ 
     # This is hacky. Should streamline this in HARK.
     agents_distributed = [
         distribute_params(
@@ -71,24 +95,37 @@ def create_agents(agent_classes, agent_parameters):
         ) 
         for agent in agents
     ]
-
-    # distribute the discount factors/time preference/beta
-    # from CSTW "Distribution of Wealth"
+    
     agents = [
         agent
         for agent_dist in agents_distributed
         for agent in agent_dist
     ]
-
-
+    
     # should be unecessary but a hack to cover a HARK bug
+    # https://github.com/econ-ark/HARK/issues/994
     for agent in agents:
         agent.assign_parameters(
             DiscFac = agent.DiscFac,
             AgentCount = agent.AgentCount
         )
+    return agents
 
-    # TODO: Revisit. Why simulate the agents 1 period here?
+def create_distributed_agents(agent_classes, agent_parameters):
+    """
+    Creates agents of the given classes with stable parameters.
+    Will overwrite the DiscFac with a distribution from CSTW_MPC.
+    """
+    
+    agents = initialize_agents(agent_classes, agent_parameters)
+    agents = distribute_beta(agents)
+
+    return agents
+
+def init_simulations(agents):
+    """
+    Sets up the agents with their state for the state of the simulation
+    """
     for agent in agents:
         agent.track_vars += ['pLvl','mNrm','cNrm','Share','Risky']
 
@@ -107,7 +144,7 @@ def create_agents(agent_classes, agent_parameters):
 
         if not hasattr(pf_clone.solution[0],'mNrmStE'):
             # See https://github.com/econ-ark/HARK/issues/1005
-            print("Agent has no stead say normalized market resources. Using 1.0 as stopgap.")
+            print("Agent has no steady state normalized market resources. Using 1.0 as stopgap.")
             pf_clone.solution[0].mNrmStE = 1.0 # A hack.
 
         # set normalize assets to steady state market resources.
@@ -115,12 +152,8 @@ def create_agents(agent_classes, agent_parameters):
         agent.state_now['aNrm'] = agent.state_now['mNrm'] - agent.solution[0].cFuncAdj(agent.state_now['mNrm'])
         agent.state_now['aLvl'] = agent.state_now['aNrm'] * agent.state_now['pLvl']
 
-        #agent.simulate(sim_periods = 1)
-
-        #change it back
-        # agent.AdjustPrb = 0.0
-
     return agents
+
 
 
 ### Initializing financial values
