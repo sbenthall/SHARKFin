@@ -317,6 +317,12 @@ class FinanceModel():
 
         print(f'daily expectations: {expected_ror},{expected_std}')
 
+    def rap(self):
+        """
+        Returns the current risky asset price.
+        """
+        return self.prices[-1]
+
     def risky_expectations(self):
         """
         Return quarterly expectations for the risky asset.
@@ -381,7 +387,7 @@ class MarketPNL():
             config_file = config_file,
             config_local_file = config_local_file
         )
-    
+
     def run_market(self, seed = 0, buy_sell = 0):
         """
         Runs the NetLogo market simulation with a given
