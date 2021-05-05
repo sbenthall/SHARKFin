@@ -249,10 +249,10 @@ class FinanceModel():
     # Data structures. These will change over time.
     starting_price = 100
     prices = [starting_price]
-    ror_list = []
+    ror_list = None
 
-    expected_ror_list = []
-    expected_std_list = []
+    expected_ror_list = None
+    expected_std_list = None
 
     def add_ror(self, ror):
         self.ror_list.append(ror)
@@ -267,7 +267,10 @@ class FinanceModel():
 
         if dividend_std:
             self.dividend_std = dividend_std
-        pass
+
+        self.ror_list = []
+        self.expected_ror_list = []
+        self.expected_std_list = []
 
     def calculate_risky_expectations(self):
         """
@@ -289,8 +292,6 @@ class FinanceModel():
         w_0 = S_t
         w_t = [(1 - S_t) * math.exp(self.a * (t+1)) / D_t for t in range(len(self.ror_list))]
 
-        print(f"D_t: {D_t}\nS_t / w_0  : {S_t}") # "\nror_list: {ror_list}\n w_t: {w_t}")
-
         expected_ror = w_0 * self.sp500_ror + sum(
             [w_ror[0] * w_ror[1]
              for w_ror
@@ -303,8 +304,6 @@ class FinanceModel():
                     for w_ror_er
                     in zip(w_t, self.ror_list)]))
         self.expected_std_list.append(expected_std)
-
-        print(f'daily expectations: {expected_ror},{expected_std}')
 
     def rap(self):
         """
@@ -319,8 +318,14 @@ class FinanceModel():
         including both capital gains and dividends.
         """
         # expected capital gains quarterly
-        ex_cg_q_ror = ror_quarterly(self.expected_ror_list[-1], self.days_per_quarter)
-        ex_cg_q_std = sig_quarterly(self.expected_std_list[-1], self.days_per_quarter)
+        ex_cg_q_ror = ror_quarterly(
+            self.expected_ror_list[-1],
+            self.days_per_quarter
+        )
+        ex_cg_q_std = sig_quarterly(
+            self.expected_std_list[-1],
+            self.days_per_quarter
+        )
 
         # factor in dividend:
         cg_w_div_ror, cg_w_div_std = combine_lognormal_rates(
@@ -472,3 +477,57 @@ class MarketPNL():
 
         return ror
 
+
+####
+#   Broker
+####
+
+class Broker():
+    """
+    A share Broker. Collects orders from agents, then trades on the market
+    and reports a rate of return.
+
+    Parameters
+    ----------
+    market - a MarketPNL instance
+    """
+
+    buy_limit = 0
+    sell_limit = 0
+
+    buy_sell_history = None
+
+    market = None
+
+    def __init__(self, market):
+        self.market = market
+        self.buy_sell_history = []
+
+    def transact(self, delta_shares):
+        """
+        Input: an array of share deltas. positive for buy, negative for sell.
+        """
+        self.buy_limit += delta_shares[delta_shares > 0].sum()
+        self.sell_limit += -delta_shares[delta_shares < 0].sum()
+
+    def trade(self, seed = None):
+        """
+        Broker executes the trade on the financial market and then updates
+        their record of the current asset price.
+
+        Input: (optional) random seed for the simulation
+        Output: Rate of return of the asset value that day.
+        """
+
+        # use integral shares here.
+        buy_sell = (int(self.buy_limit), int(self.sell_limit))
+        self.buy_sell_history.append(buy_sell)
+        print("Buy/Sell Limit: " + str(buy_sell))
+
+        self.market.run_market(buy_sell = buy_sell, seed = seed)
+
+        # clear the local limits
+        self.buy_limit = 0
+        self.sell_limit = 0
+
+        return buy_sell, self.market.daily_rate_of_return()
