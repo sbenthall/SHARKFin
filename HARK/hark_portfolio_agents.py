@@ -92,16 +92,16 @@ def distribute_beta(agents):
             'DiscFac',
             5,
             Uniform(bot=0.936, top=0.978)
-        ) 
+        )
         for agent in agents
     ]
-    
+
     agents = [
         agent
         for agent_dist in agents_distributed
         for agent in agent_dist
     ]
-    
+
     # should be unecessary but a hack to cover a HARK bug
     # https://github.com/econ-ark/HARK/issues/994
     for agent in agents:
@@ -116,7 +116,7 @@ def create_distributed_agents(agent_classes, agent_parameters):
     Creates agents of the given classes with stable parameters.
     Will overwrite the DiscFac with a distribution from CSTW_MPC.
     """
-    
+
     agents = initialize_agents(agent_classes, agent_parameters)
     agents = distribute_beta(agents)
 
@@ -154,17 +154,6 @@ def init_simulations(agents):
         agent.state_now['aLvl'] = agent.state_now['aNrm'] * agent.state_now['pLvl']
 
     return agents
-
-
-
-### Initializing financial values
-
-### These are used for the agent's starting estimations
-### of the risky asset
-
-market_rate_of_return = 0.000628
-market_standard_deviation = 0.011988
-
 
 
 ######
@@ -232,17 +221,17 @@ class FinanceModel():
       - the capital gains expectations function
       - the dividend
       - the risky asset expectations
-      
+
     Contains data structures for tracking ROR and STD over time.
     """
     # Empirical data
     sp500_ror = 0.000628
     sp500_std = 0.011988
-    
+
     # Simulation parameter
     days_per_quarter = 60
-    
-    # Expectation calculation parameters    
+
+    # Expectation calculation parameters
     p1 = 0.1
     delta_t1 = 30
 
@@ -301,7 +290,7 @@ class FinanceModel():
         w_t = [(1 - S_t) * math.exp(self.a * (t+1)) / D_t for t in range(len(self.ror_list))]
 
         print(f"D_t: {D_t}\nS_t / w_0  : {S_t}") # "\nror_list: {ror_list}\n w_t: {w_t}")
-    
+
         expected_ror = w_0 * self.sp500_ror + sum(
             [w_ror[0] * w_ror[1]
              for w_ror
@@ -365,8 +354,20 @@ class FinanceModel():
 ######
 
 class MarketPNL():
+    """
+    A wrapper around the Market PNL model with methods for getting
+    data from recent runs.
+
+    Parameters
+    ----------
+    config_file
+    config_local_file
+
+    """
+    # Properties of the PNL market model
     netlogo_ror = -0.00052125
     netlogo_std =  0.0068
+
     simulation_price_scale = 0.25
     default_sim_price = 400
 
@@ -374,9 +375,13 @@ class MarketPNL():
     sp500_ror = 0.000628
     sp500_std = 0.011988
 
-    #
+    # Storing the last market arguments used for easy access to most
+    # recent data
     last_buy_sell = None
     last_seed = None
+
+    # config object for PNL
+    config = None
 
     def __init__(
         self,
