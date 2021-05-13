@@ -2,9 +2,12 @@ import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 import HARK.ConsumptionSaving.ConsIndShockModel as cism
 from HARK.core import distribute_params
 from HARK.distribution import Uniform
+import itertools
 import math
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import random
 from statistics import mean
 
 
@@ -79,70 +82,6 @@ def distribute(agents, dist_params):
         # https://github.com/econ-ark/HARK/issues/994
         for agent in agents:
             agent.assign_parameters(**{param : getattr(agent, param)})
-
-    return agents
-
-def create_distributed_agents(agent_parameters, dist_params, n_per_class):
-    """
-    Creates agents of the given classes with stable parameters.
-    Will overwrite the DiscFac with a distribution from CSTW_MPC.
-
-    Parameters
-    ----------
-    agent_parameters: dict
-        Parameters shared by all agents (unless overwritten).
-
-    dist_params: dict of dicts
-        Parameters to distribute agents over, with discrete Uniform arguments
-
-    n_per_class: int
-        number of agents to instantiate per class
-    """
-    num_classes = math.prod([dist_params[dp]['n'] for dp in dist_params])
-    agent_batches = [{'AgentCount' : num_classes}] * n_per_class
-
-    agents = [
-        cpm.PortfolioConsumerType(
-            **update_return(agent_parameters, ac)
-        )
-        for ac
-        in agent_batches
-    ]
-
-    agents = distribute(agents, dist_params)
-
-    return agents
-
-def init_simulations(agents):
-    """
-    Sets up the agents with their state for the state of the simulation
-    """
-    for agent in agents:
-        agent.track_vars += ['pLvl','mNrm','cNrm','Share','Risky']
-
-        agent.assign_parameters(AdjustPrb = 1.0)
-        agent.T_sim = 1000 # arbitrary!
-        agent.solve()
-
-        ### TODO: make and equivalent PF model and solve it
-        ### to get the steady-state wealth
-        ### This code block is not working.
-        #pf_clone = cism.PerfForesightConsumerType(**agent.parameters)
-        #pf_clone.assign_parameters(Rfree = pf_clone.parameters['RiskyAvg'])
-        #pf_clone.solve()
-        #
-        #if not hasattr(pf_clone.solution[0],'mNrmStE'):
-        #    # See https://github.com/econ-ark/HARK/issues/1005
-        #    x = 0.7
-        #    print(f"Agent has no steady state normalized market resources. Using {x} as stopgap.")
-        #    pf_clone.solution[0].mNrmStE = x # A hack.
-
-        agent.initialize_sim()
-
-        # set normalize assets to steady state market resources.
-        agent.state_now['mNrm'][:] = 1.0 #pf_clone.solution[0].mNrmStE
-        agent.state_now['aNrm'] = agent.state_now['mNrm'] - agent.solution[0].cFuncAdj(agent.state_now['mNrm'])
-        agent.state_now['aLvl'] = agent.state_now['aNrm'] * agent.state_now['pLvl']
 
     return agents
 
@@ -522,3 +461,347 @@ class Broker():
         self.sell_limit = 0
 
         return buy_sell, self.market.daily_rate_of_return()
+
+
+#####
+#    AttentionSimulation class
+#####
+
+class AttentionSimulation():
+    """
+    Encapsulates the "Oversight Code" functions of the experiment.
+    Connects the Agent population model with a Broker, a Market simulation,
+    and a FinanceModel of expected share prices.
+
+    Parameters
+    ----------
+
+    agents: [HARK.AgentType]
+
+    fm: FinanceModel
+
+    q: int - number of quarters
+
+    r: int - runs per quarter
+
+    a: float - attention rate (between 0 and 1)
+
+    """
+    agents = None
+    broker = None
+    dollars_per_hark_money_unit = 1500
+
+    # Number of days in a quarter / An empirical value based on trading calendars.
+    days_per_quarter = 60
+
+    # A FinanceModel
+    fm = None
+
+    # Simulation parameters
+    quarters_per_simulation = None # Number of quarters to run total
+
+    # Number of market runs to do per quarter
+    # Valid values: 1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60...
+    runs_per_quarter = None
+
+    # For John's prefered condition: days per quarter = runs per quarter
+    # Best if an integer.
+    days_per_run = None
+
+    ## upping this to make more agents engaged in trade
+    attention_rate = None
+
+    # for tracking history of the simulation
+    history = {}
+
+    # dividend_ror -> on financial model
+    # dividend_std -> on financial model; on MarketPNL
+
+    # sp500_ror = 0.000628 -> on financial model; on MarketPNL
+    # sp500_std = 0.011988 -> on financial model; on MarketPNL
+
+    def __init__(self, pop, fm, q = 1, r = None, a = None):
+        self.agents = pop.agents
+        self.fm = fm
+
+        self.quarters_per_simulation = q
+
+        if r is not None:
+            self.runs_per_quarter = r
+        else:
+            self.runs_per_quarter = self.days_per_quarter
+        self.days_per_run = self.days_per_quarter / self.runs_per_quarter
+
+        # TODO: Make this more variable.
+        if a is not None:
+            self.attention_rate = a
+        else:
+            self.attention_rate = 1 / self.runs_per_quarter
+
+        # Create the Market wrapper
+        market = MarketPNL()
+        self.broker = Broker(market)
+
+        self.history = {}
+        self.history['buy_sell'] = []
+        self.history['owned_shares'] = []
+        self.history['total_assets'] = []
+
+    def attend(self, agent):
+        """
+        Cause the agent to attend to the financial model.
+
+        This will update their expectations of the risky asset.
+        They will then adjust their owned risky asset shares to meet their
+        target.
+
+        Return the delta of risky asset shares ordered through the brokers.
+
+        NOTE: This MUTATES the agents with their new target share amounts.
+        """
+        # Note: this mutates the underlying agent
+        agent.assign_parameters(**self.fm.risky_expectations())
+
+        d_shares = self.compute_share_demand(agent)
+
+        delta_shares = d_shares - agent.shares
+
+        # NOTE: This mutates the agent
+        agent.shares = d_shares
+        return delta_shares
+
+    def compute_share_demand(self, agent):
+        """
+        Computes the number of shares an agent _wants_ to own.
+
+        This involves:
+          - Computing a solution function based on their
+            expectations and personal properties
+          - Using the solution and the agent's current normalized
+            assets to compute a share number
+        """
+        agent.assign_parameters(AdjustPrb = 1.0)
+        agent.solve()
+        asset_normalized = agent.state_now['aNrm']
+
+        # ShareFunc takes normalized market assets as argument
+        risky_share = agent.solution[0].ShareFuncAdj(
+            asset_normalized
+        )
+
+        # denormalize the risky share. See https://github.com/econ-ark/HARK/issues/986
+        risky_asset_wealth = risky_share \
+                            * asset_normalized \
+                            * agent.state_now['pLvl'] \
+                            * self.dollars_per_hark_money_unit 
+
+        shares = risky_asset_wealth / self.fm.rap()
+
+        if (np.isnan(shares)).any():
+            print("ERROR: Agent has nan shares")
+
+        return shares
+
+    def data(self):
+        """
+        Returns a Pandas DataFrame of the data from the simulation run.
+        """
+        data = pd.DataFrame.from_dict({
+            't' : range(len(self.fm.prices)),
+            'prices' : self.fm.prices,
+            'buy' : [None] + [bs[0] for bs in self.broker.buy_sell_history],
+            'sell' : [None]  + [bs[1] for bs in self.broker.buy_sell_history],
+            'owned' : self.history['owned_shares'],
+            'total_assets' : self.history['total_assets'],
+            'ror' : [None] + self.fm.ror_list,
+            'expected_ror' : self.fm.expected_ror_list,
+            'expected_std' : self.fm.expected_std_list,
+        })
+
+        return data
+
+    def macro_update(self, agent):
+        """
+        Input: an agent, a FinancialModel, and a Broker
+
+        Simulates one "macro" period for the agent (quarterly by assumption).
+        For the purposes of the simulation, award the agent dividend income
+        but not capital gains on the risky asset.
+        """
+
+        #agent.assign_parameters(AdjustPrb = 0.0)
+        agent.solve()
+
+        ## For risky asset gains in the simulated quarter,
+        ## use only the dividend.
+        true_risky_expectations = {
+            "RiskyAvg" : agent.parameters['RiskyAvg'],
+            "RiskyStd" : agent.parameters['RiskyStd']   
+        }
+
+        dividend_risky_params = {
+            "RiskyAvg" : 1 + self.fm.dividend_ror,
+            "RiskyStd" : self.fm.dividend_std
+        }
+
+        agent.assign_parameters(**dividend_risky_params)
+
+        agent.simulate(sim_periods=1)
+
+        ## put back the expectations that include capital gains now
+        agent.assign_parameters(**true_risky_expectations)
+
+        # Selling off shares if necessary to
+        # finance this period's consumption
+        asset_level_in_shares = agent.state_now['aLvl'] \
+            * self.dollars_per_hark_money_unit / self.fm.rap()
+
+        delta = asset_level_in_shares - agent.shares
+        delta[delta > 0] = 0
+
+        agent.shares = agent.shares + delta
+        self.broker.transact(delta)
+
+    def report(self):
+        data = self.data()
+
+        fig, ax = plt.subplots(
+            4, 1,
+            sharex='col',
+            #sharey='col',
+            figsize=(12,16),
+        )
+
+        ax[0].plot(data['total_assets'], alpha=0.5, label='total assets')
+        ax[0].plot([p * o for (p,o) in zip(data['prices'], data['owned'])], alpha=0.5, label='owned share value')
+        ax[0].plot([100 * o for (p,o) in zip(data['prices'], data['owned'])], alpha=0.5, label='owned share quantity * p_0')
+        ax[0].legend()
+
+        ax[1].plot(data['buy'], alpha=0.5, label='buy')
+        ax[1].plot(data['sell'], alpha=0.5, label='sell')
+        ax[1].legend()
+
+        ax[2].plot(data['ror'], alpha=0.5, label='ror')
+        ax[2].plot(data['expected_ror'], alpha=0.5, label='expected ror')
+        ax[2].legend()
+
+        ax[3].plot(data['prices'], alpha=0.5, label='prices')
+        ax[3].legend()
+
+        ax[0].set_title("Simulation History")
+        ax[0].set_ylabel("Dollars")
+        ax[1].set_xlabel("t")
+
+        plt.show()
+
+    def simulate(self):
+        """
+        Workhorse method that runs the simulation.
+        """
+        seeds = itertools.cycle([2,3,6,0,1,4,5])
+
+        # Initialize share ownership for agents
+        for agent in self.agents:
+            agent.shares = self.compute_share_demand(agent)
+
+        self.track()
+
+        # Main loop
+        for quarter in range(self.quarters_per_simulation):
+            print(f"Q-{quarter}")
+    
+            for agent in self.agents:
+                self.macro_update(agent)
+
+            day = 0
+
+            for run in range(self.runs_per_quarter):
+                print(f"Q-{quarter}:R-{run}")
+
+                # Set to a number for a fixed seed, or None to rotate
+                seed = next(seeds)
+
+                for agent in self.agents:
+                    if random.random() < self.attention_rate:
+                        self.broker.transact(self.attend(agent))
+
+                buy_sell, ror = self.broker.trade(seed)
+                print("ror: " + str(ror))
+
+                new_run = True
+
+                for new_day in range(int(self.days_per_run)):
+                    if new_run:
+                        new_run = False
+                    else:
+                        # sloppy
+                        # problem is that this should really be nan, nan
+                        # putting 0,0 here is a stopgap to make plotting code simpler
+                        self.broker.buy_sell_history.append((0,0))
+
+                    day = day + 1
+                    print(f"Q-{quarter}:D-{day}")
+
+                    self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
+
+                    self.track()
+
+                    # combine these steps?
+                    risky_asset_price = self.fm.add_ror(ror)
+                    self.fm.calculate_risky_expectations()
+
+    def track(self):
+        """
+        Tracks the current state of agent's total assets and owned shares
+        """
+        tal = sum(
+                [agent.state_now['aLvl'].sum()
+                 for agent
+                 in self.agents]
+                ) * self.dollars_per_hark_money_unit
+        os = sum([sum(agent.shares) for agent in self.agents])
+
+        self.history['owned_shares'].append(os)
+        self.history['total_assets'].append(tal)
+
+    def update_agent_wealth_capital_gains(self, old_share_price, ror):
+        """
+        For all agents,
+        given the old share price
+        and a rate of return
+
+        update the agent's wealth level to adjust
+        for the most recent round of capital gains.
+        """
+
+        new_share_price = old_share_price * (1 + ror)
+
+        for agent in self.agents:
+            old_raw = agent.shares * old_share_price
+            new_raw = agent.shares * new_share_price
+
+            delta_aNrm = (new_raw - old_raw) / \
+                (self.dollars_per_hark_money_unit * agent.state_now['pLvl'])
+
+            # update normalized market assets
+            # if agent.state_now['aNrm'] < delta_aNrm:
+            #     breakpoint()
+
+            agent.state_now['aNrm'] = agent.state_now['aNrm'] + delta_aNrm
+
+            if (agent.state_now['aNrm'] < 0).any():
+                print(f"ERROR: Agent with CRRA {agent.parameters['CRRA']} has negative aNrm after capital gains update.")
+                print("Setting normalize assets and shares to 0.")
+                agent.state_now['aNrm'][(agent.state_now['aNrm'] < 0)] = 0.0
+                ## TODO: This change in shares needs to be registered with the Broker.
+                agent.shares[(agent.state_now['aNrm'] == 0)] = 0
+
+            # update non-normalized market assets
+            agent.state_now['aLvl'] = agent.state_now['aNrm']  * agent.state_now['pLvl']
+
+    def ror_volatility(self):
+        """
+        Returns the volatility of the rate of return.
+        Must be run after a simulation.
+        """
+        return self.data()['ror'].dropna().std()
