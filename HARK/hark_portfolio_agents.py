@@ -34,41 +34,7 @@ def update_return(dict1, dict2):
 
     return dict3
 
-import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
-import HARK.ConsumptionSaving.ConsIndShockModel as cism
-from HARK.core import distribute_params
-from HARK.distribution import Uniform
-
-def initialize_agents(agent_classes, agent_parameters):
-    """
-    Initialize the agent objects according to standard
-    parameterization agent_parameters and agent_classes definition.
-
-    Parameters
-    ----------
-
-    agent_classes: list of dicts
-        Parameters for each HARK AgentType
-        # TODO: Rename, conflict with Python 'class' term
-
-    agent_parameters: dict
-        Parameters shared by all agents (unless overwritten).
-
-    Returns
-    -------
-        agents: a list of HARK agents.
-    """
-    agents = [
-        cpm.PortfolioConsumerType(
-            **update_return(agent_parameters, ac)
-        )
-        for ac
-        in agent_classes
-    ]
-
-    return agents
-
-def distribute_beta(agents):
+def distribute(agents, dist_params):
     """
     Distribue the discount rate among a set of agents according
     the distribution from Carroll et al., "Distribution of Wealth"
@@ -80,45 +46,70 @@ def distribute_beta(agents):
     agents: list of AgentType
         A list of AgentType
 
+    dist_params:
+
     Returns
     -------
         agents: A list of AgentType
     """
  
     # This is hacky. Should streamline this in HARK.
-    agents_distributed = [
-        distribute_params(
-            agent,
-            'DiscFac',
-            5,
-            Uniform(bot=0.936, top=0.978)
-        )
-        for agent in agents
-    ]
 
-    agents = [
-        agent
-        for agent_dist in agents_distributed
-        for agent in agent_dist
-    ]
+    for param in dist_params:
+        agents_distributed = [
+            distribute_params(
+                agent,
+                param,
+                dist_params[param]['n'],
+                Uniform(
+                    bot=dist_params[param]['bot'],
+                    top=dist_params[param]['top']
+                )
+            )
+            for agent in agents
+        ]
 
-    # should be unecessary but a hack to cover a HARK bug
-    # https://github.com/econ-ark/HARK/issues/994
-    for agent in agents:
-        agent.assign_parameters(
-            DiscFac = agent.DiscFac,
-            AgentCount = agent.AgentCount
-        )
+        agents = [
+            agent
+            for agent_dist in agents_distributed
+            for agent in agent_dist
+        ]
+
+        # should be unecessary but a hack to cover a HARK bug
+        # https://github.com/econ-ark/HARK/issues/994
+        for agent in agents:
+            agent.assign_parameters(**{param : getattr(agent, param)})
+
     return agents
 
-def create_distributed_agents(agent_classes, agent_parameters):
+def create_distributed_agents(agent_parameters, dist_params, n_per_class):
     """
     Creates agents of the given classes with stable parameters.
     Will overwrite the DiscFac with a distribution from CSTW_MPC.
-    """
 
-    agents = initialize_agents(agent_classes, agent_parameters)
-    agents = distribute_beta(agents)
+    Parameters
+    ----------
+    agent_parameters: dict
+        Parameters shared by all agents (unless overwritten).
+
+    dist_params: dict of dicts
+        Parameters to distribute agents over, with discrete Uniform arguments
+
+    n_per_class: int
+        number of agents to instantiate per class
+    """
+    num_classes = math.prod([dist_params[dp]['n'] for dp in dist_params])
+    agent_batches = [{'AgentCount' : num_classes}] * n_per_class
+
+    agents = [
+        cpm.PortfolioConsumerType(
+            **update_return(agent_parameters, ac)
+        )
+        for ac
+        in agent_batches
+    ]
+
+    agents = distribute(agents, dist_params)
 
     return agents
 
