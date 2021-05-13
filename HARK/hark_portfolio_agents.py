@@ -117,6 +117,7 @@ class AgentPopulation():
     """
     agents = None
     base_parameters = None
+    stored_class_stats = None
     dist_params = None
 
     def __init__(self, base_parameters, dist_params, n_per_class):
@@ -124,7 +125,7 @@ class AgentPopulation():
         self.dist_params = dist_params
         self.agents = self.create_distributed_agents(self.base_parameters, dist_params, n_per_class)
 
-    def class_stats(self):
+    def class_stats(self, store = True):
         """
         Output the statistics for each class within the population.
 
@@ -147,7 +148,14 @@ class AgentPopulation():
 
         agent_df = pd.DataFrame.from_records(records)
 
-        return agent_df.groupby(list(self.dist_params.keys())).aggregate(['mean','std']).reset_index()
+        class_stats = agent_df.groupby(
+            list(self.dist_params.keys())
+        ).aggregate(['mean','std']).reset_index()
+
+        if store:
+            self.stored_class_stats = class_stats
+
+        return class_stats
 
     def create_distributed_agents(self, agent_parameters, dist_params, n_per_class):
         """
@@ -193,9 +201,15 @@ class AgentPopulation():
 
             agent.initialize_sim()
 
-            # TODO: Figure out how to put equilibrium in here.
-            # set normalize assets to steady state market resources.
-            agent.state_now['mNrm'][:] = 1.0 #pf_clone.solution[0].mNrmStE
+            if self.stored_class_stats is None:
+                agent.state_now['mNrm'][:] = 1.0
+            else:
+                idx = [agent.parameters[dp] for dp in self.dist_params] 
+                mNrm_T = self.stored_class_stats.copy() \
+                    .set_index([dp for dp in self.dist_params]) \
+                    .xs((idx))['mNrm_T']['mean']
+                agent.state_now['mNrm'][:] = mNrm_T
+
             agent.state_now['aNrm'] = agent.state_now['mNrm'] - agent.solution[0].cFuncAdj(agent.state_now['mNrm'])
             agent.state_now['aLvl'] = agent.state_now['aNrm'] * agent.state_now['pLvl']
 
@@ -723,6 +737,19 @@ class AttentionSimulation():
         """
         Returns a Pandas DataFrame of the data from the simulation run.
         """
+        ## DEBUGGING
+        print("Lengths:" + str({
+            't' : len(self.fm.prices),
+            'prices' : len(self.fm.prices),
+            'buy' : len([None] + [bs[0] for bs in self.broker.buy_sell_history]),
+            'sell' : len([None]  + [bs[1] for bs in self.broker.buy_sell_history]),
+            'owned' : len(self.history['owned_shares']),
+            'total_assets' : len(self.history['total_assets']),
+            'ror' : len([None] + self.fm.ror_list),
+            'expected_ror' : len(self.fm.expected_ror_list),
+            'expected_std' : len(self.fm.expected_std_list),
+        }))
+
         data = pd.DataFrame.from_dict({
             't' : range(len(self.fm.prices)),
             'prices' : self.fm.prices,
@@ -827,6 +854,8 @@ class AttentionSimulation():
         for quarter in range(self.quarters_per_simulation):
             print(f"Q-{quarter}")
 
+            day = 0
+
             for run in range(self.runs_per_quarter):
                 print(f"Q-{quarter}:R-{run}")
 
@@ -842,9 +871,11 @@ class AttentionSimulation():
 
                 new_run = True
 
-                for today in range(int(self.days_per_run)):
+                for day_in_run in range(int(self.days_per_run)):
+                    updates = 0
                     for agent in self.agents:
-                        if agent.macro_day == today:
+                        if agent.macro_day == day:
+                            updates = updates + 1
                             self.macro_update(agent)
 
                     if new_run:
@@ -855,7 +886,7 @@ class AttentionSimulation():
                         # putting 0,0 here is a stopgap to make plotting code simpler
                         self.broker.buy_sell_history.append((0,0))
 
-                    print(f"Q-{quarter}:D-{today}")
+                    print(f"Q-{quarter}:D-{day}. {updates} macro-updates.")
 
                     self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
 
@@ -864,6 +895,8 @@ class AttentionSimulation():
                     # combine these steps?
                     risky_asset_price = self.fm.add_ror(ror)
                     self.fm.calculate_risky_expectations()
+
+                    day = day + 1
 
     def track(self):
         """
@@ -905,7 +938,8 @@ class AttentionSimulation():
             agent.state_now['aNrm'] = agent.state_now['aNrm'] + delta_aNrm
 
             if (agent.state_now['aNrm'] < 0).any():
-                print(f"ERROR: Agent with CRRA {agent.parameters['CRRA']} has negative aNrm after capital gains update.")
+                print(f"ERROR: Agent with CRRA {agent.parameters['CRRA']}" \
+                      + "has negative aNrm after capital gains update.")
                 print("Setting normalize assets and shares to 0.")
                 agent.state_now['aNrm'][(agent.state_now['aNrm'] < 0)] = 0.0
                 ## TODO: This change in shares needs to be registered with the Broker.
