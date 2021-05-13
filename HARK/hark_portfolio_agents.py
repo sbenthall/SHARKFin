@@ -85,6 +85,120 @@ def distribute(agents, dist_params):
 
     return agents
 
+#####
+#   AgentPopulation
+#####
+
+class AgentPopulation():
+    """
+    A class encapsulating the population of 'macroeconomy' agents.
+
+    These agents will be initialized with a distribution of parameters,
+    such as risk aversion and discount factor.
+
+    Parameters
+    ------------
+ 
+    base_parameters: Dict
+        A dictionary of parameters to be shared by all agents.
+        These correspond to parameters of the HARK ConsPortfolioModel AgentType
+
+    dist_params: dict of dicts
+        A dictionary with [m] values. Keys are parameters.
+        Values are dicts with keys: bot, top, n.
+        These define a discretized uniform spread of values.
+
+    n_per_class: int
+        The values of dist_params define a space of n^m
+        agent classes.
+        This value is the number of agents [l] of each class to include in
+        population.
+        Total population will be l*n^m
+    """
+    agents = None
+    base_parameters = None
+    dist_params = None
+
+    def __init__(self, base_parameters, dist_params, n_per_class):
+        self.base_parameters = base_parameters
+        self.dist_params = dist_params
+        self.agents = self.create_distributed_agents(self.base_parameters, dist_params, n_per_class)
+
+    def class_stats(self):
+        """
+        Output the statistics for each class within the population.
+
+        Currently limited to asset level in the final simulated period (aLvl_T)
+        """
+        # get records for each agent with distributed parameter values and wealth (asset level: aLvl)
+        records = []
+
+        for agent in self.agents:
+            for i, aLvl in enumerate(agent.state_now['aLvl']):
+                record = {
+                    'aLvl_T' : aLvl,
+                    'mNrm_T' : agent.state_now['mNrm'][i]
+                }
+
+                for dp in self.dist_params:
+                    record[dp] = agent.parameters[dp]
+
+                records.append(record)
+
+        agent_df = pd.DataFrame.from_records(records)
+
+        return agent_df.groupby(list(self.dist_params.keys())).aggregate(['mean','std']).reset_index()
+
+    def create_distributed_agents(self, agent_parameters, dist_params, n_per_class):
+        """
+        Creates agents of the given classes with stable parameters.
+        Will overwrite the DiscFac with a distribution from CSTW_MPC.
+
+        Parameters
+        ----------
+        agent_parameters: dict
+            Parameters shared by all agents (unless overwritten).
+
+        dist_params: dict of dicts
+            Parameters to distribute agents over, with discrete Uniform arguments
+
+        n_per_class: int
+            number of agents to instantiate per class
+        """
+        num_classes = math.prod([dist_params[dp]['n'] for dp in dist_params])
+        agent_batches = [{'AgentCount' : num_classes}] * n_per_class
+
+        agents = [
+            cpm.PortfolioConsumerType(
+                **update_return(agent_parameters, ac)
+            )
+            for ac
+            in agent_batches
+        ]
+
+        agents = distribute(agents, dist_params)
+
+        return agents
+
+    def init_simulation(self):
+        """
+        Sets up the agents with their state for the state of the simulation
+        """
+        for agent in self.agents:
+            agent.track_vars += ['pLvl','mNrm','cNrm','Share','Risky']
+
+            agent.assign_parameters(AdjustPrb = 1.0)
+            agent.T_sim = 1000 # arbitrary!
+            agent.solve()
+
+            agent.initialize_sim()
+
+            # TODO: Figure out how to put equilibrium in here.
+            # set normalize assets to steady state market resources.
+            agent.state_now['mNrm'][:] = 1.0 #pf_clone.solution[0].mNrmStE
+            agent.state_now['aNrm'] = agent.state_now['mNrm'] - agent.solution[0].cFuncAdj(agent.state_now['mNrm'])
+            agent.state_now['aLvl'] = agent.state_now['aNrm'] * agent.state_now['pLvl']
+
 
 ######
 #   Math Utilities
@@ -462,7 +576,6 @@ class Broker():
 
         return buy_sell, self.market.daily_rate_of_return()
 
-
 #####
 #    AttentionSimulation class
 #####
@@ -546,6 +659,10 @@ class AttentionSimulation():
         self.history['buy_sell'] = []
         self.history['owned_shares'] = []
         self.history['total_assets'] = []
+
+        # assign macro-days to each agent
+        for agent in self.agents:
+            agent.macro_day = random.randrange(self.days_per_quarter)
 
     def attend(self, agent):
         """
@@ -709,11 +826,6 @@ class AttentionSimulation():
         # Main loop
         for quarter in range(self.quarters_per_simulation):
             print(f"Q-{quarter}")
-    
-            for agent in self.agents:
-                self.macro_update(agent)
-
-            day = 0
 
             for run in range(self.runs_per_quarter):
                 print(f"Q-{quarter}:R-{run}")
@@ -730,7 +842,11 @@ class AttentionSimulation():
 
                 new_run = True
 
-                for new_day in range(int(self.days_per_run)):
+                for today in range(int(self.days_per_run)):
+                    for agent in self.agents:
+                        if agent.macro_day == today:
+                            self.macro_update(agent)
+
                     if new_run:
                         new_run = False
                     else:
@@ -739,8 +855,7 @@ class AttentionSimulation():
                         # putting 0,0 here is a stopgap to make plotting code simpler
                         self.broker.buy_sell_history.append((0,0))
 
-                    day = day + 1
-                    print(f"Q-{quarter}:D-{day}")
+                    print(f"Q-{quarter}:D-{today}")
 
                     self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
 
