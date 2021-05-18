@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import random
+import seaborn as sns
 from statistics import mean
 
 
@@ -152,6 +153,16 @@ class AgentPopulation():
             list(self.dist_params.keys())
         ).aggregate(['mean','std']).reset_index()
 
+        cs = class_stats
+        cs['label'] = round(cs['CRRA'],2)\
+                      .apply(lambda x: f'CRRA: {x}, ') \
+                      + round(cs['DiscFac'], 2)\
+                      .apply(lambda x : f"DiscFac: {x}")
+        cs['aLvl_mean'] = cs['aLvl']['mean']
+        cs['aLvl_std'] = cs['aLvl']['std']
+        cs['mNrm_mean'] = cs['mNrm']['mean']
+        cs['mNrm_std'] = cs['mNrm']['std']
+
         if store:
             self.stored_class_stats = class_stats
 
@@ -186,6 +197,10 @@ class AgentPopulation():
 
         agents = distribute(agents, dist_params)
 
+        for agent in agents:
+            agent.seed = random.randint(0,5000)
+            agent.reset_rng()
+
         return agents
 
     def init_simulation(self):
@@ -210,7 +225,8 @@ class AgentPopulation():
                     .xs((idx))['mNrm']['mean']
                 agent.state_now['mNrm'][:] = mNrm
 
-            agent.state_now['aNrm'] = agent.state_now['mNrm'] - agent.solution[0].cFuncAdj(agent.state_now['mNrm'])
+            agent.state_now['aNrm'] = agent.state_now['mNrm'] \
+                                      - agent.solution[0].cFuncAdj(agent.state_now['mNrm'])
             agent.state_now['aLvl'] = agent.state_now['aNrm'] * agent.state_now['pLvl']
 
 
@@ -321,7 +337,7 @@ class FinanceModel():
     def __init__(self, dividend_ror = None, dividend_std = None):
 
         if dividend_ror:
-            self.dividend_ror = divedend_ror
+            self.dividend_ror = dividend_ror
 
         if dividend_std:
             self.dividend_std = dividend_std
@@ -925,40 +941,17 @@ class AttentionSimulation():
 
         plt.show()
 
-    def report_class_stats(self, stat_history = None):
+    def report_class_stats(self, stat = 'aLvl', stat_history = None):
         if stat_history is None:
             stat_history = self.history['class_stats']
 
-        def mNrm_mean_record(class_stat_row):
-            csr = class_stat_row
-            label = ("CRRA: " + str(round(csr['CRRA'],2)[0]),
-                     "DiscFac: " + str(round(csr['DiscFac'], 2)[0]))
-            return {
-                label : csr['mNrm']['mean']
-            }
+        for d, cs in enumerate(self.history['class_stats']):
+            cs['time'] = d
 
-        records = [dict(pair for d in list(L) for pair in d.items())
-                   for L
-                   in [cs.apply(mNrm_mean_record, axis=1)
-                       for cs
-                       in stat_history]]
+        data = pd.concat(self.history['class_stats'])
 
-        data = pd.DataFrame.from_records(records)
-
-        fig, ax = plt.subplots(
-            1, 1,
-            sharex='col',
-            #sharey='col',
-            figsize=(12,16),
-        )
-
-        for c in data.columns:
-            ax.plot(data[c], alpha=0.5, label=c)
-
-        ax.set_title("Mean normalized market resourcs (mNrm) by population class")
-        ax.legend()
-
-        plt.show()
+        ax = sns.lineplot(data=data, x='time', y='aLvl_mean', hue='label')
+        ax.set_title("mean aLvl by class subpopulation")
 
     def simulate(self, quarters = None, start = True):
         """
@@ -1010,7 +1003,7 @@ class AttentionSimulation():
                         # putting 0,0 here is a stopgap to make plotting code simpler
                         self.broker.buy_sell_history.append((0,0))
 
-                    print(f"Q-{quarter}:D-{day}. {updates} macro-updates.")
+                    #print(f"Q-{quarter}:D-{day}. {updates} macro-updates.")
 
                     self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
 
@@ -1079,3 +1072,15 @@ class AttentionSimulation():
         Must be run after a simulation.
         """
         return self.data()['ror'].dropna().std()
+
+    def sim_stats(self):
+        df = self.history['class_stats'][-1][['label','aLvl_mean']]
+        df.columns = df.columns.droplevel(1)
+        sim_stats = df.set_index('label').to_dict()['aLvl_mean']
+
+        sim_stats = {('aLvl_mean', k) : v  for k,v in sim_stats.items()}
+
+        sim_stats['attention'] = self.attention_rate
+        sim_stats['ror_volatility'] = self.ror_volatility()
+
+        return sim_stats
