@@ -11,14 +11,8 @@ import numpy as np
 import pandas as pd
 import math
 
-sim_params = {
-    "pop_n" : 25,
-    "q" : 8,
-    "r" : 10
-}
 
-data_n = 24
-
+### Configuring the agent population
 
 dist_params = {
     'CRRA' : {'bot' : 2, 'top' : 10, 'n' : 2}, # Chosen for "interesting" results
@@ -45,11 +39,23 @@ agent_parameters = {
     'PermShkStd' : [ssvp['PermShkStd'][idx_40] ** 0.25]
 }
 
+
+
+## Configuring the parameter grid
+
+sim_params = {
+    "pop_n" : 25,
+    "q" : 8,
+    "r" : 10
+}
+
+data_n = 64
+
 def run_simulation(agent_parameters, dist_params, n_per_class, a = None, q = None, r = 1, fm = None, market = None):
-    
+
     # initialize population
     pop = hpa.AgentPopulation(agent_parameters, dist_params, 5)
-    
+
     # Initialize the financial model
     fm = hpa.FinanceModel() if fm is None else fm
 
@@ -58,67 +64,36 @@ def run_simulation(agent_parameters, dist_params, n_per_class, a = None, q = Non
 
     # Initialize the population model
     pop.init_simulation()
-    
+
     attsim = hpa.AttentionSimulation(pop, fm, a = a, q = q, r = r, market = market)
     attsim.simulate()
-    
+
     return attsim.sim_stats()
 
-def sim_att_1(dummy):
-    return run_simulation(
-        agent_parameters,
-        dist_params,
-        sim_params['pop_n'],
-        a = 1, ## This is what's changing
-        q = sim_params['q'],
-        r = sim_params['r'],
-        market = hpa.MockMarket()
-    )
-    
-def sim_att_0(dummy):
-    return run_simulation(
-        agent_parameters,
-        dist_params,
-        sim_params['pop_n'],
-        a = 0, ## This is what's changing
-        q = sim_params['q'],
-        r = sim_params['r'],
-        market = hpa.MockMarket()
-    )
+def sample_simulation(attention):
+    records = []
 
-def sim_att_avg(dummy):
-    return run_simulation(
-        agent_parameters,
-        dist_params,
-        sim_params['pop_n'],
-        a = None, ## This is what's changing
-        q = sim_params['q'],
-        r = sim_params['r'],
-        market = hpa.MockMarket()
-    )
+    for i in range(data_n):
+        record = run_simulation(
+            agent_parameters,
+            dist_params,
+            sim_params['pop_n'],
+            a = attention, ## This is what's changing
+            q = sim_params['q'],
+            r = sim_params['r'],
+            market = hpa.MockMarket()
+        )
+        records.append(record)
 
+    return pd.DataFrame.from_records(records)
 
 import multiprocessing
 
-print("Att sim 1")
 pool = multiprocessing.Pool()
-inputs_1 = range(data_n)
-records_1 = pool.map(sim_att_1, inputs_1)
-
-print("Att sim 0")
-inputs_0 = range(data_n)
-records_0 = pool.map(sim_att_0, inputs_0)
-
-print("Att sim avg")
-inputs_avg = range(data_n)
-records_avg = pool.map(sim_att_avg, inputs_avg)
+attention_range = [0, 0.2, 0.4, 0.6, 0.8, 1]
+dfs = pool.map(sample_simulation, attention_range)
 pool.close()
 
-
-data = pd.concat([
-    pd.DataFrame.from_records(records_1),
-    pd.DataFrame.from_records(records_0),
-    pd.DataFrame.from_records(records_avg)
-])
+data = pd.concat(dfs)
 
 data.to_csv("study.csv")
