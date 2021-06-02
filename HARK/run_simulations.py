@@ -15,7 +15,7 @@ import math
 ### Configuring the agent population
 
 dist_params = {
-    'CRRA' : {'bot' : 2, 'top' : 10, 'n' : 2}, # Chosen for "interesting" results
+    'CRRA' : {'bot' : 2, 'top' : 10, 'n' : 3}, # Chosen for "interesting" results
     'DiscFac' : {'bot' : 0.936, 'top' : 0.978, 'n' : 2} # from CSTW "MPC" results
 }
 
@@ -90,7 +90,7 @@ def sample_simulation(attention):
 import multiprocessing
 
 pool = multiprocessing.Pool()
-attention_range = [0, 0.2, 0.4, 0.6, 0.8, 1]
+attention_range = [0, 0.0625, 0.2, 0.125, 0.25, 0.5, 1]
 dfs = pool.map(sample_simulation, attention_range)
 pool.close()
 

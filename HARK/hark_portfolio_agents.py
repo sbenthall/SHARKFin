@@ -1074,11 +1074,20 @@ class AttentionSimulation():
         return self.data()['ror'].dropna().std()
 
     def sim_stats(self):
-        df = self.history['class_stats'][-1][['label','aLvl_mean']]
-        df.columns = df.columns.droplevel(1)
-        sim_stats = df.set_index('label').to_dict()['aLvl_mean']
+        df_mean = self.history['class_stats'][-1][['label','aLvl_mean']]
+        df_mean.columns = df_mean.columns.droplevel(1)
+        sim_stats_mean = df_mean.set_index('label').to_dict()['aLvl_mean']
 
-        sim_stats = {('aLvl_mean', k) : v  for k,v in sim_stats.items()}
+        df_std = self.history['class_stats'][-1][['label','aLvl_std']]
+        df_std.columns = df_std.columns.droplevel(1)
+        sim_stats_std = df_std.set_index('label').to_dict()['aLvl_std']
+
+        sim_stats_mean = {('aLvl_mean', k) : v  for k,v in sim_stats_mean.items()}
+        sim_stats_std = {('aLvl_std', k) : v  for k,v in sim_stats_std.items()}
+
+        sim_stats = {}
+        sim_stats.update(sim_stats_mean)
+        sim_stats.update(sim_stats_std)
 
         sim_stats['attention'] = self.attention_rate
         sim_stats['ror_volatility'] = self.ror_volatility()
