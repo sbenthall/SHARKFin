@@ -1,11 +1,8 @@
-from datetime import datetime
 import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 from HARK.Calibration.Income.IncomeTools import (
      sabelhaus_song_var_profile,
 )
 import hark_portfolio_agents as hpa
-from itertools import product
-import json
 import logging
 import math
 from math import exp
@@ -14,7 +11,6 @@ import numpy as np
 import pandas as pd
 import math
 
-timestamp_start = datetime.now().strftime("%Y-%b-%s_%H:%M)")
 
 ### Configuring the agent population
 
@@ -53,17 +49,9 @@ sim_params = {
     "r" : 10
 }
 
-data_n = 1
+data_n = 32 # 64
 
-def run_simulation(
-    agent_parameters,
-    dist_params,
-    n_per_class,
-    a = None,
-    q = None,
-    r = 1,
-    fm = None,
-    market = None):
+def run_simulation(agent_parameters, dist_params, n_per_class, a = None, q = None, r = 1, fm = None, market = None):
 
     # initialize population
     pop = hpa.AgentPopulation(agent_parameters, dist_params, 5)
@@ -82,33 +70,24 @@ def run_simulation(
 
     return attsim.sim_stats()
 
-def sample_simulation(args):
-    """
-    args: attention, dividend_ror, dividend_std
-    """
-    print(f"New case: {args}")
-
-    attention = args[0]
-    dividend_ror = args[1]
-    dividend_std = args[2]
-
+def sample_simulation(dividend):
     records = []
 
     for i in range(data_n):
         # Initialize the financial model
         fm = hpa.FinanceModel(
-            dividend_ror = dividend_ror,
-            dividend_std = dividend_std
+            dividend_ror = dividend[0],
+            dividend_std = dividend[1]
         )
 
         record = run_simulation(
             agent_parameters,
             dist_params,
             sim_params['pop_n'],
-            a = attention,
+            # a = attention, ## This is what's changing
+            fm = fm, ## this is what's changing
             q = sim_params['q'],
             r = sim_params['r'],
-            fm = fm,
             market = hpa.MockMarket()
         )
         records.append(record)
@@ -119,29 +98,14 @@ import multiprocessing
 
 pool = multiprocessing.Pool()
 
-attention_range = [0, 0.01, 0.03, 0.06, 0.12, 0.25, 0.5, 1]
-dividend_ror_range = [0.001, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
-dividend_std_range = [0.01]
-
-cases = product(attention_range, dividend_ror_range, dividend_std_range)
-total_cases = len(attention_range) * len(dividend_ror_range) * len(dividend_std_range)
-
-print(f"Number of cases: {total_cases}")
-
-dfs = pool.map(sample_simulation, cases)
+dividend_range = [
+    (0.001, 0.001), (0.03, 0.001), (0.06, 0.001),
+    (0.001, 0.01), (0.03, 0.01), (0.06, 0.01),
+    (0.001, 0.02), (0.03, 0.02), (0.06, 0.02),
+    ]
+dfs = pool.map(sample_simulation, dividend_range)
 pool.close()
 
 data = pd.concat(dfs)
 
-data.to_csv(f"study-{timestamp_start}.csv")
-
-
-timestamp_end = datetime.now().strftime("%Y-%b-%s_%H:%M)")
-
-meta = {
-    'start' : timestamp_start,
-    'end' : timestand_end
-}
-
-with open(f'meta-{timestamp_start}.json', 'w') as json_file:
-  json.dump(meta, json_file)
+data.to_csv("dividend-study.csv")

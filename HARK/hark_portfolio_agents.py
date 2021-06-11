@@ -1091,5 +1091,7 @@ class AttentionSimulation():
 
         sim_stats['attention'] = self.attention_rate
         sim_stats['ror_volatility'] = self.ror_volatility()
+        sim_stats['dividend_ror'] = self.fm.dividend_ror
+        sim_stats['dividend_std'] = self.fm.dividend_std
 
         return sim_stats
