@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 import math
 
-timestamp_start = datetime.now().strftime("%Y-%b-%s_%H:%M")
+timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
 ### Configuring the agent population
 
@@ -49,8 +49,8 @@ agent_parameters = {
 
 sim_params = {
     "pop_n" : 25,
-    "q" : 8,
-    "r" : 10
+    "q" : 2,
+    "r" : 2
 }
 
 data_n = 1
@@ -91,6 +91,7 @@ def sample_simulation(args):
     attention = args[0]
     dividend_ror = args[1]
     dividend_std = args[2]
+    mock = args[3]
 
     records = []
 
@@ -101,6 +102,11 @@ def sample_simulation(args):
             dividend_std = dividend_std
         )
 
+        if mock:
+            market = hpa.MockMarket()
+        else:
+            market = hpa.MarketPNL()
+
         record = run_simulation(
             agent_parameters,
             dist_params,
@@ -109,7 +115,7 @@ def sample_simulation(args):
             q = sim_params['q'],
             r = sim_params['r'],
             fm = fm,
-            market = hpa.MockMarket()
+            market = market
         )
         records.append(record)
 
@@ -119,12 +125,13 @@ import multiprocessing
 
 pool = multiprocessing.Pool()
 
-attention_range = [0, 0.01, 0.03, 0.06, 0.12, 0.25, 0.5, 1]
-dividend_ror_range = [0.001, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
+attention_range = [.03] # [0, 0.01, 0.03, 0.06, 0.12, 0.25, 0.5, 1]
+dividend_ror_range = [.001] # [0.001, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
 dividend_std_range = [0.01]
+mock_range = [False, True]
 
-cases = product(attention_range, dividend_ror_range, dividend_std_range)
-total_cases = len(attention_range) * len(dividend_ror_range) * len(dividend_std_range)
+cases = product(attention_range, dividend_ror_range, dividend_std_range, mock_range)
+total_cases = len(attention_range) * len(dividend_ror_range) * len(dividend_std_range) * len(mock_range)
 
 print(f"Number of cases: {total_cases}")
 
@@ -136,11 +143,11 @@ data = pd.concat(dfs)
 data.to_csv(f"study-{timestamp_start}.csv")
 
 
-timestamp_end = datetime.now().strftime("%Y-%b-%s_%H:%M)")
+timestamp_end = datetime.now().strftime("%Y-%b-%d_%H:%M)")
 
 meta = {
     'start' : timestamp_start,
-    'end' : timestand_end
+    'end' : timestamp_end
 }
 
 with open(f'meta-{timestamp_start}.json', 'w') as json_file:

@@ -1,6 +1,7 @@
 import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 import HARK.ConsumptionSaving.ConsIndShockModel as cism
 from HARK.core import distribute_params
+from datetime import datetime
 from HARK.distribution import Uniform
 import itertools
 import math
@@ -480,6 +481,9 @@ class MarketPNL():
         for the brokers to buy/sell (buy_sell), and
         optionally a random seed (seed)
         """
+        if seed is None:
+            seed = np.random.randint(1000)
+
         self.last_seed = seed
         self.last_buy_sell = buy_sell
 
@@ -671,7 +675,7 @@ class Broker():
         # use integral shares here.
         buy_sell = (int(self.buy_limit), int(self.sell_limit))
         self.buy_sell_history.append(buy_sell)
-        print("Buy/Sell Limit: " + str(buy_sell))
+        #print("Buy/Sell Limit: " + str(buy_sell))
 
         self.market.run_market(buy_sell = buy_sell, seed = seed)
 
@@ -739,6 +743,10 @@ class AttentionSimulation():
 
     # sp500_ror = 0.000628 -> on financial model; on MarketPNL
     # sp500_std = 0.011988 -> on financial model; on MarketPNL
+
+    ## saving the time of simulation start and end
+    start_time = None
+    end_time = None
 
     def __init__(self, pop, fm, q = 1, r = None, a = None, market = None):
         self.agents = pop.agents
@@ -957,6 +965,8 @@ class AttentionSimulation():
         """
         Workhorse method that runs the simulation.
         """
+        self.start_time = datetime.now()
+
         if quarters is None:
             quarters = self.quarters_per_simulation
 
@@ -974,17 +984,17 @@ class AttentionSimulation():
             day = 0
 
             for run in range(self.runs_per_quarter):
-                print(f"Q-{quarter}:R-{run}")
+                #print(f"Q-{quarter}:R-{run}")
 
                 # Set to a number for a fixed seed, or None to rotate
-                seed = next(seeds)
+                seed = None
 
                 for agent in self.agents:
                     if random.random() < self.attention_rate:
                         self.broker.transact(self.attend(agent))
 
                 buy_sell, ror = self.broker.trade(seed)
-                print("ror: " + str(ror))
+                #print("ror: " + str(ror))
 
                 new_run = True
 
@@ -1014,6 +1024,8 @@ class AttentionSimulation():
                     self.fm.calculate_risky_expectations()
 
                     day = day + 1
+
+        self.end_time = datetime.now()
 
     def track(self):
         """
@@ -1093,5 +1105,7 @@ class AttentionSimulation():
         sim_stats['ror_volatility'] = self.ror_volatility()
         sim_stats['dividend_ror'] = self.fm.dividend_ror
         sim_stats['dividend_std'] = self.fm.dividend_std
+
+        sim_stats['seconds'] = (self.end_time - self.start_time).seconds
 
         return sim_stats
