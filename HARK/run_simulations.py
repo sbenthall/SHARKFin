@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 import math
 
-timestamp_start = datetime.now().strftime("%Y-%b-%s_%H:%M)")
+timestamp_start = datetime.now().strftime("%Y-%b-%s_%H:%M")
 
 ### Configuring the agent population
 

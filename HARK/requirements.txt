@@ -1,3 +1,6 @@
 econ-ark
-numpy
+jpype1
 matplotlib
+numpy
+pyNetLogo
+seaborn
