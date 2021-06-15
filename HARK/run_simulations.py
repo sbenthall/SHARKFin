@@ -49,8 +49,8 @@ agent_parameters = {
 
 sim_params = {
     "pop_n" : 25,
-    "q" : 2,
-    "r" : 2
+    "q" : 1,
+    "r" : 1
 }
 
 data_n = 1
@@ -143,12 +143,19 @@ data = pd.concat(dfs)
 data.to_csv(f"study-{timestamp_start}.csv")
 
 
-timestamp_end = datetime.now().strftime("%Y-%b-%d_%H:%M)")
+timestamp_end = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
 meta = {
     'start' : timestamp_start,
-    'end' : timestamp_end
+    'end' : timestamp_end,
+    'data_n' : data_n,
+    'attention_range' : attention_range,
+    'dividend_ror_range' : dividend_ror_range,
+    'dividend_std_range' : dividend_std_range,
+    'mock_range' : mock_range
 }
 
+meta.update(sim_params)
+
 with open(f'meta-{timestamp_start}.json', 'w') as json_file:
-  json.dump(meta, json_file)
+    json.dump(meta, json_file)

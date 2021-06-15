@@ -1101,6 +1101,8 @@ class AttentionSimulation():
         sim_stats.update(sim_stats_mean)
         sim_stats.update(sim_stats_std)
 
+        sim_stats['market_class'] = self.broker.market.__class__
+
         sim_stats['attention'] = self.attention_rate
         sim_stats['ror_volatility'] = self.ror_volatility()
         sim_stats['dividend_ror'] = self.fm.dividend_ror
