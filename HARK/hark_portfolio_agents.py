@@ -464,8 +464,12 @@ class MarketPNL():
     # config object for PNL
     config = None
 
+    # sample - modifier for the seed
+    sample = 0
+
     def __init__(
         self,
+        sample = 0,
         config_file = "../PNL/macroliquidity.ini",
         config_local_file = "../PNL/macroliquidity_local.ini"
     ):
@@ -473,6 +477,8 @@ class MarketPNL():
             config_file = config_file,
             config_local_file = config_local_file
         )
+
+        self.sample = 0
 
     def run_market(self, seed = 0, buy_sell = 0):
         """
@@ -482,7 +488,7 @@ class MarketPNL():
         optionally a random seed (seed)
         """
         if seed is None:
-            seed = np.random.randint(1000)
+            seed = np.random.randint(1500) + self.sample
 
         self.last_seed = seed
         self.last_buy_sell = buy_sell

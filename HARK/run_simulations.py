@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import math
+import os
 
 timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
@@ -49,11 +50,11 @@ agent_parameters = {
 
 sim_params = {
     "pop_n" : 25,
-    "q" : 1,
-    "r" : 1
+    "q" : 2,
+    "r" : 2
 }
 
-data_n = 1
+data_n = 2
 
 def run_simulation(
     agent_parameters,
@@ -84,7 +85,7 @@ def run_simulation(
 
 def sample_simulation(args):
     """
-    args: attention, dividend_ror, dividend_std
+    args: attention, dividend_ror, dividend_std, mock, sample
     """
     print(f"New case: {args}")
 
@@ -92,55 +93,54 @@ def sample_simulation(args):
     dividend_ror = args[1]
     dividend_std = args[2]
     mock = args[3]
+    sample = args[4]
 
-    records = []
+    # Initialize the financial model
+    fm = hpa.FinanceModel(
+        dividend_ror = dividend_ror,
+        dividend_std = dividend_std
+    )
 
-    for i in range(data_n):
-        # Initialize the financial model
-        fm = hpa.FinanceModel(
-            dividend_ror = dividend_ror,
-            dividend_std = dividend_std
-        )
+    if mock:
+        market = hpa.MockMarket()
+    else:
+        market = hpa.MarketPNL(sample = sample)
 
-        if mock:
-            market = hpa.MockMarket()
-        else:
-            market = hpa.MarketPNL()
+    record = run_simulation(
+        agent_parameters,
+        dist_params,
+        sim_params['pop_n'],
+        a = attention,
+        q = sim_params['q'],
+        r = sim_params['r'],
+        fm = fm,
+        market = market
+    )
 
-        record = run_simulation(
-            agent_parameters,
-            dist_params,
-            sim_params['pop_n'],
-            a = attention,
-            q = sim_params['q'],
-            r = sim_params['r'],
-            fm = fm,
-            market = market
-        )
-        records.append(record)
-
-    return pd.DataFrame.from_records(records)
+    return record
 
 import multiprocessing
 
 pool = multiprocessing.Pool()
 
-attention_range = [.03] # [0, 0.01, 0.03, 0.06, 0.12, 0.25, 0.5, 1]
-dividend_ror_range = [.001] # [0.001, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
+attention_range = [0, 0.08] # [0, 0.01, 0.03, 0.06, 0.12, 0.25, 0.5, 1]
+dividend_ror_range = [.001, 0.1] # [0.001, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
 dividend_std_range = [0.01]
 mock_range = [False, True]
+samples = range(data_n)
 
-cases = product(attention_range, dividend_ror_range, dividend_std_range, mock_range)
+cases = product(attention_range, dividend_ror_range, dividend_std_range, mock_range, samples)
 total_cases = len(attention_range) * len(dividend_ror_range) * len(dividend_std_range) * len(mock_range)
 
 print(f"Number of cases: {total_cases}")
+print(f"Number of samples (data_n): {data_n}")
 
-dfs = pool.map(sample_simulation, cases)
+records = pool.map(sample_simulation, cases)
 pool.close()
 
-data = pd.concat(dfs)
+data = pd.DataFrame.from_records(records)
 
-data.to_csv(f"study-{timestamp_start}.csv")
+data.to_csv(os.path.join("out",f"study-{timestamp_start}.csv"))
 
 
 timestamp_end = datetime.now().strftime("%Y-%b-%d_%H:%M")
@@ -157,5 +157,5 @@ meta = {
 
 meta.update(sim_params)
 
-with open(f'meta-{timestamp_start}.json', 'w') as json_file:
+with open(os.path.join("out",f'meta-{timestamp_start}.json'), 'w') as json_file:
     json.dump(meta, json_file)
