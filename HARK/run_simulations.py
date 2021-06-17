@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 import math
 import os
+import time
 
 timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
@@ -94,6 +95,12 @@ def sample_simulation(args):
     dividend_std = args[2]
     mock = args[3]
     sample = args[4]
+
+    # super hack
+    if not mock:
+        time.sleep((attention + dividend_ror) / 100000)
+        time.sleep(sample / 1000000)
+    np.random.seed()
 
     # Initialize the financial model
     fm = hpa.FinanceModel(

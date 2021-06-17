@@ -199,7 +199,7 @@ class AgentPopulation():
         agents = distribute(agents, dist_params)
 
         for agent in agents:
-            agent.seed = random.randint(0,5000)
+            agent.seed = random.randint(0,10000)
             agent.reset_rng()
 
         return agents
@@ -461,6 +461,8 @@ class MarketPNL():
     last_buy_sell = None
     last_seed = None
 
+    seeds = None
+
     # config object for PNL
     config = None
 
@@ -479,6 +481,7 @@ class MarketPNL():
         )
 
         self.sample = 0
+        self.seeds = []
 
     def run_market(self, seed = 0, buy_sell = 0):
         """
@@ -492,6 +495,7 @@ class MarketPNL():
 
         self.last_seed = seed
         self.last_buy_sell = buy_sell
+        self.seeds.append(seed)
 
         pnl.run_NLsims(
             self.config,
@@ -1111,6 +1115,7 @@ class AttentionSimulation():
         sim_stats.update(sim_stats_std)
 
         sim_stats['market_class'] = self.broker.market.__class__
+        sim_stats['market_seeds'] = self.broker.market.seeds if 'PNL' in str(sim_stats['market_class']) else []
 
         sim_stats['attention'] = self.attention_rate
         sim_stats['ror_volatility'] = self.ror_volatility()
