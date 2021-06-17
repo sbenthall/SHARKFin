@@ -106,18 +106,29 @@ def sample_simulation(args):
     else:
         market = hpa.MarketPNL(sample = sample)
 
-    record = run_simulation(
-        agent_parameters,
-        dist_params,
-        sim_params['pop_n'],
-        a = attention,
-        q = sim_params['q'],
-        r = sim_params['r'],
-        fm = fm,
-        market = market
-    )
+    try:
+        record = run_simulation(
+            agent_parameters,
+            dist_params,
+            sim_params['pop_n'],
+            a = attention,
+            q = sim_params['q'],
+            r = sim_params['r'],
+            fm = fm,
+            market = market
+        )
+        return record
 
-    return record
+    except Exception as e:
+        return {
+            "error" : e,
+            'attention' : args[0],
+            'dividend_ror' : args[1],
+            'dividend_std' : args[2],
+            'mock' : args[3],
+            'sample' : args[4]
+        }
+        
 
 import multiprocessing
 
@@ -138,10 +149,15 @@ print(f"Number of samples (data_n): {data_n}")
 records = pool.map(sample_simulation, cases)
 pool.close()
 
-data = pd.DataFrame.from_records(records)
+good_records = [r for r in records if 'error' not in r]
+bad_records = [r for r in records if 'error' in r]
+
+data = pd.DataFrame.from_records(good_records)
+
+error_data = pd.DataFrame.from_records(bad_records)
 
 data.to_csv(os.path.join("out",f"study-{timestamp_start}.csv"))
-
+error_data.to_csv(os.path.join("out",f"errors-{timestamp_start}.csv"))
 
 timestamp_end = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
