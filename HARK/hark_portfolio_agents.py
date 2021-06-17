@@ -515,11 +515,14 @@ class MarketPNL():
         )
 
         # use run_market() first to create logs
-        transactions = pd.read_csv(
-            logfile,
-            delimiter='\t'
-        )
-        return transactions
+        try:
+            transactions = pd.read_csv(
+                logfile,
+                delimiter='\t'
+            )
+            return transactions
+        except Exception as e:
+            raise(Exception(f"{logfile}: {e}"))
 
     def get_simulation_price(self, seed = 0, buy_sell = (0,0)):
         """
