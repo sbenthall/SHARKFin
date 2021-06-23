@@ -1,3 +1,4 @@
+
 from datetime import datetime
 import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 from HARK.Calibration.Income.IncomeTools import (
@@ -46,7 +47,6 @@ agent_parameters = {
 }
 
 
-
 ## Configuring the parameter grid
 
 sim_params = {
@@ -90,11 +90,13 @@ def sample_simulation(args):
     """
     print(f"New case: {args}")
 
-    attention = args[0]
-    dividend_ror = args[1]
-    dividend_std = args[2]
-    mock = args[3]
-    sample = args[4]
+    case_id = args[0]
+
+    attention = args[1][0]
+    dividend_ror = args[1][1]
+    dividend_std = args[1][2]
+    mock = args[1][3]
+    sample = args[1][4]
 
     # super hack
     if not mock:
@@ -124,16 +126,20 @@ def sample_simulation(args):
             fm = fm,
             market = market
         )
+
+        with open(os.path.join("out",f"simstat-{timestamp_start}-c{case_id}.json"), 'w') as json_file:
+            json.dump(record, json_file)
+
         return record
 
     except Exception as e:
         return {
             "error" : e,
-            'attention' : args[0],
-            'dividend_ror' : args[1],
-            'dividend_std' : args[2],
-            'mock' : args[3],
-            'sample' : args[4]
+            'attention' : args[1][0],
+            'dividend_ror' : args[1][1],
+            'dividend_std' : args[1][2],
+            'mock' : args[1][3],
+            'sample' : args[1][4]
         }
         
 
@@ -153,7 +159,24 @@ total_cases = len(attention_range) * len(dividend_ror_range) * len(dividend_std_
 print(f"Number of cases: {total_cases}")
 print(f"Number of samples (data_n): {data_n}")
 
-records = pool.map(sample_simulation, cases)
+### Update the meta document
+
+meta = {
+    'start' : timestamp_start,
+    #'end' : timestamp_end,
+    'data_n' : data_n,
+    'attention_range' : attention_range,
+    'dividend_ror_range' : dividend_ror_range,
+    'dividend_std_range' : dividend_std_range,
+    'mock_range' : mock_range
+}
+
+meta.update(sim_params)
+
+with open(os.path.join("out",f'meta-{timestamp_start}.json'), 'w') as json_file:
+    json.dump(meta, json_file)
+
+records = pool.map(sample_simulation, enumerate(cases))
 pool.close()
 
 good_records = [r for r in records if 'error' not in r]
@@ -168,17 +191,11 @@ error_data.to_csv(os.path.join("out",f"errors-{timestamp_start}.csv"))
 
 timestamp_end = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
-meta = {
-    'start' : timestamp_start,
-    'end' : timestamp_end,
-    'data_n' : data_n,
-    'attention_range' : attention_range,
-    'dividend_ror_range' : dividend_ror_range,
-    'dividend_std_range' : dividend_std_range,
-    'mock_range' : mock_range
-}
 
-meta.update(sim_params)
+### Update the meta document
 
+meta.update({'end' : timestamp_end})
+
+# trying to overwrite here
 with open(os.path.join("out",f'meta-{timestamp_start}.json'), 'w') as json_file:
     json.dump(meta, json_file)

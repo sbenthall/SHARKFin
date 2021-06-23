@@ -1114,6 +1114,9 @@ class AttentionSimulation():
         sim_stats.update(sim_stats_mean)
         sim_stats.update(sim_stats_std)
 
+        sim_stats['q'] = self.quarters_per_simulation
+        sim_stats['r'] = self.runs_per_quarter
+
         sim_stats['market_class'] = self.broker.market.__class__
         sim_stats['market_seeds'] = self.broker.market.seeds if 'PNL' in str(sim_stats['market_class']) else []
 
