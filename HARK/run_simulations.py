@@ -127,8 +127,14 @@ def sample_simulation(args):
             market = market
         )
 
-        with open(os.path.join("out",f"simstat-{timestamp_start}-c{case_id}.json"), 'w') as json_file:
-            json.dump(record, json_file)
+
+        print(record)
+        stat_path = os.path.join(
+            "out",
+            f"simstat-{timestamp_start}-c{case_id}.csv"
+        )
+        record_df = pd.DataFrame.from_records([record])
+        record_df.to_csv(stat_path)
 
         return record
 
