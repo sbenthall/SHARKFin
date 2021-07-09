@@ -335,13 +335,33 @@ class FinanceModel():
         self.prices.append(asset_price)
         return asset_price
 
-    def __init__(self, dividend_ror = None, dividend_std = None):
+    def __init__(
+        self,
+        dividend_ror = None,
+        dividend_std = None,
+        p1 = None,
+        p2 = None,
+        delta_t1 = None,
+        delta_t2 = None
+        ):
 
         if dividend_ror:
             self.dividend_ror = dividend_ror
 
         if dividend_std:
             self.dividend_std = dividend_std
+
+        if p1:
+            self.p1 = p1
+
+        if p2:
+            self.p2 = p2
+        
+        if delta_t1:
+            self.delta_t1 = delta_t1
+
+        if delta_t2:
+            self.delta_t2 = delta_t2
 
         self.prices = [self.starting_price]
         self.ror_list = []
@@ -1122,8 +1142,14 @@ class AttentionSimulation():
 
         sim_stats['attention'] = self.attention_rate
         sim_stats['ror_volatility'] = self.ror_volatility()
+
         sim_stats['dividend_ror'] = self.fm.dividend_ror
         sim_stats['dividend_std'] = self.fm.dividend_std
+        sim_stats['p1'] = self.fm.p1
+        sim_stats['p2'] = self.fm.p2
+        sim_stats['delta_t1'] = self.fm.delta_t1
+        sim_stats['delta_t2'] = self.fm.delta_t2
+
 
         sim_stats['seconds'] = (self.end_time - self.start_time).seconds
 

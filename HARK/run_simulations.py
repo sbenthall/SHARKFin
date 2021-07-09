@@ -96,7 +96,11 @@ def sample_simulation(args):
     dividend_ror = args[1][1]
     dividend_std = args[1][2]
     mock = args[1][3]
-    sample = args[1][4]
+    p1 = args[1][4]
+    p2 = args[1][5]
+    delta_t1 = args[1][6]
+    delta_t2 = args[1][7]
+    sample = args[1][8]
 
     # super hack
     if not mock:
@@ -107,7 +111,11 @@ def sample_simulation(args):
     # Initialize the financial model
     fm = hpa.FinanceModel(
         dividend_ror = dividend_ror,
-        dividend_std = dividend_std
+        dividend_std = dividend_std,
+        p1 = p1,
+        p2 = p2,
+        delta_t1 = delta_t1,
+        delta_t2 = delta_t2
     )
 
     if mock:
@@ -136,30 +144,51 @@ def sample_simulation(args):
         record_df = pd.DataFrame.from_records([record])
         record_df.to_csv(stat_path)
 
+        #write_df(stat_path, record_df)
+
         return record
 
     except Exception as e:
+        import pdb; pdb.set_trace()
         return {
             "error" : e,
-            'attention' : args[1][0],
-            'dividend_ror' : args[1][1],
-            'dividend_std' : args[1][2],
-            'mock' : args[1][3],
-            'sample' : args[1][4]
+            'attention' : attention,
+            'dividend_ror' : dividend_ror,
+            'dividend_std' : dividend_std,
+            'mock' : mock,
+            'p1' : p1,
+            'p2' : p2,
+            'delta_t1' : delta_t1,
+            'delta_t2' : delta_t2,
+            'sample' : sample
         }
-        
+
 
 import multiprocessing
 
 pool = multiprocessing.Pool()
 
-attention_range = [0, 0.08] # [0, 0.01, 0.03, 0.06, 0.12, 0.25, 0.5, 1]
-dividend_ror_range = [.001, 0.1] # [0.001, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
+attention_range = [0.05] # [0, 0.01, 0.03, 0.06, 0.12, 0.25, 0.5, 1]
+dividend_ror_range = [.04] # [0.001, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
 dividend_std_range = [0.01]
 mock_range = [False, True]
+p1_range = [0.1,0.9]
+p2_range = [0.1, 0.9]
+delta_t1_range = [60]
+delta_t2_range = [60]
 samples = range(data_n)
 
-cases = product(attention_range, dividend_ror_range, dividend_std_range, mock_range, samples)
+cases = product(
+    attention_range,
+    dividend_ror_range,
+    dividend_std_range,
+    mock_range,
+    p1_range,
+    p2_range,
+    delta_t1_range,
+    delta_t2_range,
+    samples
+    )
 total_cases = len(attention_range) * len(dividend_ror_range) * len(dividend_std_range) * len(mock_range)
 
 print(f"Number of cases: {total_cases}")
