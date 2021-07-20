@@ -168,31 +168,27 @@ import multiprocessing
 
 pool = multiprocessing.Pool()
 
-attention_range = [0.05] # [0, 0.01, 0.03, 0.06, 0.12, 0.25, 0.5, 1]
-dividend_ror_range = [.04] # [0.001, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
-dividend_std_range = [0.01]
-mock_range = [False, True]
-p1_range = [0.1,0.9]
-p2_range = [0.1, 0.9]
-delta_t1_range = [60]
-delta_t2_range = [60]
+import yaml
+
+with open("config.yml", 'r') as stream:
+    try:
+        config = yaml.safe_load(stream)
+    except yaml.YAMLError as exc:
+        print(exc)
+
 samples = range(data_n)
 
 cases = product(
-    attention_range,
-    dividend_ror_range,
-    dividend_std_range,
-    mock_range,
-    p1_range,
-    p2_range,
-    delta_t1_range,
-    delta_t2_range,
+    config['attention_range'],
+    config['dividend_ror_range'],
+    config['dividend_std_range'],
+    config['mock_range'],
+    config['p1_range'],
+    config['p2_range'],
+    config['delta_t1_range'],
+    config['delta_t2_range'],
     samples
     )
-total_cases = len(attention_range) * len(dividend_ror_range) * len(dividend_std_range) * len(mock_range)
-
-print(f"Number of cases: {total_cases}")
-print(f"Number of samples (data_n): {data_n}")
 
 ### Update the meta document
 
@@ -200,11 +196,8 @@ meta = {
     'start' : timestamp_start,
     #'end' : timestamp_end,
     'data_n' : data_n,
-    'attention_range' : attention_range,
-    'dividend_ror_range' : dividend_ror_range,
-    'dividend_std_range' : dividend_std_range,
-    'mock_range' : mock_range
 }
+meta.update(config)
 
 meta.update(sim_params)
 
