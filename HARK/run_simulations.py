@@ -11,6 +11,7 @@ import logging
 import math
 from math import exp
 import matplotlib.pyplot as plt
+import multiprocessing
 import numpy as np
 import pandas as pd
 import math
@@ -18,6 +19,15 @@ import os
 import time
 
 timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
+
+
+with open("config.yml", 'r') as stream:
+    try:
+        config = yaml.safe_load(stream)
+    except yaml.YAMLError as exc:
+        print(exc)
+
+
 
 ### Configuring the agent population
 
@@ -45,17 +55,6 @@ agent_parameters = {
     'TranShkStd' : [ssvp['TranShkStd'][idx_40] / 2],  # Adjust non-multiplicative shock to quarterly
     'PermShkStd' : [ssvp['PermShkStd'][idx_40] ** 0.25]
 }
-
-
-## Configuring the parameter grid
-
-sim_params = {
-    "pop_n" : 25,
-    "q" : 2,
-    "r" : 2
-}
-
-data_n = 2
 
 def run_simulation(
     agent_parameters,
@@ -127,10 +126,10 @@ def sample_simulation(args):
         record = run_simulation(
             agent_parameters,
             dist_params,
-            sim_params['pop_n'],
+            config['pop_n'],
             a = attention,
-            q = sim_params['q'],
-            r = sim_params['r'],
+            q = config['q'],
+            r = config['r'],
             fm = fm,
             market = market
         )
@@ -164,66 +163,59 @@ def sample_simulation(args):
         }
 
 
-import multiprocessing
+def main():
+    samples = range(config['data_n'])
 
-pool = multiprocessing.Pool()
+    pool = multiprocessing.Pool()
 
-import yaml
+    cases = product(
+        config['attention_range'],
+        config['dividend_ror_range'],
+        config['dividend_std_range'],
+        config['mock_range'],
+        config['p1_range'],
+        config['p2_range'],
+        config['delta_t1_range'],
+        config['delta_t2_range'],
+        samples
+        )
 
-with open("config.yml", 'r') as stream:
-    try:
-        config = yaml.safe_load(stream)
-    except yaml.YAMLError as exc:
-        print(exc)
+    ### Update the meta document
 
-samples = range(data_n)
+    meta = {
+        'start' : timestamp_start,
+    }
+    meta.update(config)
 
-cases = product(
-    config['attention_range'],
-    config['dividend_ror_range'],
-    config['dividend_std_range'],
-    config['mock_range'],
-    config['p1_range'],
-    config['p2_range'],
-    config['delta_t1_range'],
-    config['delta_t2_range'],
-    samples
-    )
+    with open(os.path.join("out",f'meta-{timestamp_start}.json'), 'w') as json_file:
+        json.dump(meta, json_file)
 
-### Update the meta document
+    # single process version:
+    #records = [sample_simulation(case) for case in enumerate (cases)]
 
-meta = {
-    'start' : timestamp_start,
-    #'end' : timestamp_end,
-    'data_n' : data_n,
-}
-meta.update(config)
+    records = pool.map(sample_simulation, enumerate(cases))
+    pool.close()
 
-meta.update(sim_params)
+    good_records = [r for r in records if 'error' not in r]
+    bad_records = [r for r in records if 'error' in r]
 
-with open(os.path.join("out",f'meta-{timestamp_start}.json'), 'w') as json_file:
-    json.dump(meta, json_file)
+    data = pd.DataFrame.from_records(good_records)
 
-records = pool.map(sample_simulation, enumerate(cases))
-pool.close()
+    error_data = pd.DataFrame.from_records(bad_records)
 
-good_records = [r for r in records if 'error' not in r]
-bad_records = [r for r in records if 'error' in r]
+    data.to_csv(os.path.join("out",f"study-{timestamp_start}.csv"))
+    error_data.to_csv(os.path.join("out",f"errors-{timestamp_start}.csv"))
 
-data = pd.DataFrame.from_records(good_records)
-
-error_data = pd.DataFrame.from_records(bad_records)
-
-data.to_csv(os.path.join("out",f"study-{timestamp_start}.csv"))
-error_data.to_csv(os.path.join("out",f"errors-{timestamp_start}.csv"))
-
-timestamp_end = datetime.now().strftime("%Y-%b-%d_%H:%M")
+    timestamp_end = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
 
-### Update the meta document
+    ### Update the meta document
 
-meta.update({'end' : timestamp_end})
+    meta.update({'end' : timestamp_end})
 
-# trying to overwrite here
-with open(os.path.join("out",f'meta-{timestamp_start}.json'), 'w') as json_file:
-    json.dump(meta, json_file)
+    # trying to overwrite here
+    with open(os.path.join("out",f'meta-{timestamp_start}.json'), 'w') as json_file:
+        json.dump(meta, json_file)
+
+if __name__ == "__main__":
+    main()
