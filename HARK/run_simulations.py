@@ -14,9 +14,15 @@ import matplotlib.pyplot as plt
 import multiprocessing
 import numpy as np
 import pandas as pd
+import yaml
 import math
 import os
 import time
+
+AZURE = True
+
+if AZURE:
+    import azure_storage
 
 timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
@@ -148,7 +154,6 @@ def sample_simulation(args):
         return record
 
     except Exception as e:
-        import pdb; pdb.set_trace()
         return {
             "error" : e,
             'attention' : attention,
@@ -165,6 +170,7 @@ def sample_simulation(args):
 
 def main():
     samples = range(config['data_n'])
+
 
     pool = multiprocessing.Pool()
 
@@ -187,12 +193,6 @@ def main():
     }
     meta.update(config)
 
-    with open(os.path.join("out",f'meta-{timestamp_start}.json'), 'w') as json_file:
-        json.dump(meta, json_file)
-
-    # single process version:
-    #records = [sample_simulation(case) for case in enumerate (cases)]
-
     records = pool.map(sample_simulation, enumerate(cases))
     pool.close()
 
@@ -203,19 +203,35 @@ def main():
 
     error_data = pd.DataFrame.from_records(bad_records)
 
-    data.to_csv(os.path.join("out",f"study-{timestamp_start}.csv"))
-    error_data.to_csv(os.path.join("out",f"errors-{timestamp_start}.csv"))
+    path = "out"
+    study_fn = f"study-{timestamp_start}.csv"
+    error_fn = f"errors-{timestamp_start}.csv"
+    if AZURE:
+        azure_storage.dataframe_to_blob(
+            data, path, study_fn
+        )
+        azure_storage.dataframe_to_blob(
+            error_data, path, error_fn
+        )
+    else:
+        data.to_csv(os.path.join(path,study_fn))
+        error_data.to_csv(os.path.join(path,error_fn))
 
     timestamp_end = datetime.now().strftime("%Y-%b-%d_%H:%M")
-
 
     ### Update the meta document
 
     meta.update({'end' : timestamp_end})
 
-    # trying to overwrite here
-    with open(os.path.join("out",f'meta-{timestamp_start}.json'), 'w') as json_file:
-        json.dump(meta, json_file)
+    meta_fn = f'meta-{timestamp_start}.json'
+
+    if AZURE:
+        azure_storage.json_to_blob(meta, path, meta_fn)
+    else:
+        local_path = os.path.join(path, meta_fn)
+        # trying to overwrite here
+        with open(local_path, 'w') as json_file:
+            json.dump(meta, json_file)
 
 if __name__ == "__main__":
     main()
