@@ -193,6 +193,15 @@ def main():
     }
     meta.update(config)
 
+    if AZURE:
+        config_fn = f"config-{timestamp_start}.yml"
+        path = "."
+
+        azure_storage.upload_file(
+            config_fn,
+            local_file_name = "config.yml"
+        )
+    
     records = pool.map(sample_simulation, enumerate(cases))
     pool.close()
 

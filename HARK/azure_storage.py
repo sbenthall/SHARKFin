@@ -37,9 +37,18 @@ def test_file(local_path = "."):
     file.write("Hello, World!")
     file.close()
   
-def upload_file(file_name, local_path = "."):
+def upload_file(
+        file_name,
+        local_path = ".",
+        local_file_name = None
+):
     # Create a local directory to hold blob data
-    upload_file_path = os.path.join(local_path, file_name)
+    upload_file_path = os.path.join(
+        local_path,
+        file_name
+        if local_file_name is None
+        else local_file_name
+    )
 
     # Create a blob client using the local file name as the name for the blob
     blob_client = blob_service_client.get_blob_client(
@@ -47,7 +56,7 @@ def upload_file(file_name, local_path = "."):
         blob=file_name
     )
 
-    print("\nUploading to Azure Storage as blob:\n\t" + local_file_name)
+    print("\nUploading to Azure Storage as blob:\n\t" + upload_file_path)
 
     # Upload the created file
     with open(upload_file_path, "rb") as data:
