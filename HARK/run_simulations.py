@@ -18,6 +18,7 @@ import yaml
 import math
 import os
 import time
+import uuid
 
 AZURE = True
 
@@ -193,8 +194,10 @@ def main():
     }
     meta.update(config)
 
+    filename_stamp = timestamp_start +"-" + str(uuid.uuid4())[:4]
+    
     if AZURE:
-        config_fn = f"config-{timestamp_start}.yml"
+        config_fn = f"config-{filename_stamp}.yml"
         path = "."
 
         azure_storage.upload_file(
@@ -213,8 +216,8 @@ def main():
     error_data = pd.DataFrame.from_records(bad_records)
 
     path = "out"
-    study_fn = f"study-{timestamp_start}.csv"
-    error_fn = f"errors-{timestamp_start}.csv"
+    study_fn = f"study-{filename_stamp}.csv"
+    error_fn = f"errors-{filename_stamp}.csv"
     if AZURE:
         azure_storage.dataframe_to_blob(
             data, path, study_fn
@@ -227,12 +230,12 @@ def main():
         error_data.to_csv(os.path.join(path,error_fn))
 
     timestamp_end = datetime.now().strftime("%Y-%b-%d_%H:%M")
-
+    
     ### Update the meta document
 
     meta.update({'end' : timestamp_end})
 
-    meta_fn = f'meta-{timestamp_start}.json'
+    meta_fn = f'meta-{filename_stamp}.json'
 
     if AZURE:
         azure_storage.json_to_blob(meta, path, meta_fn)
