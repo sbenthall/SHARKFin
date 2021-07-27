@@ -21,6 +21,16 @@ import util as UTIL
 
 import random
 
+## TODO configuration file for this value!
+sys.path.append('../../HARK')
+
+AZURE = True
+
+if AZURE:
+    import azure_storage
+
+
+
 LOG=None
 LM=None
 
@@ -273,6 +283,19 @@ def run_NLsims(
     toc0 = time.process_time()
     print(f'Elapsed (sys clock), run {SEED}: ', toc0-tic0)
     LM.kill_workspace()
+
+    if AZURE:
+        (head, tail) = os.path.split(TRfile)
+
+        remote_file_name = os.path.join("pnl",tail)
+        
+        try:
+            azure_storage.upload_file(
+                remote_file_name,
+                local_file_name = TRfile
+            )
+        except Exception as e:
+            raise(Exception(f"{logfile} Uploading error: {e}"))
 
 def set_NLvar(varname,value):
     LOG.debug(f"SETTING: {varname}:={value}")
