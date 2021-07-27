@@ -36,7 +36,13 @@ def test_file(local_path = "."):
     file = open(upload_file_path, 'w')
     file.write("Hello, World!")
     file.close()
-  
+
+def blob_exists(remote_file_name):
+    blob_client = container_client.get_blob_client(
+        remote_file_name
+    )
+    return blob_client.exists()
+    
 def upload_file(
         file_name,
         local_path = ".",
@@ -55,6 +61,10 @@ def upload_file(
         container=container_name,
         blob=file_name
     )
+
+    if blob_client.exists():
+        print("Blob already exists")
+        return
 
     print("\nUploading to Azure Storage as blob:\n\t" + upload_file_path)
 
@@ -84,3 +94,13 @@ def json_to_blob(js, path, filename):
     print(f"\nUploading to Azure Storage as blob:\n\t{local_path}")
     upload_file(filename, local_path = path)
     os.remove(local_path)
+
+
+def download_blob(remote_file_name):
+    blob_client = container_client.get_blob_client(
+        remote_file_name
+    )
+
+    blob_download = blob_client.download_blob()
+
+    return blob_download.readall()

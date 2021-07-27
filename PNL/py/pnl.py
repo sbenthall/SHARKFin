@@ -97,10 +97,20 @@ def run_NLsims(
         CFG, SEED, broker_buy_limit, broker_sell_limit
     )
 
-    if use_cache and os.path.exists(TRfile):
-        print(f"Output for S:{SEED},BL:{broker_buy_limit},SL:{broker_sell_limit} already exists.")
-        print("Will use cache.")
-        return
+    if use_cache:
+        if os.path.exists(TRfile):
+            print(f"Output for S:{SEED},BL:{broker_buy_limit},SL:{broker_sell_limit} already exists.")
+            print("Will use cache.")
+            return
+
+        if AZURE:
+            (head, tail) = os.path.split(TRfile)
+            remote_file_name = os.path.join("pnl", tail)
+
+            if azure_storage.blob_exists(remote_file_name):
+                print(f"Output for S:{SEED},BL:{broker_buy_limit},SL:{broker_sell_limit} already exists in Azure Blob storage.")
+                print("Will use cache.")
+                return
 
     #sid = f"{CFG['pnl']['nLiqSup']}_{CFG['pnl']['nMktMkr']}"
     LOG = logging.getLogger(sid)
@@ -295,7 +305,7 @@ def run_NLsims(
                 local_file_name = TRfile
             )
         except Exception as e:
-            raise(Exception(f"{logfile} Uploading error: {e}"))
+            raise(Exception(f"{remote_file_name} Uploading error: {e}"))
 
 def set_NLvar(varname,value):
     LOG.debug(f"SETTING: {varname}:={value}")

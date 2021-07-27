@@ -3,10 +3,12 @@ import HARK.ConsumptionSaving.ConsIndShockModel as cism
 from HARK.core import distribute_params
 from datetime import datetime
 from HARK.distribution import Uniform
+import io
 import itertools
 import math
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 import pandas as pd
 import random
 import seaborn as sns
@@ -25,6 +27,11 @@ import pnl as pnl
 import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+AZURE = True
+
+if AZURE:
+    import azure_storage
 
 
 ### Initializing agents
@@ -539,14 +546,25 @@ class MarketPNL():
         )
 
         # use run_market() first to create logs
-        try:
+        if os.path.exists(logfile):
             transactions = pd.read_csv(
                 logfile,
                 delimiter='\t'
             )
             return transactions
-        except Exception as e:
-            raise(Exception(f"{logfile}: {e}"))
+        elif AZURE:
+            try:
+                (head, tail) = os.path.split(logfile)
+                remote_transaction_file_name = os.path.join("pnl", tail)
+                csv_data = azure_storage.download_blob(remote_transaction_file_name)
+
+                if isinstance(csv_data, bytes):
+                    csv_data = str(csv_data)
+
+                df = pd.read_csv(io.StringIO(csv_data))
+                return df
+            except Exception as e:
+                raise(Exception(f"Azure loading {logfile} error: {e}"))
 
     def get_simulation_price(self, seed = 0, buy_sell = (0,0)):
         """
@@ -557,7 +575,14 @@ class MarketPNL():
         """
 
         transactions = self.get_transactions(seed=seed, buy_sell = buy_sell)
-        prices = transactions['TrdPrice']
+
+        try:
+            prices = transactions['TrdPrice']
+        except Exception as e:
+            raise Exception(
+                f"get_simulation_price(seed = {seed}," +
+                f" buy_sell = {buy_sell}) error: " + str(e)
+            )
 
         if len(prices.index) == 0:
             ## BUG FIX HACK
