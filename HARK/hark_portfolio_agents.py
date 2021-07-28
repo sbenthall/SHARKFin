@@ -547,11 +547,14 @@ class MarketPNL():
 
         # use run_market() first to create logs
         if os.path.exists(logfile):
-            transactions = pd.read_csv(
-                logfile,
-                delimiter='\t'
-            )
-            return transactions
+            try:
+                transactions = pd.read_csv(
+                    logfile,
+                    delimiter='\t'
+                )
+                return transactions
+            except Exception as e:
+                raise(Exception(f"Error loading transactions from local file: {e}"))
         elif AZURE:
             try:
                 (head, tail) = os.path.split(logfile)
@@ -559,9 +562,13 @@ class MarketPNL():
                 csv_data = azure_storage.download_blob(remote_transaction_file_name)
 
                 if isinstance(csv_data, bytes):
-                    csv_data = str(csv_data)
+                    csv_data = csv_data.decode('UTF-8')
 
-                df = pd.read_csv(io.StringIO(csv_data))
+                df = pd.read_csv(io.StringIO(csv_data), delimiter='\t')
+
+                if len(df.columns) < 3:
+                    raise Exception(f"transaction dataframe columns insufficent: {df.columns}")
+                
                 return df
             except Exception as e:
                 raise(Exception(f"Azure loading {logfile} error: {e}"))
@@ -582,6 +589,7 @@ class MarketPNL():
             raise Exception(
                 f"get_simulation_price(seed = {seed}," +
                 f" buy_sell = {buy_sell}) error: " + str(e)
+                + f", columns: {transactions.columns}"
             )
 
         if len(prices.index) == 0:
