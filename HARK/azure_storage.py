@@ -55,6 +55,8 @@ def upload_file(
         if local_file_name is None
         else local_file_name
     )
+    
+    print("\nOpening client to upload blob:\n\t" + upload_file_path)
 
     # Create a blob client using the local file name as the name for the blob
     blob_client = blob_service_client.get_blob_client(
@@ -62,12 +64,12 @@ def upload_file(
         blob=file_name
     )
 
+    print("Checking for existence.")
     if blob_client.exists():
         print("Blob already exists")
         return
 
-    print("\nUploading to Azure Storage as blob:\n\t" + upload_file_path)
-
+    print("Does not exist. Uploading.")
     # Upload the created file
     with open(upload_file_path, "rb") as data:
         blob_client.upload_blob(data)

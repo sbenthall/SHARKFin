@@ -304,6 +304,8 @@ def run_NLsims(
                 remote_file_name,
                 local_file_name = TRfile
             )
+
+            os.remove(TRfile)
         except Exception as e:
             raise(Exception(f"{remote_file_name} Uploading error: {e}"))
 
