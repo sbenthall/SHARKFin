@@ -1,4 +1,3 @@
-
 from datetime import datetime
 import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 from HARK.Calibration.Income.IncomeTools import (
@@ -107,7 +106,8 @@ def sample_simulation(args):
     delta_t1 = args[1][6]
     delta_t2 = args[1][7]
     sample = args[1][8]
-
+    seed_limit = args[1][9]
+    
     # super hack
     if not mock:
         time.sleep((attention + dividend_ror) / 100000)
@@ -127,7 +127,10 @@ def sample_simulation(args):
     if mock:
         market = hpa.MockMarket()
     else:
-        market = hpa.MarketPNL(sample = sample)
+        market = hpa.MarketPNL(
+            sample = sample,
+            seed_limit = seed_limit
+        )
 
     try:
         record = run_simulation(
@@ -184,7 +187,8 @@ def main():
         config['p2_range'],
         config['delta_t1_range'],
         config['delta_t2_range'],
-        samples
+        samples,
+        [config['seed_limit']]
         )
 
     ### Update the meta document
