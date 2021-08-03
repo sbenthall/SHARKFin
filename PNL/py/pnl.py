@@ -312,6 +312,8 @@ def run_NLsims(
     try:
         # we don't need these piling up.
         os.remove(logfile)
+    except:
+        pass
 
 def set_NLvar(varname,value):
     LOG.debug(f"SETTING: {varname}:={value}")
