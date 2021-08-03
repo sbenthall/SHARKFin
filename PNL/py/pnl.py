@@ -309,6 +309,10 @@ def run_NLsims(
         except Exception as e:
             raise(Exception(f"{remote_file_name} Uploading error: {e}"))
 
+    try:
+        # we don't need these piling up.
+        os.remove(logfile)
+
 def set_NLvar(varname,value):
     LOG.debug(f"SETTING: {varname}:={value}")
     LM.command(f"set {varname} {value}")
