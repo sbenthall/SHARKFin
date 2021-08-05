@@ -12,12 +12,14 @@ from math import exp
 import matplotlib.pyplot as plt
 import multiprocessing
 import numpy as np
-import pandas as pd
-import yaml
 import math
 import os
+import pandas as pd
+import sys
 import time
 import uuid
+import yaml
+
 
 AZURE = True
 
@@ -25,15 +27,6 @@ if AZURE:
     import azure_storage
 
 timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
-
-
-with open("config.yml", 'r') as stream:
-    try:
-        config = yaml.safe_load(stream)
-    except yaml.YAMLError as exc:
-        print(exc)
-
-
 
 ### Configuring the agent population
 
@@ -106,7 +99,7 @@ def sample_simulation(args):
     delta_t1 = args[1][6]
     delta_t2 = args[1][7]
     sample = args[1][8]
-    seed_limit = args[1][9]
+    config = args[1][9]
     
     # super hack
     if not mock:
@@ -129,7 +122,7 @@ def sample_simulation(args):
     else:
         market = hpa.MarketPNL(
             sample = sample,
-            seed_limit = seed_limit
+            seed_limit = config['seed_limit']
         )
 
     try:
@@ -151,9 +144,7 @@ def sample_simulation(args):
             f"simstat-{timestamp_start}-c{case_id}.csv"
         )
         record_df = pd.DataFrame.from_records([record])
-        record_df.to_csv(stat_path)
-
-        #write_df(stat_path, record_df)
+        #record_df.to_csv(stat_path)
 
         return record
 
@@ -173,6 +164,20 @@ def sample_simulation(args):
 
 
 def main():
+
+    # first argument is path of config file.
+    if len(sys.argv[1:]) > 0:
+        config_path = sys.argv[1]
+    else:
+        config_path = "config.yml"
+
+    with open(config_path, 'r') as stream:
+        try:
+            config = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+
+        
     samples = range(config['data_n'])
 
 
@@ -188,7 +193,7 @@ def main():
         config['delta_t1_range'],
         config['delta_t2_range'],
         samples,
-        [config['seed_limit']]
+        [config]
         )
 
     ### Update the meta document
@@ -206,7 +211,7 @@ def main():
 
         azure_storage.upload_file(
             config_fn,
-            local_file_name = "config.yml"
+            local_file_name = config_path
         )
     
     records = pool.map(sample_simulation, enumerate(cases))
