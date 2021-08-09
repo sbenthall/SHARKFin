@@ -6,8 +6,6 @@ from HARK.Calibration.Income.IncomeTools import (
 import hark_portfolio_agents as hpa
 from itertools import product
 import json
-import logging
-import math
 from math import exp
 import matplotlib.pyplot as plt
 import multiprocessing
@@ -100,7 +98,7 @@ def sample_simulation(args):
     delta_t2 = args[1][7]
     sample = args[1][8]
     config = args[1][9]
-    
+
     # super hack
     if not mock:
         time.sleep((attention + dividend_ror) / 100000)
@@ -165,11 +163,16 @@ def sample_simulation(args):
 
 def main():
 
+    test_remote_config = "config-2021-Aug-05_18:28-b5bf.yml"
+
     # first argument is path of config file.
     if len(sys.argv[1:]) > 0:
         config_path = sys.argv[1]
     else:
-        config_path = "config.yml"
+        config_path = test_remote_config # "config.yml"
+
+    if not os.path.exists(config_path):
+        config = azure_storage.download_blob(config_path, write = True)
 
     with open(config_path, 'r') as stream:
         try:
@@ -177,9 +180,7 @@ def main():
         except yaml.YAMLError as exc:
             print(exc)
 
-        
     samples = range(config['data_n'])
-
 
     pool = multiprocessing.Pool()
 
@@ -204,7 +205,7 @@ def main():
     meta.update(config)
 
     filename_stamp = timestamp_start +"-" + str(uuid.uuid4())[:4]
-    
+
     if AZURE:
         config_fn = f"config-{filename_stamp}.yml"
         path = "."
@@ -213,7 +214,7 @@ def main():
             config_fn,
             local_file_name = config_path
         )
-    
+
     records = pool.map(sample_simulation, enumerate(cases))
     pool.close()
 
@@ -239,7 +240,7 @@ def main():
         error_data.to_csv(os.path.join(path,error_fn))
 
     timestamp_end = datetime.now().strftime("%Y-%b-%d_%H:%M")
-    
+
     ### Update the meta document
 
     meta.update({'end' : timestamp_end})

@@ -569,9 +569,6 @@ class MarketPNL():
                 remote_transaction_file_name = os.path.join("pnl", tail)
                 csv_data = azure_storage.download_blob(remote_transaction_file_name)
 
-                if isinstance(csv_data, bytes):
-                    csv_data = csv_data.decode('UTF-8')
-
                 df = pd.read_csv(io.StringIO(csv_data), delimiter='\t')
 
                 if len(df.columns) < 3:
