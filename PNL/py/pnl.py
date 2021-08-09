@@ -21,6 +21,16 @@ import util as UTIL
 
 import random
 
+## TODO configuration file for this value!
+sys.path.append('../../HARK')
+
+AZURE = True
+
+if AZURE:
+    import azure_storage
+
+
+
 LOG=None
 LM=None
 
@@ -87,10 +97,20 @@ def run_NLsims(
         CFG, SEED, broker_buy_limit, broker_sell_limit
     )
 
-    if use_cache and os.path.exists(TRfile):
-        print(f"Output for S:{SEED},BL:{broker_buy_limit},SL:{broker_sell_limit} already exists.")
-        print("Will use cache.")
-        return
+    if use_cache:
+        if os.path.exists(TRfile):
+            print(f"Output for S:{SEED},BL:{broker_buy_limit},SL:{broker_sell_limit} already exists.")
+            print("Will use cache.")
+            return
+
+        if AZURE:
+            (head, tail) = os.path.split(TRfile)
+            remote_file_name = os.path.join("pnl", tail)
+            print(f"Testing for blob existence: {remote_file_name}")
+            if azure_storage.blob_exists(remote_file_name):
+                print(f"Output for S:{SEED},BL:{broker_buy_limit},SL:{broker_sell_limit} already exists in Azure Blob storage.")
+                print("Will use cache.")
+                return
 
     #sid = f"{CFG['pnl']['nLiqSup']}_{CFG['pnl']['nMktMkr']}"
     LOG = logging.getLogger(sid)
@@ -273,6 +293,27 @@ def run_NLsims(
     toc0 = time.process_time()
     print(f'Elapsed (sys clock), run {SEED}: ', toc0-tic0)
     LM.kill_workspace()
+
+    if AZURE:
+        (head, tail) = os.path.split(TRfile)
+
+        remote_file_name = os.path.join("pnl",tail)
+        
+        try:
+            azure_storage.upload_file(
+                remote_file_name,
+                local_file_name = TRfile
+            )
+
+            os.remove(TRfile)
+        except Exception as e:
+            raise(Exception(f"{remote_file_name} Uploading error: {e}"))
+
+    try:
+        # we don't need these piling up.
+        os.remove(logfile)
+    except:
+        pass
 
 def set_NLvar(varname,value):
     LOG.debug(f"SETTING: {varname}:={value}")

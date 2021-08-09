@@ -1,4 +1,3 @@
-
 from datetime import datetime
 import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 from HARK.Calibration.Income.IncomeTools import (
@@ -13,21 +12,21 @@ from math import exp
 import matplotlib.pyplot as plt
 import multiprocessing
 import numpy as np
-import pandas as pd
 import math
 import os
+import pandas as pd
+import sys
 import time
+import uuid
+import yaml
+
+
+AZURE = True
+
+if AZURE:
+    import azure_storage
 
 timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
-
-
-with open("config.yml", 'r') as stream:
-    try:
-        config = yaml.safe_load(stream)
-    except yaml.YAMLError as exc:
-        print(exc)
-
-
 
 ### Configuring the agent population
 
@@ -100,7 +99,8 @@ def sample_simulation(args):
     delta_t1 = args[1][6]
     delta_t2 = args[1][7]
     sample = args[1][8]
-
+    config = args[1][9]
+    
     # super hack
     if not mock:
         time.sleep((attention + dividend_ror) / 100000)
@@ -120,7 +120,10 @@ def sample_simulation(args):
     if mock:
         market = hpa.MockMarket()
     else:
-        market = hpa.MarketPNL(sample = sample)
+        market = hpa.MarketPNL(
+            sample = sample,
+            seed_limit = config['seed_limit']
+        )
 
     try:
         record = run_simulation(
@@ -141,14 +144,11 @@ def sample_simulation(args):
             f"simstat-{timestamp_start}-c{case_id}.csv"
         )
         record_df = pd.DataFrame.from_records([record])
-        record_df.to_csv(stat_path)
-
-        #write_df(stat_path, record_df)
+        #record_df.to_csv(stat_path)
 
         return record
 
     except Exception as e:
-        import pdb; pdb.set_trace()
         return {
             "error" : e,
             'attention' : attention,
@@ -164,7 +164,22 @@ def sample_simulation(args):
 
 
 def main():
+
+    # first argument is path of config file.
+    if len(sys.argv[1:]) > 0:
+        config_path = sys.argv[1]
+    else:
+        config_path = "config.yml"
+
+    with open(config_path, 'r') as stream:
+        try:
+            config = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+
+        
     samples = range(config['data_n'])
+
 
     pool = multiprocessing.Pool()
 
@@ -177,7 +192,8 @@ def main():
         config['p2_range'],
         config['delta_t1_range'],
         config['delta_t2_range'],
-        samples
+        samples,
+        [config]
         )
 
     ### Update the meta document
@@ -187,12 +203,17 @@ def main():
     }
     meta.update(config)
 
-    with open(os.path.join("out",f'meta-{timestamp_start}.json'), 'w') as json_file:
-        json.dump(meta, json_file)
+    filename_stamp = timestamp_start +"-" + str(uuid.uuid4())[:4]
+    
+    if AZURE:
+        config_fn = f"config-{filename_stamp}.yml"
+        path = "."
 
-    # single process version:
-    #records = [sample_simulation(case) for case in enumerate (cases)]
-
+        azure_storage.upload_file(
+            config_fn,
+            local_file_name = config_path
+        )
+    
     records = pool.map(sample_simulation, enumerate(cases))
     pool.close()
 
@@ -203,19 +224,35 @@ def main():
 
     error_data = pd.DataFrame.from_records(bad_records)
 
-    data.to_csv(os.path.join("out",f"study-{timestamp_start}.csv"))
-    error_data.to_csv(os.path.join("out",f"errors-{timestamp_start}.csv"))
+    path = "out"
+    study_fn = f"study-{filename_stamp}.csv"
+    error_fn = f"errors-{filename_stamp}.csv"
+    if AZURE:
+        azure_storage.dataframe_to_blob(
+            data, path, study_fn
+        )
+        azure_storage.dataframe_to_blob(
+            error_data, path, error_fn
+        )
+    else:
+        data.to_csv(os.path.join(path,study_fn))
+        error_data.to_csv(os.path.join(path,error_fn))
 
     timestamp_end = datetime.now().strftime("%Y-%b-%d_%H:%M")
-
-
+    
     ### Update the meta document
 
     meta.update({'end' : timestamp_end})
 
-    # trying to overwrite here
-    with open(os.path.join("out",f'meta-{timestamp_start}.json'), 'w') as json_file:
-        json.dump(meta, json_file)
+    meta_fn = f'meta-{filename_stamp}.json'
+
+    if AZURE:
+        azure_storage.json_to_blob(meta, path, meta_fn)
+    else:
+        local_path = os.path.join(path, meta_fn)
+        # trying to overwrite here
+        with open(local_path, 'w') as json_file:
+            json.dump(meta, json_file)
 
 if __name__ == "__main__":
     main()

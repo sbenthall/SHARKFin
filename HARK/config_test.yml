@@ -1,0 +1,23 @@
+---
+seed_limit: 30
+data_n: 4 # 64 # number of samples per grid case
+pop_n : 25 # number of agents per population class
+q : 8 # quarters per simulation
+r : 60 # runs per simulation. Should be factor of 60
+attention_range:
+  - 0.0
+  - .01
+dividend_ror_range:
+  - 0.04 
+dividend_std_range:
+  - 0.01
+mock_range:
+  - False
+p1_range:
+  - 0.5
+p2_range:
+  - 0.5
+delta_t1_range:
+  - 60
+delta_t2_range:
+  - 60
