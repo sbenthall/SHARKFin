@@ -1,3 +1,4 @@
+azure-storage-blob
 econ-ark
 jpype1
 matplotlib
