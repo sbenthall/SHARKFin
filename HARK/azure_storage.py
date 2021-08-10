@@ -73,13 +73,15 @@ def upload_file(
     with open(upload_file_path, "rb") as data:
         blob_client.upload_blob(data)
 
-def list_blobs():
+def list_blobs(name_starts_with=None):
     print("\nListing blobs...")
 
     # List the blobs in the container
-    blob_list = container_client.list_blobs()
-    for blob in blob_list:
-        print("\t" + blob.name)
+    blob_list = container_client.list_blobs(
+        name_starts_with = name_starts_with
+    )
+
+    return blob_list
 
 def dataframe_to_blob(df, path, filename):
     local_path = os.path.join(path, filename)

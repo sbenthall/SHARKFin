@@ -573,7 +573,7 @@ class MarketPNL():
 
                 if len(df.columns) < 3:
                     raise Exception(f"transaction dataframe columns insufficent: {df.columns}")
-                
+
                 return df
             except Exception as e:
                 raise(Exception(f"Azure loading {logfile} error: {e}"))

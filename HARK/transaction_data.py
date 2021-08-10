@@ -1,22 +1,29 @@
+import azure_storage
+import io
 import os
 import pandas as pd
 import re
 
-tre = re.compile("LMtransactions_SD(\d+)BL(\d+)SL(\d+).csv")
+tre = re.compile("pnl/LMtransactions_SD(\d+)BL(\d+)SL(\d+).csv")
 
-files = os.listdir('logs')
-
-transactions = [f for f in files if 'LMtransactions' in f]
+files = azure_storage.list_blobs(name_starts_with="pnl/")
 
 def tre_data(filename):
-    match = tre.match(filename)
+
+    match = tre.match(filename['name'])
+
+    # just some arbitary output...
+    if match[1] == match[2] or match[1] == match[3]:
+        print("Procesing " + filename['name'])
 
     message = None
-    
+
     try:
-        df = pd.read_csv(filename, delimiter = "\t")
-
-
+        tr_data = azure_storage.download_blob(filename)
+        df = pd.read_csv(
+            io.StringIO(tr_data),
+            delimiter='\t'
+        )
         prices = df['TrdPrice']
 
         if len(prices.index) == 0:
@@ -28,7 +35,7 @@ def tre_data(filename):
             final_price = prices[prices.index.values[-1]]
     except Exception as e:
         print(e)
-        message = "No columns found"
+        message = f"{str(e)}"
         final_price = None
 
     return {
@@ -39,7 +46,7 @@ def tre_data(filename):
         "message" : message
     }
 
-records = [tre_data(fn) for fn in transactions]
+records = [tre_data(fn) for fn in files]
 
 tdf = pd.DataFrame.from_records(records)
 
