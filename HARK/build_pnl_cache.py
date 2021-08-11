@@ -36,26 +36,46 @@ def do_market(args):
         return (args , True)
     except Exception as e:
         return (args , False)
-                
+
 def main():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("sl", help="seed limit",
-                    type=int)
-    parser.add_argument("lt", help="total buy and sell limit total",
-                    type=int)
-    parser.add_argument("--fill", help="fill in every value not just (x,0) and (0,x)",
-                    action="store_true")
+    parser.add_argument("--sl_max", help="seed max", type=int, default=20)
+    parser.add_argument("--sl_min", help="seed min", type=int, default=0)
+
+    parser.add_argument('--bl_max',
+                        help="buy limit max",
+                        const=1,
+                        type=int, default=20)
+    parser.add_argument('--sl_max',
+                        help="sell limit max",
+                        const=1,
+                        type=int,
+                        default=20)
+
+    parser.add_argument('--bl_min',
+                        help="buy limit min",
+                        const=1,
+                        type=int,
+                        default=0)
+    parser.add_argument('--sl_min',
+                        help="sell limit min",
+                        const=1,
+                        type=int,
+                        default=0)
 
     args = parser.parse_args()
 
     pool = multiprocessing.Pool()
     records = pool.imap(
         do_market, case_generator(
-            seed_limit = args.sl,
-            limit_total = args.lt,
-            fill = args.fill
+            seed_max = args.sl_max,
+            seed_min = args.sl_min,
+            bl_max = args.bl_max,
+            bl_min = args.bl_min,
+            sl_max = args.sl_max,
+            sl_min = args.sl_min
         ))
     pool.close()
 
