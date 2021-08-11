@@ -1,3 +1,4 @@
+import argparse
 from datetime import datetime
 import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 from HARK.Calibration.Income.IncomeTools import (
@@ -17,6 +18,12 @@ import sys
 import time
 import uuid
 import yaml
+
+parser = argparse.ArgumentParser()
+parser.add_argument("config", help="The name of a config file.")
+parser.add_argument("-t",
+                    "--tag", type=str,
+                    help="a string tag to be added to the output files")
 
 
 AZURE = True
@@ -162,14 +169,12 @@ def sample_simulation(args):
 
 
 def main():
+    args = parser.parse_args()
 
-    test_remote_config = "config-2021-Aug-05_18:28-b5bf.yml"
+    config_path = args.config
 
-    # first argument is path of config file.
-    if len(sys.argv[1:]) > 0:
-        config_path = sys.argv[1]
-    else:
-        config_path = test_remote_config # "config.yml"
+    print(args.config)
+    print(args.tag)
 
     if not os.path.exists(config_path):
         config = azure_storage.download_blob(config_path, write = True)
@@ -205,6 +210,8 @@ def main():
     meta.update(config)
 
     filename_stamp = timestamp_start +"-" + str(uuid.uuid4())[:4]
+    if args.tag:
+        filename_stamp = filename_stamp + "-" + args.tag
 
     if AZURE:
         config_fn = f"config-{filename_stamp}.yml"
