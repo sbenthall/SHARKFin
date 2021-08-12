@@ -211,10 +211,12 @@ def main():
 
     filename_stamp = timestamp_start +"-" + str(uuid.uuid4())[:4]
     if args.tag:
-        filename_stamp = filename_stamp + "-" + args.tag
+        tag = args.tag + "-"
+    else:
+        tag = ""
 
     if AZURE:
-        config_fn = f"config-{filename_stamp}.yml"
+        config_fn = f"{tag}config-{filename_stamp}.yml"
         path = "."
 
         azure_storage.upload_file(
@@ -241,7 +243,7 @@ def main():
 
     meta.update({'end' : timestamp_end})
 
-    meta_fn = f'meta-{filename_stamp}.json'
+    meta_fn = f'{tag}meta-{filename_stamp}.json'
 
     if AZURE:
         azure_storage.json_to_blob(meta, path, meta_fn)
@@ -252,8 +254,8 @@ def main():
             json.dump(meta, json_file)
 
     path = "out"
-    study_fn = f"study-{filename_stamp}.csv"
-    error_fn = f"errors-{filename_stamp}.csv"
+    study_fn = f"{tag}study-{filename_stamp}.csv"
+    error_fn = f"{tag}errors-{filename_stamp}.csv"
     if AZURE:
         azure_storage.dataframe_to_blob(
             data, path, study_fn
