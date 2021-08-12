@@ -222,8 +222,11 @@ def main():
             local_file_name = config_path
         )
 
+    print("Running parallel simulations")
     records = pool.map(sample_simulation, enumerate(cases))
     pool.close()
+
+    print("Closing pool, attempting to upload data.")
 
     good_records = [r for r in records if 'error' not in r]
     bad_records = [r for r in records if 'error' in r]
@@ -231,20 +234,6 @@ def main():
     data = pd.DataFrame.from_records(good_records)
 
     error_data = pd.DataFrame.from_records(bad_records)
-
-    path = "out"
-    study_fn = f"study-{filename_stamp}.csv"
-    error_fn = f"errors-{filename_stamp}.csv"
-    if AZURE:
-        azure_storage.dataframe_to_blob(
-            data, path, study_fn
-        )
-        azure_storage.dataframe_to_blob(
-            error_data, path, error_fn
-        )
-    else:
-        data.to_csv(os.path.join(path,study_fn))
-        error_data.to_csv(os.path.join(path,error_fn))
 
     timestamp_end = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
@@ -261,6 +250,22 @@ def main():
         # trying to overwrite here
         with open(local_path, 'w') as json_file:
             json.dump(meta, json_file)
+
+    path = "out"
+    study_fn = f"study-{filename_stamp}.csv"
+    error_fn = f"errors-{filename_stamp}.csv"
+    if AZURE:
+        azure_storage.dataframe_to_blob(
+            data, path, study_fn
+        )
+        azure_storage.dataframe_to_blob(
+            error_data, path, error_fn
+        )
+    else:
+        data.to_csv(os.path.join(path,study_fn))
+        error_data.to_csv(os.path.join(path,error_fn))
+
+
 
 if __name__ == "__main__":
     main()
