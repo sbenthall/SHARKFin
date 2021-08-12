@@ -4,6 +4,11 @@ from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient, _
 import json
 import pandas as pd
 
+import logging
+
+# Set the logging level for all azure-storage-* libraries
+logger = logging.getLogger('azure.storage')
+logger.setLevel(logging.WARNING)
 
 # CONFIGURATION
 
