@@ -265,7 +265,7 @@ def main():
         data.to_csv(os.path.join(path,study_fn))
         error_data.to_csv(os.path.join(path,error_fn))
 
-    print(f"Completed with data upload. {len(records) records.}")
+    print(f"Completed with data upload. {len(records)} records.")
 
 
 if __name__ == "__main__":
