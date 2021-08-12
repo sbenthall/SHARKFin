@@ -7,7 +7,7 @@ import pandas as pd
 import logging
 
 # Set the logging level for all azure-storage-* libraries
-logger = logging.getLogger('azure.storage')
+logger = logging.getLogger("azure.core.pipeline.policies.http_logging_policy")
 logger.setLevel(logging.WARNING)
 
 # CONFIGURATION
