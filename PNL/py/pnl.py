@@ -15,6 +15,8 @@ import logging
 import csv
 import multiprocessing as mp
 
+from pathlib import Path
+
 import pyNetLogo as pnl
 
 import util as UTIL
@@ -24,7 +26,7 @@ import random
 ## TODO configuration file for this value!
 sys.path.append('../../HARK')
 
-AZURE = True
+AZURE = False
 
 if AZURE:
     import azure_storage
@@ -41,7 +43,13 @@ def logfile_name(config, seed, bbl, bsl):
     logfile = config['pnl']['logfilepfx'] \
               + f"SD{seed}BL{bbl}SL{bsl}" + '.' \
               + config['pnl']['logfilesfx']
-    logfile = os.path.join(config['pnl']['logdir'], logfile)
+
+    logfile = os.path.join(config['pnl']['logdir'], logfile)  
+    
+    Path(config['pnl']['logdir']).mkdir(parents=True, exist_ok=True)
+
+    if not os.path.isfile(logfile):
+        open(logfile, 'a').close()
 
     return logfile
 
