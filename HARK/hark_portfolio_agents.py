@@ -87,11 +87,6 @@ def distribute(agents, dist_params):
             for agent in agent_dist
         ]
 
-        # should be unecessary but a hack to cover a HARK bug
-        # https://github.com/econ-ark/HARK/issues/994
-        for agent in agents:
-            agent.assign_parameters(**{param : getattr(agent, param)})
-
     return agents
 
 #####
