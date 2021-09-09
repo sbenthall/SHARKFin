@@ -478,6 +478,9 @@ class MarketPNL():
     sp500_ror = 0.000628
     sp500_std = 0.011988
 
+    # limits the seeds
+    seed_limit = None
+
     # Storing the last market arguments used for easy access to most
     # recent data
     last_buy_sell = None
@@ -495,7 +498,8 @@ class MarketPNL():
         self,
         sample = 0,
         config_file = "../PNL/macroliquidity.ini",
-        config_local_file = "../PNL/macroliquidity_local.ini"
+        config_local_file = "../PNL/macroliquidity_local.ini",
+        seed_limit = None
     ):
         self.config = UTIL.read_config(
             config_file = config_file,
@@ -505,6 +509,9 @@ class MarketPNL():
         self.sample = 0
         self.seeds = []
 
+        if seed_limit is not None:
+            self.seed_limit = seed_limit
+
     def run_market(self, seed = 0, buy_sell = 0):
         """
         Runs the NetLogo market simulation with a given
@@ -513,7 +520,8 @@ class MarketPNL():
         optionally a random seed (seed)
         """
         if seed is None:
-            seed = np.random.randint(1500) + self.sample
+            seed_limit = self.seed_limit if self.seed_limit is not None else 3000
+            seed = (np.random.randint(seed_limit) + self.sample) % seed_limit
 
         self.last_seed = seed
         self.last_buy_sell = buy_sell
@@ -556,14 +564,11 @@ class MarketPNL():
                 remote_transaction_file_name = os.path.join("pnl", tail)
                 csv_data = azure_storage.download_blob(remote_transaction_file_name)
 
-                if isinstance(csv_data, bytes):
-                    csv_data = csv_data.decode('UTF-8')
-
                 df = pd.read_csv(io.StringIO(csv_data), delimiter='\t')
 
                 if len(df.columns) < 3:
                     raise Exception(f"transaction dataframe columns insufficent: {df.columns}")
-                
+
                 return df
             except Exception as e:
                 raise(Exception(f"Azure loading {logfile} error: {e}"))
@@ -1031,8 +1036,6 @@ class AttentionSimulation():
         if quarters is None:
             quarters = self.quarters_per_simulation
 
-        seeds = itertools.cycle([7,2,8,3,9,6,0,1,4,5])
-
         # Initialize share ownership for agents
         if start:
             for agent in self.agents:
@@ -1048,13 +1051,11 @@ class AttentionSimulation():
                 #print(f"Q-{quarter}:R-{run}")
 
                 # Set to a number for a fixed seed, or None to rotate
-                seed = None
-
                 for agent in self.agents:
                     if random.random() < self.attention_rate:
                         self.broker.transact(self.attend(agent))
 
-                buy_sell, ror = self.broker.trade(seed)
+                buy_sell, ror = self.broker.trade()
                 #print("ror: " + str(ror))
 
                 new_run = True

@@ -1,4 +1,5 @@
 git+https://github.com/econ-ark/HARK@master#egg=econ-ark
+azure-storage-blob
 jpype1
 matplotlib
 numpy

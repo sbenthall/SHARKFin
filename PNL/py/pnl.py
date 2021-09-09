@@ -106,7 +106,7 @@ def run_NLsims(
         if AZURE:
             (head, tail) = os.path.split(TRfile)
             remote_file_name = os.path.join("pnl", tail)
-
+            print(f"Testing for blob existence: {remote_file_name}")
             if azure_storage.blob_exists(remote_file_name):
                 print(f"Output for S:{SEED},BL:{broker_buy_limit},SL:{broker_sell_limit} already exists in Azure Blob storage.")
                 print("Will use cache.")
@@ -304,8 +304,16 @@ def run_NLsims(
                 remote_file_name,
                 local_file_name = TRfile
             )
+
+            os.remove(TRfile)
         except Exception as e:
             raise(Exception(f"{remote_file_name} Uploading error: {e}"))
+
+    try:
+        # we don't need these piling up.
+        os.remove(logfile)
+    except:
+        pass
 
 def set_NLvar(varname,value):
     LOG.debug(f"SETTING: {varname}:={value}")

@@ -4,6 +4,11 @@ from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient, _
 import json
 import pandas as pd
 
+import logging
+
+# Set the logging level for all azure-storage-* libraries
+logger = logging.getLogger("azure.core.pipeline.policies.http_logging_policy")
+logger.setLevel(logging.WARNING)
 
 # CONFIGURATION
 
@@ -14,7 +19,6 @@ import pandas as pd
 # the shell or application needs to be closed and reloaded to take the
 # environment variable into account.
 connect_str = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
-
 # Create a unique name for the container
 container_name = "simulationlogs"
 
@@ -42,7 +46,7 @@ def blob_exists(remote_file_name):
         remote_file_name
     )
     return blob_client.exists()
-    
+
 def upload_file(
         file_name,
         local_path = ".",
@@ -56,29 +60,33 @@ def upload_file(
         else local_file_name
     )
 
+    print("\nOpening client to upload blob:\n\t" + upload_file_path)
+
     # Create a blob client using the local file name as the name for the blob
     blob_client = blob_service_client.get_blob_client(
         container=container_name,
         blob=file_name
     )
 
+    print("Checking for existence.")
     if blob_client.exists():
         print("Blob already exists")
         return
 
-    print("\nUploading to Azure Storage as blob:\n\t" + upload_file_path)
-
+    print("Does not exist. Uploading.")
     # Upload the created file
     with open(upload_file_path, "rb") as data:
         blob_client.upload_blob(data)
 
-def list_blobs():
+def list_blobs(name_starts_with=None):
     print("\nListing blobs...")
 
     # List the blobs in the container
-    blob_list = container_client.list_blobs()
-    for blob in blob_list:
-        print("\t" + blob.name)
+    blob_list = container_client.list_blobs(
+        name_starts_with = name_starts_with
+    )
+
+    return blob_list
 
 def dataframe_to_blob(df, path, filename):
     local_path = os.path.join(path, filename)
@@ -96,11 +104,19 @@ def json_to_blob(js, path, filename):
     os.remove(local_path)
 
 
-def download_blob(remote_file_name):
+def download_blob(remote_file_name, write=False):
     blob_client = container_client.get_blob_client(
         remote_file_name
     )
 
-    blob_download = blob_client.download_blob()
+    blob_download = blob_client.download_blob().readall()
 
-    return blob_download.readall()
+    if isinstance(blob_download, bytes):
+        blob_download = blob_download.decode('UTF-8')
+
+    if write and not os.path.exists(remote_file_name):
+        with open(remote_file_name, 'w') as file:
+            file.write(blob_download)
+            file.close()
+
+    return blob_download
