@@ -26,7 +26,7 @@ import random
 ## TODO configuration file for this value!
 sys.path.append('../../HARK')
 
-AZURE = False
+AZURE = True
 
 if AZURE:
     import azure_storage
