@@ -28,7 +28,7 @@ ap = {
 
 # STEP 1. Initialize the agents. (and the market?)
 
-agents = hpa.create_agents(agent_classes, ap)
+agents = hpa.create_agents(agent_classes, ap) # THIS IS DEPRECATED, create_agents does not exist!
 
 
 # STEP 2. Create starting demand for the market.
