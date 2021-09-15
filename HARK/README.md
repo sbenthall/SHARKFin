@@ -65,4 +65,7 @@ for i in range(N):
 
     prices = run_market(buy_sell)
     old_demands = new_demands
+
+# Testing
+Run tests using `python -m pytest`, currently just running `pytest` causes import errors
 ```
