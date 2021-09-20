@@ -13,7 +13,9 @@ import pandas as pd
 import random
 import seaborn as sns
 from statistics import mean
+import yaml
 
+from abc import ABC, abstractmethod
 
 import sys
 
@@ -28,7 +30,10 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-AZURE = True
+with open('config.yml', 'r') as stream:
+    config = yaml.safe_load(stream)
+
+AZURE = config['azure']
 
 if AZURE:
     import azure_storage
@@ -456,7 +461,28 @@ class FinanceModel():
 #   PNL Interface methods
 ######
 
-class MarketPNL():
+class AbstractMarket(ABC):
+    '''
+    Abstract class from which market models should inherit
+
+    defines common methods for all market models. 
+    '''
+    @abstractmethod
+    def run_market():
+        pass
+
+    @abstractmethod
+    def get_simulation_price():
+        pass
+
+    @abstractmethod
+    def daily_rate_of_return():
+        pass
+
+
+
+
+class MarketPNL(AbstractMarket):
     """
     A wrapper around the Market PNL model with methods for getting
     data from recent runs.
@@ -623,7 +649,7 @@ class MarketPNL():
         return ror
 
 
-class MockMarket(MarketPNL):
+class MockMarket(AbstractMarket):
     """
     A wrapper around the Market PNL model with methods for getting
     data from recent runs.

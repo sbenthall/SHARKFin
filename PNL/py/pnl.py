@@ -14,6 +14,7 @@ import sys
 import logging
 import csv
 import multiprocessing as mp
+import yaml
 
 import pyNetLogo as pnl
 
@@ -24,7 +25,11 @@ import random
 ## TODO configuration file for this value!
 sys.path.append('../../HARK')
 
-AZURE = True
+# is this the correct config file?
+with open('../HARK/config.yml', 'r') as stream:
+    config = yaml.safe_load(stream)
+
+AZURE = config['azure']
 
 if AZURE:
     import azure_storage
