@@ -1,8 +1,9 @@
+git+https://github.com/econ-ark/HARK@master#egg=econ-ark
 azure-storage-blob
-econ-ark
 jpype1
 matplotlib
 numpy
 pyNetLogo
 seaborn
 pyyaml
+pytest
