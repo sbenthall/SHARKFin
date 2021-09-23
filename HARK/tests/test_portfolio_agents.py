@@ -48,7 +48,7 @@ def test_agent_population():
         'PermShkStd' : [ssvp['PermShkStd'][idx_27] ** 0.25]
     }
 
-
+    n_per_class = 1
 
     pop = hpa.AgentPopulation(agent_parameters, dist_params, n_per_class)
     
@@ -62,7 +62,7 @@ def test_agent_population():
     pop.init_simulation()
 
     # arguments to attention simulation
-    n_per_class = 1
+    
     a = 0.2
     q = 1
     r = 1
