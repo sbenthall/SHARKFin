@@ -134,6 +134,29 @@ class AgentPopulation():
         self.dist_params = dist_params
         self.agents = self.create_distributed_agents(self.base_parameters, dist_params, n_per_class)
 
+    def agent_df(self):
+        '''
+        Output a dataframe for agent attributes
+
+        returns agent_df from class_stats
+        '''
+
+        records = []
+
+        for agent in self.agents:
+            for i, aLvl in enumerate(agent.state_now['aLvl']):
+                record = {
+                    'aLvl': aLvl,
+                    'mNrm': agent.state_now['mNrm'][i]
+                }
+
+                for dp in self.dist_params:
+                    record[dp] = agent.parameters[dp]
+
+                records.append(record)
+
+        return pd.DataFrame.from_records(records)
+
     def class_stats(self, store = False):
         """
         Output the statistics for each class within the population.
@@ -868,6 +891,7 @@ class AttentionSimulation():
         self.history['owned_shares'] = []
         self.history['total_assets'] = []
         self.history['class_stats'] = []
+        self.history['total_pop_stats'] = []
 
         # assign macro-days to each agent
         for agent in self.agents:
@@ -1129,6 +1153,7 @@ class AttentionSimulation():
         self.history['owned_shares'].append(os)
         self.history['total_assets'].append(tal)
         self.history['class_stats'].append(self.pop.class_stats(store=False))
+        self.history['total_pop_stats'].append(self.pop.agent_df())
 
     def update_agent_wealth_capital_gains(self, old_share_price, ror):
         """
@@ -1173,6 +1198,14 @@ class AttentionSimulation():
         """
         return self.data()['ror'].dropna().std()
 
+    def ror_mean(self):
+        """
+        Returns the average rate of return
+        Must be run after a simulation
+        """
+
+        return self.data()['ror'].dropna().mean()
+
     def sim_stats(self):
         df_mean = self.history['class_stats'][-1][['label','aLvl_mean']]
         df_mean.columns = df_mean.columns.droplevel(1)
@@ -1184,6 +1217,10 @@ class AttentionSimulation():
 
         sim_stats_mean = {('aLvl_mean', k) : v  for k,v in sim_stats_mean.items()}
         sim_stats_std = {('aLvl_std', k) : v  for k,v in sim_stats_std.items()}
+
+        total_pop_aLvl = self.history['total_pop_stats'][-1]['aLvl']
+        total_pop_aLvl_mean = total_pop_aLvl.mean()
+        total_pop_aLvl_std = total_pop_aLvl.std()
 
         sim_stats = {}
         sim_stats.update(sim_stats_mean)
@@ -1197,6 +1234,10 @@ class AttentionSimulation():
 
         sim_stats['attention'] = self.attention_rate
         sim_stats['ror_volatility'] = self.ror_volatility()
+        sim_stats['ror_mean'] = self.ror_mean()
+
+        sim_stats['total_population_aLvl_mean'] = total_pop_aLvl_mean
+        sim_stats['total_population_aLvl_std'] = total_pop_aLvl_std
 
         sim_stats['dividend_ror'] = self.fm.dividend_ror
         sim_stats['dividend_std'] = self.fm.dividend_std
