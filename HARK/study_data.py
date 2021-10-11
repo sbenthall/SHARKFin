@@ -5,8 +5,7 @@ import pandas as pd
 import re
 import argparse
 
-prefix = " 004-48-attn-study"
-blobs = azure_storage.list_blobs(name_starts_with=prefix)
+
 
 def tre_data(blob):
     print(blob['name'])
@@ -27,6 +26,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Study saved data from a simulation')
     parser.add_argument('--prefix', default=" 004-48-attn-study")
     args = parser.parse_args()
+
+    prefix = args.prefix
+    blobs = azure_storage.list_blobs(name_starts_with=prefix)
 
     dfs = [tre_data(blob) for blob in blobs]
 
