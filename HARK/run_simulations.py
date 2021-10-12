@@ -71,7 +71,7 @@ def run_simulation(
     market = None):
 
     # initialize population
-    pop = hpa.AgentPopulation(agent_parameters, dist_params, 5)
+    pop = hpa.AgentPopulation(agent_parameters, dist_params, n_per_class)
 
     # Initialize the financial model
     fm = hpa.FinanceModel() if fm is None else fm
