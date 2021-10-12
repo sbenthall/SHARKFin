@@ -211,7 +211,7 @@ def main():
 
     filename_stamp = timestamp_start +"-" + str(uuid.uuid4())[:4]
     if args.tag:
-        tag = args.tag + "-"
+        tag = args.tag.lstrip() + "-"
     else:
         tag = ""
 
