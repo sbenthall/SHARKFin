@@ -86,6 +86,13 @@ def distribute(agents, dist_params):
             for agent in agents
         ]
 
+        for agent_dist in agents_distributed:
+            for agent in agent_dist:
+                agent.seed = random.randint(0,100000000)
+                agent.reset_rng()
+                agent.IncShkDstn[0].seed = random.randint(0,100000000)
+                agent.IncShkDstn[0].reset()
+
         agents = [
             agent
             for agent_dist in agents_distributed
@@ -225,6 +232,7 @@ class AgentPopulation():
 
         agents = [
             cpm.PortfolioConsumerType(
+                seed = random.randint(0, 2 ** 31 - 1),
                 **update_return(agent_parameters, ac)
             )
             for ac
@@ -232,10 +240,6 @@ class AgentPopulation():
         ]
 
         agents = distribute(agents, dist_params)
-
-        for agent in agents:
-            agent.seed = random.randint(0,100000000)
-            agent.reset_rng()
 
         return agents
 
@@ -907,6 +911,7 @@ class AttentionSimulation():
         self.history['total_assets'] = []
         self.history['mean_income_level'] = []
         self.history['total_consumption_level'] = []
+        self.history['permshock_std'] = []
         self.history['class_stats'] = []
         self.history['total_pop_stats'] = []
 
@@ -985,6 +990,7 @@ class AttentionSimulation():
                 'total_assets' : self.history['total_assets'],
                 'mean_income' : self.history['mean_income_level'],
                 'total_consumption' : self.history['total_consumption_level'],
+                'permshock_std' : self.history['permshock_std'],
                 'ror' : self.fm.ror_list,
                 'expected_ror' : self.fm.expected_ror_list[1:],
                 'expected_std' : self.fm.expected_std_list[1:],
@@ -1186,10 +1192,20 @@ class AttentionSimulation():
             ]
         ) * self.dollars_per_hark_money_unit
 
+        permshock_std = np.array(
+            [
+                agent.shocks['PermShk']
+                for agent 
+                in self.agents
+                if 'PermShk' in agent.shocks
+            ]
+        ).std()
+
         self.history['owned_shares'].append(os)
         self.history['total_assets'].append(tal)
         self.history['mean_income_level'].append(mpl)
         self.history['total_consumption_level'].append(tcl)
+        self.history['permshock_std'].append(permshock_std)
         self.history['class_stats'].append(self.pop.class_stats(store=False))
         self.history['total_pop_stats'].append(self.pop.agent_df())
 
