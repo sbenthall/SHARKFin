@@ -147,7 +147,8 @@ class AgentPopulation():
             for i, aLvl in enumerate(agent.state_now['aLvl']):
                 record = {
                     'aLvl': aLvl,
-                    'mNrm': agent.state_now['mNrm'][i]
+                    'mNrm': agent.state_now['mNrm'][i],
+                    'cNrm': agent.controls['cNrm'][i] if 'cNrm' in agent.controls else None
                 }
 
                 for dp in self.dist_params:
@@ -170,7 +171,9 @@ class AgentPopulation():
             for i, aLvl in enumerate(agent.state_now['aLvl']):
                 record = {
                     'aLvl' : aLvl,
-                    'mNrm' : agent.state_now['mNrm'][i]
+                    'mNrm' : agent.state_now['mNrm'][i],
+                    # difference between mNrm and the equilibrium mNrm from BST
+                    'mNrm_ratio_StE' : agent.state_now['mNrm'][i] / agent.mNrmStE
                 }
 
                 for dp in self.dist_params:
@@ -193,6 +196,8 @@ class AgentPopulation():
         cs['aLvl_std'] = cs['aLvl']['std']
         cs['mNrm_mean'] = cs['mNrm']['mean']
         cs['mNrm_std'] = cs['mNrm']['std']
+        cs['mNrm_ratio_StE_mean'] = cs['mNrm_ratio_StE']['mean']
+        cs['mNrm_ratio_StE_std'] = cs['mNrm_ratio_StE']['std']
 
         if store:
             self.stored_class_stats = class_stats
@@ -229,7 +234,7 @@ class AgentPopulation():
         agents = distribute(agents, dist_params)
 
         for agent in agents:
-            agent.seed = random.randint(0,10000)
+            agent.seed = random.randint(0,100000000)
             agent.reset_rng()
 
         return agents
@@ -248,7 +253,17 @@ class AgentPopulation():
             agent.initialize_sim()
 
             if self.stored_class_stats is None:
-                agent.state_now['mNrm'][:] = 1.0
+
+                ## build an IndShockConsumerType "double" of this agent, with the same parameters
+                ind_shock_double = cism.IndShockConsumerType(**agent.parameters)
+
+                ## solve to get the mNrmStE value
+                ## that is, the Steady-state Equilibrium value of mNrm, for the IndShockModel
+                ind_shock_double.solve()
+                mNrmStE = ind_shock_double.solution[0].mNrmStE
+
+                agent.state_now['mNrm'][:] = mNrmStE
+                agent.mNrmStE = mNrmStE # saving this for later, in case we do the analysis.
             else:
                 idx = [agent.parameters[dp] for dp in self.dist_params] 
                 mNrm = self.stored_class_stats.copy() \
@@ -890,6 +905,8 @@ class AttentionSimulation():
         self.history['buy_sell'] = []
         self.history['owned_shares'] = []
         self.history['total_assets'] = []
+        self.history['mean_income_level'] = []
+        self.history['total_consumption_level'] = []
         self.history['class_stats'] = []
         self.history['total_pop_stats'] = []
 
@@ -966,6 +983,8 @@ class AttentionSimulation():
                 'sell' : [bs[1] for bs in self.broker.buy_sell_history],
                 'owned' : self.history['owned_shares'],
                 'total_assets' : self.history['total_assets'],
+                'mean_income' : self.history['mean_income_level'],
+                'total_consumption' : self.history['total_consumption_level'],
                 'ror' : self.fm.ror_list,
                 'expected_ror' : self.fm.expected_ror_list[1:],
                 'expected_std' : self.fm.expected_std_list[1:],
@@ -1129,7 +1148,7 @@ class AttentionSimulation():
 
                     self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
 
-                    self.track()
+                    self.track(day)
 
                     # combine these steps?
                     risky_asset_price = self.fm.add_ror(ror)
@@ -1139,7 +1158,7 @@ class AttentionSimulation():
 
         self.end_time = datetime.now()
 
-    def track(self):
+    def track(self, day):
         """
         Tracks the current state of agent's total assets and owned shares
         """
@@ -1150,8 +1169,27 @@ class AttentionSimulation():
                 ) * self.dollars_per_hark_money_unit
         os = sum([sum(agent.shares) for agent in self.agents])
 
+        mpl = mean(
+            [
+                agent.state_now['pLvl'].mean()
+                for agent 
+                in self.agents
+            ]
+        ) * self.dollars_per_hark_money_unit
+
+        tcl = sum(
+            [
+                (agent.controls['cNrm'] * agent.state_now['pLvl']).sum()
+                for agent 
+                in self.agents
+                if agent.macro_day == day
+            ]
+        ) * self.dollars_per_hark_money_unit
+
         self.history['owned_shares'].append(os)
         self.history['total_assets'].append(tal)
+        self.history['mean_income_level'].append(mpl)
+        self.history['total_consumption_level'].append(tcl)
         self.history['class_stats'].append(self.pop.class_stats(store=False))
         self.history['total_pop_stats'].append(self.pop.agent_df())
 
@@ -1207,6 +1245,8 @@ class AttentionSimulation():
         return self.data()['ror'].dropna().mean()
 
     def sim_stats(self):
+
+        ## TODO: Can this processing be made less code-heavy?
         df_mean = self.history['class_stats'][-1][['label','aLvl_mean']]
         df_mean.columns = df_mean.columns.droplevel(1)
         sim_stats_mean = df_mean.set_index('label').to_dict()['aLvl_mean']
@@ -1215,8 +1255,18 @@ class AttentionSimulation():
         df_std.columns = df_std.columns.droplevel(1)
         sim_stats_std = df_std.set_index('label').to_dict()['aLvl_std']
 
+        df_mNrm_ratio_StE_mean = self.history['class_stats'][-1][['label','mNrm_ratio_StE_mean']]
+        df_mNrm_ratio_StE_mean.columns = df_mNrm_ratio_StE_mean.columns.droplevel(1)
+        sim_stats_mNrm_ratio_StE_mean = df_mNrm_ratio_StE_mean.set_index('label').to_dict()['mNrm_ratio_StE_mean']
+
+        df_mNrm_ratio_StE_std = self.history['class_stats'][-1][['label','mNrm_ratio_StE_std']]
+        df_mNrm_ratio_StE_std.columns = df_mNrm_ratio_StE_std.columns.droplevel(1)
+        sim_stats_mNrm_ratio_StE_std = df_mNrm_ratio_StE_std.set_index('label').to_dict()['mNrm_ratio_StE_std']
+
         sim_stats_mean = {('aLvl_mean', k) : v  for k,v in sim_stats_mean.items()}
         sim_stats_std = {('aLvl_std', k) : v  for k,v in sim_stats_std.items()}
+        sim_stats_mNrm_ratio_StE_mean = {('mNrm_ratio_StE_mean', k) : v  for k,v in sim_stats_mNrm_ratio_StE_mean.items()}
+        sim_stats_mNrm_ratio_StE_std = {('mNrm_ratio_StE_std', k) : v  for k,v in sim_stats_mNrm_ratio_StE_std.items()}
 
         total_pop_aLvl = self.history['total_pop_stats'][-1]['aLvl']
         total_pop_aLvl_mean = total_pop_aLvl.mean()
@@ -1225,6 +1275,8 @@ class AttentionSimulation():
         sim_stats = {}
         sim_stats.update(sim_stats_mean)
         sim_stats.update(sim_stats_std)
+        sim_stats.update(sim_stats_mNrm_ratio_StE_mean)
+        sim_stats.update(sim_stats_mNrm_ratio_StE_std)
 
         sim_stats['q'] = self.quarters_per_simulation
         sim_stats['r'] = self.runs_per_quarter
