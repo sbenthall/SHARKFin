@@ -22,7 +22,7 @@ def test_pnl_market():
 
   ror = mock.daily_rate_of_return(buy_sell=(0,0))
 
-def test_agent_population():
+def test_simulation():
     '''
     Sets up and runs an agent population simulation
     '''
@@ -70,6 +70,6 @@ def test_agent_population():
     
     attsim = hpa.AttentionSimulation(pop, fm, a=a, q=q, r=r, market=market)
     attsim.simulate()
-    
-    
 
+    ## testing for existence of this class stat
+    attsim.pop.class_stats()['mNrm_ratio_StE_mean']
