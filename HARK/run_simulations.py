@@ -71,7 +71,7 @@ def run_simulation(
     market = None):
 
     # initialize population
-    pop = hpa.AgentPopulation(agent_parameters, dist_params, 5)
+    pop = hpa.AgentPopulation(agent_parameters, dist_params, n_per_class)
 
     # Initialize the financial model
     fm = hpa.FinanceModel() if fm is None else fm
@@ -211,7 +211,7 @@ def main():
 
     filename_stamp = timestamp_start +"-" + str(uuid.uuid4())[:4]
     if args.tag:
-        tag = args.tag + "-"
+        tag = args.tag.lstrip() + "-"
     else:
         tag = ""
 
