@@ -13,6 +13,7 @@ import pandas as pd
 import random
 import seaborn as sns
 from statistics import mean
+from scipy import stats
 import yaml
 
 from abc import ABC, abstractmethod
@@ -398,6 +399,22 @@ class FinanceModel():
         self.expected_ror_list = []
         self.expected_std_list = []
 
+
+    def asset_price_stats(self):
+        price_stats = {}
+
+        price_stats['min_asset_price'] = min(self.prices)
+        price_stats['max_asset_price'] = max(self.prices)
+
+        price_stats['idx_min_asset_price'] = np.argmin(self.prices)
+        price_stats['idx_max_asset_price'] = np.argmax(self.prices)
+
+        price_stats['mean_asset_price'] = np.mean(self.prices)
+        price_stats['std_asset_price'] = np.std(self.prices)
+
+        return price_stats
+
+
     def calculate_risky_expectations(self):
         """
         Compute the quarterly expectations for the risky asset based on historical return rates.
@@ -560,6 +577,7 @@ class MarketPNL(AbstractMarket):
 
         if seed_limit is not None:
             self.seed_limit = seed_limit
+
 
     def run_market(self, seed = 0, buy_sell = 0):
         """
@@ -1206,6 +1224,30 @@ class AttentionSimulation():
 
         return self.data()['ror'].dropna().mean()
 
+    def buy_sell_stats(self):
+        bs_stats = {}
+        buy_limits, sell_limits = list(zip(*self.broker.buy_sell_history))
+
+        bs_stats['max_buy_limit'] = max(buy_limits)
+        bs_stats['max_sell_limit'] = max(sell_limits)
+
+        bs_stats['idx_max_buy_limit'] = np.argmax(buy_limits)
+        bs_stats['idx_max_sell_limit'] = np.argmax(sell_limits)
+
+        bs_stats['mean_buy_limit'] = np.mean(buy_limits)
+        bs_stats['mean_sell_limit'] = np.mean(sell_limits)
+
+        bs_stats['std_buy_limit'] = np.std(buy_limits)
+        bs_stats['std_sell_limit'] = np.std(sell_limits)
+
+        bs_stats['kurtosis_buy_limit'] = stats.kurtosis(buy_limits)
+        bs_stats['kurtosis_sell_limit'] = stats.kurtosis(sell_limits)
+
+        bs_stats['skew_buy_limit'] = stats.skew(buy_limits)
+        bs_stats['skew_sell_limit'] = stats.skew(sell_limits)
+
+        return bs_stats
+
     def sim_stats(self):
         df_mean = self.history['class_stats'][-1][['label','aLvl_mean']]
         df_mean.columns = df_mean.columns.droplevel(1)
@@ -1222,9 +1264,13 @@ class AttentionSimulation():
         total_pop_aLvl_mean = total_pop_aLvl.mean()
         total_pop_aLvl_std = total_pop_aLvl.std()
 
+        bs_stats = self.buy_sell_stats()
+
         sim_stats = {}
         sim_stats.update(sim_stats_mean)
         sim_stats.update(sim_stats_std)
+        sim_stats.update(bs_stats)
+        sim_stats.update(self.fm.asset_price_stats())
 
         sim_stats['q'] = self.quarters_per_simulation
         sim_stats['r'] = self.runs_per_quarter

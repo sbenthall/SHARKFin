@@ -20,7 +20,7 @@ import uuid
 import yaml
 
 parser = argparse.ArgumentParser()
-parser.add_argument("config", help="The name of a config file.")
+parser.add_argument("save_as", help="The name of the output for sim_stats")
 parser.add_argument("-t",
                     "--tag", type=str,
                     help="a string tag to be added to the output files")
@@ -105,7 +105,12 @@ def run_simulation(
 
 
 if __name__ == '__main__':
+    args = parser.parse_args()
+
     market = hpa.MarketPNL(
         seed_limit = 150
     )
+
     sim_stats = run_simulation(agent_parameters, dist_params, 1, a=0.2, q=1, r=1, market=market)
+
+    pd.DataFrame(sim_stats).to_csv(f'{args.save_as}.csv')
