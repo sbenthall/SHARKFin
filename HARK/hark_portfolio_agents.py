@@ -847,8 +847,6 @@ class AttentionSimulation():
     broker = None
     pop = None
 
-    dollars_per_hark_money_unit = 1500
-
     # Number of days in a quarter / An empirical value based on trading calendars.
     days_per_quarter = 60
 
@@ -882,10 +880,12 @@ class AttentionSimulation():
     start_time = None
     end_time = None
 
-    def __init__(self, pop, fm, q = 1, r = None, a = None, market = None):
+    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500):
         self.agents = pop.agents
         self.fm = fm
         self.pop = pop
+
+        self.dollars_per_hark_money_unit = dphm
 
         self.quarters_per_simulation = q
 

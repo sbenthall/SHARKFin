@@ -68,7 +68,8 @@ def run_simulation(
     q = None,
     r = 1,
     fm = None,
-    market = None):
+    market = None,
+    dphm=1500):
 
     # initialize population
     pop = hpa.AgentPopulation(agent_parameters, dist_params, n_per_class)
@@ -82,14 +83,14 @@ def run_simulation(
     # Initialize the population model
     pop.init_simulation()
 
-    attsim = hpa.AttentionSimulation(pop, fm, a = a, q = q, r = r, market = market)
+    attsim = hpa.AttentionSimulation(pop, fm, a=a, q=q, r=r, market=market, dphm=dphm)
     attsim.simulate()
 
     return attsim.sim_stats()
 
 def sample_simulation(args):
     """
-    args: attention, dividend_ror, dividend_std, mock, sample
+    args: attention, dividend_ror, dividend_std, mock, sample, dollars_per_hark_money_unit
     """
     print(f"New case: {args}")
 
@@ -105,6 +106,8 @@ def sample_simulation(args):
     delta_t2 = args[1][7]
     sample = args[1][8]
     config = args[1][9]
+    dollars_per_hark_money = args[1][10]
+
 
     # super hack
     if not mock:
@@ -139,7 +142,8 @@ def sample_simulation(args):
             q = config['q'],
             r = config['r'],
             fm = fm,
-            market = market
+            market = market,
+            dphm=dollars_per_hark_money
         )
 
 
@@ -199,7 +203,8 @@ def main():
         config['delta_t1_range'],
         config['delta_t2_range'],
         samples,
-        [config]
+        [config],
+        config['dollars_per_hark_money_unit']
         )
 
     ### Update the meta document
