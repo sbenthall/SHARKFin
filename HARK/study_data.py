@@ -28,7 +28,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     prefix = args.prefix
-    blobs = azure_storage.list_blobs(name_starts_with=prefix)
+    blobs = azure_storage.list_blobs(name_starts_with=f'{prefix}-study')
 
     dfs = [tre_data(blob) for blob in blobs]
 

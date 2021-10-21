@@ -13,6 +13,7 @@ import pandas as pd
 import random
 import seaborn as sns
 from statistics import mean
+from scipy import stats
 import yaml
 
 from abc import ABC, abstractmethod
@@ -203,8 +204,6 @@ class AgentPopulation():
         cs['aLvl_std'] = cs['aLvl']['std']
         cs['mNrm_mean'] = cs['mNrm']['mean']
         cs['mNrm_std'] = cs['mNrm']['std']
-        cs['mNrm_ratio_StE_mean'] = cs['mNrm_ratio_StE']['mean']
-        cs['mNrm_ratio_StE_std'] = cs['mNrm_ratio_StE']['std']
 
         if store:
             self.stored_class_stats = class_stats
@@ -417,6 +416,22 @@ class FinanceModel():
         self.expected_ror_list = []
         self.expected_std_list = []
 
+
+    def asset_price_stats(self):
+        price_stats = {}
+
+        price_stats['min_asset_price'] = min(self.prices)
+        price_stats['max_asset_price'] = max(self.prices)
+
+        price_stats['idx_min_asset_price'] = np.argmin(self.prices)
+        price_stats['idx_max_asset_price'] = np.argmax(self.prices)
+
+        price_stats['mean_asset_price'] = np.mean(self.prices)
+        price_stats['std_asset_price'] = np.std(self.prices)
+
+        return price_stats
+
+
     def calculate_risky_expectations(self):
         """
         Compute the quarterly expectations for the risky asset based on historical return rates.
@@ -579,6 +594,7 @@ class MarketPNL(AbstractMarket):
 
         if seed_limit is not None:
             self.seed_limit = seed_limit
+
 
     def run_market(self, seed = 0, buy_sell = 0):
         """
@@ -1291,6 +1307,8 @@ class AttentionSimulation():
         sim_stats = {}
         sim_stats.update(sim_stats_mean)
         sim_stats.update(sim_stats_std)
+        sim_stats.update(bs_stats)
+        sim_stats.update(self.fm.asset_price_stats())
         sim_stats.update(sim_stats_mNrm_ratio_StE_mean)
         sim_stats.update(sim_stats_mNrm_ratio_StE_std)
 
