@@ -105,8 +105,6 @@ def run_simulation(
 
 
 if __name__ == '__main__':
-    args = parser.parse_args()
-
     market = hpa.MarketPNL(
         seed_limit = 150
     )
