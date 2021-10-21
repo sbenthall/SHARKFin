@@ -204,6 +204,8 @@ class AgentPopulation():
         cs['aLvl_std'] = cs['aLvl']['std']
         cs['mNrm_mean'] = cs['mNrm']['mean']
         cs['mNrm_std'] = cs['mNrm']['std']
+        cs['mNrm_ratio_StE_mean'] = cs['mNrm_ratio_StE']['mean']
+        cs['mNrm_ratio_StE_std'] = cs['mNrm_ratio_StE']['std']
 
         if store:
             self.stored_class_stats = class_stats
@@ -1276,6 +1278,30 @@ class AttentionSimulation():
 
         return self.data()['ror'].dropna().mean()
 
+    def buy_sell_stats(self):
+        bs_stats = {}
+        buy_limits, sell_limits = list(zip(*self.broker.buy_sell_history))
+
+        bs_stats['max_buy_limit'] = max(buy_limits)
+        bs_stats['max_sell_limit'] = max(sell_limits)
+
+        bs_stats['idx_max_buy_limit'] = np.argmax(buy_limits)
+        bs_stats['idx_max_sell_limit'] = np.argmax(sell_limits)
+
+        bs_stats['mean_buy_limit'] = np.mean(buy_limits)
+        bs_stats['mean_sell_limit'] = np.mean(sell_limits)
+
+        bs_stats['std_buy_limit'] = np.std(buy_limits)
+        bs_stats['std_sell_limit'] = np.std(sell_limits)
+
+        bs_stats['kurtosis_buy_limit'] = stats.kurtosis(buy_limits)
+        bs_stats['kurtosis_sell_limit'] = stats.kurtosis(sell_limits)
+
+        bs_stats['skew_buy_limit'] = stats.skew(buy_limits)
+        bs_stats['skew_sell_limit'] = stats.skew(sell_limits)
+
+        return bs_stats
+
     def sim_stats(self):
 
         ## TODO: Can this processing be made less code-heavy?
@@ -1303,6 +1329,8 @@ class AttentionSimulation():
         total_pop_aLvl = self.history['total_pop_stats'][-1]['aLvl']
         total_pop_aLvl_mean = total_pop_aLvl.mean()
         total_pop_aLvl_std = total_pop_aLvl.std()
+
+        bs_stats = self.buy_sell_stats()
 
         sim_stats = {}
         sim_stats.update(sim_stats_mean)
