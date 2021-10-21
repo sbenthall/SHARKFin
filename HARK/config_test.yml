@@ -21,9 +21,13 @@ delta_t1_range:
   - 60
 delta_t2_range:
   - 60
-
 dollars_per_hark_money_unit:
   - 1500
-  - 2000
+  - 3000
+  - 6000
+  - 12000
+  - 24000
+  - 48000
+  - 96000
 
 azure: true
