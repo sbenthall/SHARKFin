@@ -800,20 +800,34 @@ class Broker():
     buy_limit = 0
     sell_limit = 0
 
+    # track the buy/sell orders due to macro updates separately
+    # this data won't go to sim_stats yet but will be used for investigating
+    # the mechanism
+    buy_orders_macro = 0
+    sell_orders_macro = 0
+
     buy_sell_history = None
+    buy_sell_macro_history = None
 
     market = None
 
     def __init__(self, market):
         self.market = market
         self.buy_sell_history = []
+        self.buy_sell_macro_history = []
 
-    def transact(self, delta_shares):
+    def transact(self, delta_shares, macro = False):
         """
         Input: an array of share deltas. positive for buy, negative for sell.
+
+        macro: True if the transactions are from a 'macro update' step.
         """
         self.buy_limit += delta_shares[delta_shares > 0].sum()
         self.sell_limit += -delta_shares[delta_shares < 0].sum()
+
+        if macro:
+            self.buy_orders_macro += delta_shares[delta_shares > 0].sum()
+            self.sell_orders_macro += -delta_shares[delta_shares < 0].sum()
 
     def trade(self, seed = None):
         """
@@ -827,6 +841,9 @@ class Broker():
         # use integral shares here.
         buy_sell = (int(self.buy_limit), int(self.sell_limit))
         self.buy_sell_history.append(buy_sell)
+
+        buy_sell_macro = (int(self.buy_orders_macro), int(self.sell_orders_macro))
+        self.buy_sell_macro_history.append(buy_sell_macro)
         #print("Buy/Sell Limit: " + str(buy_sell))
 
         self.market.run_market(buy_sell = buy_sell, seed = seed)
@@ -834,6 +851,9 @@ class Broker():
         # clear the local limits
         self.buy_limit = 0
         self.sell_limit = 0
+
+        self.buy_orders_macro = 0
+        self.sell_orders_macro = 0
 
         return buy_sell, self.market.daily_rate_of_return()
 
@@ -1004,6 +1024,8 @@ class AttentionSimulation():
                 'prices' : self.fm.prices[1:],
                 'buy' :  [bs[0] for bs in self.broker.buy_sell_history],
                 'sell' : [bs[1] for bs in self.broker.buy_sell_history],
+                'buy_macro' :  [bs[0] for bs in self.broker.buy_sell_macro_history],
+                'sell_macro' : [bs[1] for bs in self.broker.buy_sell_macro_history],
                 'owned' : self.history['owned_shares'],
                 'total_assets' : self.history['total_assets'],
                 'mean_income' : self.history['mean_income_level'],
@@ -1074,7 +1096,7 @@ class AttentionSimulation():
         delta[delta > 0] = 0
 
         agent.shares = agent.shares + delta
-        self.broker.transact(delta)
+        self.broker.transact(delta, macro = True)
 
     def report(self):
         data = self.data()
@@ -1167,6 +1189,7 @@ class AttentionSimulation():
                         # problem is that this should really be nan, nan
                         # putting 0,0 here is a stopgap to make plotting code simpler
                         self.broker.buy_sell_history.append((0,0))
+                        self.broker.buy_sell_macro_history.append((0,0))
 
                     #print(f"Q-{quarter}:D-{day}. {updates} macro-updates.")
 

@@ -73,3 +73,5 @@ def test_simulation():
 
     ## testing for existence of this class stat
     attsim.pop.class_stats()['mNrm_ratio_StE_mean']
+
+    attsim.data()['sell_macro']
