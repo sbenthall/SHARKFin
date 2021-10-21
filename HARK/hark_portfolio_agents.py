@@ -1245,6 +1245,7 @@ class AttentionSimulation():
         sim_stats['p2'] = self.fm.p2
         sim_stats['delta_t1'] = self.fm.delta_t1
         sim_stats['delta_t2'] = self.fm.delta_t2
+        sim_stats['dollars_per_hark_money_unit'] = self.dollars_per_hark_money_unit
 
 
         sim_stats['seconds'] = (self.end_time - self.start_time).seconds
