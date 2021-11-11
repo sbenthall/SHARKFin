@@ -31,4 +31,4 @@ delta_t1_range:
 delta_t2_range:
   - 60
   
-azure: false
+azure: true
