@@ -1,4 +1,6 @@
-# Macro Micro Market Interface
+# SHARKFin
+
+_Simulating Heterogeneous Agents (Resources and Toolkit) with Finance_
 
 To check out the code, clone the repository.
 
