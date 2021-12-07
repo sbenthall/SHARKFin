@@ -1,6 +1,7 @@
 import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 import HARK.ConsumptionSaving.ConsIndShockModel as cism
 from HARK.core import distribute_params
+from utilities import AgentList
 from datetime import datetime
 from HARK.distribution import Uniform
 import io
@@ -240,7 +241,7 @@ class AgentPopulation():
             in agent_batches
         ]
 
-        agents = distribute(agents, dist_params)
+        agents = AgentList(agents, dist_params)
 
         return agents
 

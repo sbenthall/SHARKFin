@@ -42,22 +42,6 @@ dist_params = {
 
 # Get empirical data from Sabelhaus and Song
 ssvp = sabelhaus_song_var_profile()
-AZURE = True
-
-if AZURE:
-    import azure_storage
-
-timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
-
-### Configuring the agent population
-
-dist_params = {
-    'CRRA' : {'bot' : 2, 'top' : 10, 'n' : 3}, # Chosen for "interesting" results
-    'DiscFac' : {'bot' : 0.936, 'top' : 0.978, 'n' : 2} # from CSTW "MPC" results
-}
-
-# Get empirical data from Sabelhaus and Song
-ssvp = sabelhaus_song_var_profile()
 
 # Assume all the agents are 40 for now.
 # We will need to make more coherent assumptions about the timing and age of the population later.
@@ -108,6 +92,8 @@ if __name__ == '__main__':
     market = hpa.MarketPNL(
         seed_limit = 150
     )
+
+    args = parser.parse_args()
 
     sim_stats = run_simulation(agent_parameters, dist_params, 1, a=0.2, q=1, r=1, market=market)
 
