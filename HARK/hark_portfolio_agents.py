@@ -995,7 +995,8 @@ class AttentionSimulation():
         """
         agent.assign_parameters(AdjustPrb = 1.0)
         agent.solve()
-        asset_normalized = agent.state_now['aNrm'] + agent.controls['cNrm']
+        cNrm = agent.controls['cNrm'] if 'cNrm' in agent.controls else 0
+        asset_normalized = agent.state_now['aNrm'] + cNrm
 
         # ShareFunc takes normalized market assets as argument
         risky_share = agent.solution[0].ShareFuncAdj(
