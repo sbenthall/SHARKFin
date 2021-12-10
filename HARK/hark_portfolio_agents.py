@@ -26,7 +26,7 @@ sys.path.append('.')
 sys.path.append('../PNL/py')
 
 import util as UTIL
-# import pnl as pnl
+import pnl as pnl
 
 import logging
 logger = logging.getLogger()
@@ -995,7 +995,7 @@ class AttentionSimulation():
         """
         agent.assign_parameters(AdjustPrb = 1.0)
         agent.solve()
-        asset_normalized = agent.state_now['aNrm'] + agent.control['cNrm']
+        asset_normalized = agent.state_now['aNrm'] + agent.controls['cNrm']
 
         # ShareFunc takes normalized market assets as argument
         risky_share = agent.solution[0].ShareFuncAdj(
