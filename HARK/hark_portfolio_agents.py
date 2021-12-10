@@ -26,16 +26,18 @@ sys.path.append('.')
 sys.path.append('../PNL/py')
 
 import util as UTIL
-import pnl as pnl
+# import pnl as pnl
 
 import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-with open('config.yml', 'r') as stream:
+with open('config_cloud.yml', 'r') as stream:
     config = yaml.safe_load(stream)
 
 AZURE = config['azure']
+
+print(AZURE)
 
 if AZURE:
     import azure_storage

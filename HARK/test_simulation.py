@@ -26,7 +26,10 @@ parser.add_argument("-t",
                     help="a string tag to be added to the output files")
 
 
-AZURE = True
+with open('config_cloud.yml', 'r') as stream:
+    config = yaml.safe_load(stream)
+
+AZURE = config['azure']
 
 if AZURE:
     import azure_storage
