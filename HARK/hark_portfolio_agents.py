@@ -37,8 +37,6 @@ with open('config_cloud.yml', 'r') as stream:
 
 AZURE = config['azure']
 
-print(AZURE)
-
 if AZURE:
     import azure_storage
 
