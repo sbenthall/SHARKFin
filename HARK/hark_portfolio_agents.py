@@ -520,7 +520,7 @@ class FinanceModel():
 
 
 ######
-#   PNL Interface methods
+#   Market Simulation Interface methods
 ######
 
 class AbstractMarket(ABC):
@@ -557,17 +557,22 @@ class ClientRPCMarket(AbstractMarket):
 
         con_addr = 'localhost'
 
+        # create connection to RabbitMQ
         connection = pika.BlockingConnection(pika.ConnectionParameters(con_addr))
         self.channel = connection.channel()
-
+ 
+        # create/declare exchange
         self.channel.exchange_declare('market')
 
+        # create separate queue for sending and receiving
         params_queue = self.channel.queue_declare('params_queue')
         prices_queue = self.channel.queue_declare('prices_queue')
 
+        # add queues to exchange
         self.channel.queue_bind('params_queue', 'market')
         self.channel.queue_bind('prices_queue', 'market')
 
+        # starts data swapping process (currently mock data)
         initial_data = {'seed': 1, 'bl': 2, 'sl': 3}
         data_package = json.dumps(initial_data)
 
@@ -576,6 +581,7 @@ class ClientRPCMarket(AbstractMarket):
         self.channel.basic_publish(exchange='market', routing_key='params_queue', body=data_package)
         print('sent')
 
+        # begin consuming from incoming queue
         self.channel.basic_consume('prices_queue', self.daily_rate_of_return_cb)
         self.channel.start_consuming()
 
@@ -602,18 +608,10 @@ class ClientRPCMarket(AbstractMarket):
 
         data = {'seed': 1, 'bl': 2, 'sl': 3}
 
-
-
         self.channel.basic_publish(exchange='market', routing_key='params_queue', body=json.dumps(data))
 
     def get_simulation_price(self):
         return
-
-
-
-    
-
-
 
 
 class MarketPNL(AbstractMarket):
