@@ -560,21 +560,20 @@ class ClientRPCMarket(AbstractMarket):
         connection = pika.BlockingConnection(pika.ConnectionParameters(con_addr))
         self.channel = connection.channel()
 
-        self.channel.exchange_declare('params')
-        self.channel.exchange_declare('prices')
+        self.channel.exchange_declare('market')
 
         params_queue = self.channel.queue_declare('params_queue')
         prices_queue = self.channel.queue_declare('prices_queue')
 
-        self.channel.queue_bind('params_queue', 'params')
-        self.channel.queue_bind('prices_queue', 'prices')
+        self.channel.queue_bind('params_queue', 'market')
+        self.channel.queue_bind('prices_queue', 'market')
 
         initial_data = {'seed': 1, 'bl': 2, 'sl': 3}
         data_package = json.dumps(initial_data)
 
         print('sending')
         # initial data to start data swapping with server
-        self.channel.basic_publish(exchange='params', routing_key='params_queue', body=data_package)
+        self.channel.basic_publish(exchange='market', routing_key='params_queue', body=data_package)
         print('sent')
 
         self.channel.basic_consume('prices_queue', self.daily_rate_of_return_cb)
@@ -605,7 +604,7 @@ class ClientRPCMarket(AbstractMarket):
 
 
 
-        self.channel.basic_publish(exchange='params', routing_key='params_queue', body=json.dumps(data))
+        self.channel.basic_publish(exchange='market', routing_key='params_queue', body=json.dumps(data))
 
     def get_simulation_price(self):
         return
