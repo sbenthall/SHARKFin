@@ -16,6 +16,8 @@ import seaborn as sns
 from statistics import mean
 from scipy import stats
 import yaml
+import json
+import pika
 
 from abc import ABC, abstractmethod
 
@@ -538,6 +540,79 @@ class AbstractMarket(ABC):
     @abstractmethod
     def daily_rate_of_return():
         pass
+
+
+class ClientRPCMarket(AbstractMarket):
+
+    def __init__(self):
+        # limits the seeds
+        seed_limit = None
+
+        # Storing the last market arguments used for easy access to most
+        # recent data
+        last_buy_sell = None
+        last_seed = None
+
+        seeds = None
+
+        con_addr = 'localhost'
+
+        connection = pika.BlockingConnection(pika.ConnectionParameters(con_addr))
+        self.channel = connection.channel()
+
+        self.channel.exchange_declare('params')
+        self.channel.exchange_declare('prices')
+
+        params_queue = self.channel.queue_declare('params_queue')
+        prices_queue = self.channel.queue_declare('prices_queue')
+
+        self.channel.queue_bind('params_queue', 'params')
+        self.channel.queue_bind('prices_queue', 'prices')
+
+        initial_data = {'seed': 1, 'bl': 2, 'sl': 3}
+        data_package = json.dumps(initial_data)
+
+        print('sending')
+        # initial data to start data swapping with server
+        self.channel.basic_publish(exchange='params', routing_key='params_queue', body=data_package)
+        print('sent')
+
+        self.channel.basic_consume('prices_queue', self.daily_rate_of_return_cb)
+        self.channel.start_consuming()
+
+
+
+    def run_market(self, seed = 0, buy_sell = 0):
+        if seed is None:
+            seed_limit = self.seed_limit if self.seed_limit is not None else 3000
+            seed = (np.random.randint(seed_limit) + self.sample) % seed_limit
+
+        self.last_seed = seed
+        self.last_buy_sell = buy_sell
+        self.seeds.append(seed)
+
+        # should anything replace the pnl simulation run?
+
+    def daily_rate_of_return(self):
+        return
+
+    def daily_rate_of_return_cb(self, ch, method, properties, body):
+        price = float(body)
+
+        print(f'got price {price}')
+
+        data = {'seed': 1, 'bl': 2, 'sl': 3}
+
+
+
+        self.channel.basic_publish(exchange='params', routing_key='params_queue', body=json.dumps(data))
+
+    def get_simulation_price(self):
+        return
+
+
+
+    
 
 
 
