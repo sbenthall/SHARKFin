@@ -18,6 +18,7 @@ from scipy import stats
 import yaml
 import json
 import pika
+import uuid
 
 from abc import ABC, abstractmethod
 
@@ -558,8 +559,8 @@ class ClientRPCMarket(AbstractMarket):
         con_addr = 'localhost'
 
         # create connection to RabbitMQ
-        connection = pika.BlockingConnection(pika.ConnectionParameters(con_addr))
-        self.channel = connection.channel()
+        self.connection = pika.BlockingConnection(pika.ConnectionParameters(con_addr))
+        self.channel = self.connection.channel()
  
         # create/declare exchange
         self.channel.exchange_declare('market')
@@ -572,29 +573,63 @@ class ClientRPCMarket(AbstractMarket):
         self.channel.queue_bind('params_queue', 'market')
         self.channel.queue_bind('prices_queue', 'market')
 
-        # starts data swapping process (currently mock data)
-        initial_data = {'seed': 1, 'bl': 2, 'sl': 3}
-        data_package = json.dumps(initial_data)
+        self.callback_queue = params_queue.method.queue
 
-        print('sending')
-        # initial data to start data swapping with server
-        self.channel.basic_publish(exchange='market', routing_key='params_queue', body=data_package)
-        print('sent')
+        # # starts data swapping process (currently mock data)
+        # initial_data = {'seed': 1, 'bl': 2, 'sl': 3}
+        # data_package = json.dumps(initial_data)
 
-        # begin consuming from incoming queue
-        self.channel.basic_consume('prices_queue', self.daily_rate_of_return_cb)
-        self.channel.start_consuming()
+        # print('sending')
+        # # initial data to start data swapping with server (send on params queue)
+
+        # # self.corr_id = str(uuid.uuid4())
+        # self.channel.basic_publish(exchange='market',
+        #                            routing_key='params_queue',
+        #                            properties=pika.BasicProperties(
+        #                                 reply_to=self.callback_queue,
+        #                                 correlation_id=self.corr_id),
+        #                            body=json.dumps(initial_data))
+        # print('sent')
+
+        # consume from prices queue
+        self.channel.basic_consume('prices_queue', self.on_response)
+        
+        # potentially isolate in another thread? would greatly increase complexity
+        # self.channel.start_consuming()
 
 
+    def on_response(self, ch, method, props, body):
+        # return None
+
+        
+        if self.corr_id == props.correlation_id:
+            self.response = body
+        
 
     def run_market(self, seed = 0, buy_sell = 0):
-        if seed is None:
-            seed_limit = self.seed_limit if self.seed_limit is not None else 3000
-            seed = (np.random.randint(seed_limit) + self.sample) % seed_limit
+        # if seed is None:
+        #     seed_limit = self.seed_limit if self.seed_limit is not None else 3000
+        #     seed = (np.random.randint(seed_limit) + self.sample) % seed_limit
 
-        self.last_seed = seed
-        self.last_buy_sell = buy_sell
-        self.seeds.append(seed)
+        # self.last_seed = seed
+        # self.last_buy_sell = buy_sell
+        # self.seeds.append(seed)
+
+        data = {'seed': 1, 'bl': 2, 'sl': 3}
+
+        self.response = None
+        self.corr_id = str(uuid.uuid4())
+        self.channel.basic_publish(exchange='market',
+                                   routing_key='params_queue',
+                                   properties=pika.BasicProperties(
+                                        reply_to=self.callback_queue,
+                                        correlation_id=self.corr_id),
+                                   body=json.dumps(data))
+
+        while self.response is None:
+            self.connection.process_data_events()
+
+        return float(self.response)
 
         # should anything replace the pnl simulation run?
 
@@ -606,8 +641,14 @@ class ClientRPCMarket(AbstractMarket):
 
         print(f'got price {price}')
 
+        # do SHARKFin computations
+
+        # could change some state value that other functions could read, 
+        # in which case a separate function should be created which publishes price data to message queue
+
         data = {'seed': 1, 'bl': 2, 'sl': 3}
 
+        # where to put?
         self.channel.basic_publish(exchange='market', routing_key='params_queue', body=json.dumps(data))
 
     def get_simulation_price(self):

@@ -1,10 +1,21 @@
 import json 
 import pika
 
-def send_price(addr, exch_name, rkey, body):
-	channel.basic_publish(exch_name, rkey, body)
+connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
 
-def callback(ch, method, properties, body):
+channel = connection.channel()
+
+channel.queue_declare(queue='params_queue')
+channel.queue_declare(queue='prices_queue')
+
+channel.exchange_declare('market')
+
+# add queues to exchange
+channel.queue_bind('params_queue', 'market')
+channel.queue_bind('prices_queue', 'market')
+
+
+def callback(ch, method, props, body):
 	print('callback triggered')
 	data = json.loads(body)
 
@@ -14,24 +25,23 @@ def callback(ch, method, properties, body):
 
 	print(f'seed: {seed}, bl: {bl}, sl: {sl}')
 
+	ch.basic_publish(exchange='market', 
+					 routing_key='prices_queue',
+					 properties=pika.BasicProperties(correlation_id=props.correlation_id),
+					 body='10.5'),
+	# ch.basic_ack(delivery_tag=method.delivery_tag)
+
+
 	# send closing price
-	send_price('localhost', 'market', 'prices_queue', '10.5')
+	# send_price('localhost', 'market', 'prices_queue', '10.5')
 
 
-con_addr = 'localhost'
-
-connection = pika.BlockingConnection(pika.ConnectionParameters(con_addr))
-channel = connection.channel()
-
-channel.exchange_declare('market')
-
-params_queue = channel.queue_declare('params_queue')
-prices_queue = channel.queue_declare('prices_queue')
-
-channel.queue_bind('params_queue', 'market')
-channel.queue_bind('prices_queue', 'market')
+# channel.basic_qos(prefetch_count=1)
 
 
-
-channel.basic_consume('params_queue', callback)
+channel.basic_consume('params_queue', on_message_callback=callback)
 channel.start_consuming()
+
+
+
+
