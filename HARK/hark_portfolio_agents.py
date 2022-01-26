@@ -546,6 +546,13 @@ class AbstractMarket(ABC):
 class ClientRPCMarket(AbstractMarket):
 
     def __init__(self):
+        simulation_price_scale = 0.25
+        default_sim_price = 400
+
+        # Empirical data -- redundant with FinanceModel!
+        sp500_ror = 0.000628
+        sp500_std = 0.011988
+
         # limits the seeds
         seed_limit = None
 
@@ -556,103 +563,108 @@ class ClientRPCMarket(AbstractMarket):
 
         seeds = None
 
-        con_addr = 'localhost'
+        # config object for PNL
+        config = None
 
-        # create connection to RabbitMQ
-        self.connection = pika.BlockingConnection(pika.ConnectionParameters(con_addr))
+        # sample - modifier for the seed
+        sample = 0
+
+        self.config = UTIL.read_config(
+            config_file = config_file,
+            config_local_file = config_local_file
+        )
+
+        self.sample = 0
+        self.seeds = []
+
+        if seed_limit is not None:
+            self.seed_limit = seed_limit
+
+        #RPC initialization
+        self.connection = pika.BlockingConnection(
+            pika.ConnectionParameters(host='localhost'))
+
         self.channel = self.connection.channel()
- 
-        # create/declare exchange
-        self.channel.exchange_declare('market')
 
-        # create separate queue for sending and receiving
-        params_queue = self.channel.queue_declare('params_queue')
-        prices_queue = self.channel.queue_declare('prices_queue')
+        result = self.channel.queue_declare(queue='', exclusive=True)
+        self.callback_queue = result.method.queue
 
-        # add queues to exchange
-        self.channel.queue_bind('params_queue', 'market')
-        self.channel.queue_bind('prices_queue', 'market')
-
-        self.callback_queue = params_queue.method.queue
-
-        # # starts data swapping process (currently mock data)
-        # initial_data = {'seed': 1, 'bl': 2, 'sl': 3}
-        # data_package = json.dumps(initial_data)
-
-        # print('sending')
-        # # initial data to start data swapping with server (send on params queue)
-
-        # # self.corr_id = str(uuid.uuid4())
-        # self.channel.basic_publish(exchange='market',
-        #                            routing_key='params_queue',
-        #                            properties=pika.BasicProperties(
-        #                                 reply_to=self.callback_queue,
-        #                                 correlation_id=self.corr_id),
-        #                            body=json.dumps(initial_data))
-        # print('sent')
-
-        # consume from prices queue
-        self.channel.basic_consume('prices_queue', self.on_response)
-        
-        # potentially isolate in another thread? would greatly increase complexity
-        # self.channel.start_consuming()
-
+        self.channel.basic_consume(
+            queue=self.callback_queue,
+            on_message_callback=self.on_response,
+            auto_ack=True)
 
     def on_response(self, ch, method, props, body):
-        # return None
-
-        
         if self.corr_id == props.correlation_id:
             self.response = body
-        
 
-    def run_market(self, seed = 0, buy_sell = 0):
-        # if seed is None:
-        #     seed_limit = self.seed_limit if self.seed_limit is not None else 3000
-        #     seed = (np.random.randint(seed_limit) + self.sample) % seed_limit
+    def run_market(self, seed=0, buy_sell=(0, 0)):
+        if seed is None:
+            seed_limit = self.seed_limit if self.seed_limit is not None else 3000
+            seed = (np.random.randint(seed_limit) + self.sample) % seed_limit
 
-        # self.last_seed = seed
-        # self.last_buy_sell = buy_sell
-        # self.seeds.append(seed)
+        self.last_seed = seed
+        self.last_buy_sell = buy_sell
+        self.seeds.append(seed)
 
-        data = {'seed': 1, 'bl': 2, 'sl': 3}
+
+        data = {
+            'seed': seed,
+            'bl': buy_sell[0],
+            'sl': buy_sell[1]
+        }
 
         self.response = None
         self.corr_id = str(uuid.uuid4())
-        self.channel.basic_publish(exchange='market',
-                                   routing_key='params_queue',
-                                   properties=pika.BasicProperties(
-                                        reply_to=self.callback_queue,
-                                        correlation_id=self.corr_id),
-                                   body=json.dumps(data))
-
+        self.channel.basic_publish(
+            exchange='',
+            routing_key='rpc_queue',
+            properties=pika.BasicProperties(
+                reply_to=self.callback_queue,
+                correlation_id=self.corr_id,
+            ),
+            body=json.dumps(data))
         while self.response is None:
             self.connection.process_data_events()
-
         return float(self.response)
 
-        # should anything replace the pnl simulation run?
+    def get_transactions(self, seed = 0, buy_sell = (0,0)):
+        # Market needs to handle keeping a record of transactions. Will it integrate with Azure in the same way?
 
-    def daily_rate_of_return(self):
+        #access logfile for AMMPS
         return
 
-    def daily_rate_of_return_cb(self, ch, method, properties, body):
-        price = float(body)
 
-        print(f'got price {price}')
+    def get_simulation_price():
+        transactions = get_transactions()
 
-        # do SHARKFin computations
+        # should this be the same as the PNL class?
+        
 
-        # could change some state value that other functions could read, 
-        # in which case a separate function should be created which publishes price data to message queue
+    def daily_rate_of_return(self, seed=None, buy_sell=None):
+        # same as PNL class. Should this be put in the abstract base class?
 
-        data = {'seed': 1, 'bl': 2, 'sl': 3}
+        ## TODO: Cleanup. Use "last" parameter in just one place.
+        if seed is None:
+            seed = self.last_seed
 
-        # where to put?
-        self.channel.basic_publish(exchange='market', routing_key='params_queue', body=json.dumps(data))
+        if buy_sell is None:
+            buy_sell = self.last_buy_sell
 
-    def get_simulation_price(self):
-        return
+        last_sim_price = self.get_simulation_price(
+            seed=seed, buy_sell = buy_sell
+        )
+
+        if last_sim_price is None:
+            last_sim_price = self.default_sim_price
+
+        ror = (last_sim_price * self.simulation_price_scale - 100) / 100
+
+        # adjust to calibrated NetLogo to S&P500
+        ror = self.sp500_std * (ror - self.netlogo_ror) / self.netlogo_std + self.sp500_ror
+
+        return ror
+        
 
 
 class MarketPNL(AbstractMarket):

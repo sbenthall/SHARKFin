@@ -1,45 +1,39 @@
 import json 
 import pika
 
-connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+connection = pika.BlockingConnection(
+    pika.ConnectionParameters(host='localhost'))
 
 channel = connection.channel()
 
-channel.queue_declare(queue='params_queue')
-channel.queue_declare(queue='prices_queue')
+channel.queue_declare(queue='rpc_queue')
 
-channel.exchange_declare('market')
+def fib(n):
+    if n == 0:
+        return 0
+    elif n == 1:
+        return 1
+    else:
+        return fib(n - 1) + fib(n - 2)
 
-# add queues to exchange
-channel.queue_bind('params_queue', 'market')
-channel.queue_bind('prices_queue', 'market')
+def on_request(ch, method, props, body):
+    data = json.loads(body)
 
+    print(f'seed: {data["seed"]}, bl: {data["bl"]}, sl: {data["sl"]}')
 
-def callback(ch, method, props, body):
-	print('callback triggered')
-	data = json.loads(body)
+    response = data['seed'] + data['bl'] + data['sl']
 
-	seed = data['seed']
-	bl = data['bl']
-	sl = data['sl']
+    ch.basic_publish(exchange='',
+                     routing_key=props.reply_to,
+                     properties=pika.BasicProperties(correlation_id = \
+                                                         props.correlation_id),
+                     body=str(response))
+    ch.basic_ack(delivery_tag=method.delivery_tag)
 
-	print(f'seed: {seed}, bl: {bl}, sl: {sl}')
+channel.basic_qos(prefetch_count=1)
+channel.basic_consume(queue='rpc_queue', on_message_callback=on_request)
 
-	ch.basic_publish(exchange='market', 
-					 routing_key='prices_queue',
-					 properties=pika.BasicProperties(correlation_id=props.correlation_id),
-					 body='10.5'),
-	# ch.basic_ack(delivery_tag=method.delivery_tag)
-
-
-	# send closing price
-	# send_price('localhost', 'market', 'prices_queue', '10.5')
-
-
-# channel.basic_qos(prefetch_count=1)
-
-
-channel.basic_consume('params_queue', on_message_callback=callback)
+print(" [x] Awaiting RPC requests")
 channel.start_consuming()
 
 
