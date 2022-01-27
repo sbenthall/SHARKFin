@@ -92,12 +92,12 @@ def run_simulation(
 
 
 if __name__ == '__main__':
-    market = hpa.MarketPNL(
+    market = hpa.ClientRPCMarket(
         seed_limit = 150
     )
 
     args = parser.parse_args()
 
-    sim_stats = run_simulation(agent_parameters, dist_params, 1, a=0.2, q=1, r=1, market=market)
+    sim_stats = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=2, r=2, market=market)
 
     pd.DataFrame(sim_stats).to_csv(f'{args.save_as}.csv')

@@ -536,6 +536,7 @@ class AbstractMarket(ABC):
 
     @abstractmethod
     def get_simulation_price():
+        # does this need to be an abstract method or can it be encapsulated in daily_rate_of_return?
         pass
 
     @abstractmethod
@@ -563,7 +564,7 @@ class ClientRPCMarket(AbstractMarket):
 
         seeds = None
 
-        # config object for PNL
+        # config object for PNL - do we need for AMMPS?
         config = None
 
         # sample - modifier for the seed
@@ -577,8 +578,10 @@ class ClientRPCMarket(AbstractMarket):
         self.sample = 0
         self.seeds = []
 
-        if seed_limit is not None:
-            self.seed_limit = seed_limit
+        # if seed_limit is not None:
+        #     self.seed_limit = seed_limit
+
+        self.seed_limit = seed_limit
 
         #RPC initialization
         self.connection = pika.BlockingConnection(
@@ -598,7 +601,7 @@ class ClientRPCMarket(AbstractMarket):
         if self.corr_id == props.correlation_id:
             self.response = body
 
-    def run_market(self, seed=0, buy_sell=(0, 0)):
+    def run_market(self, seed=None, buy_sell=(0, 0)):
         if seed is None:
             seed_limit = self.seed_limit if self.seed_limit is not None else 3000
             seed = (np.random.randint(seed_limit) + self.sample) % seed_limit
@@ -666,6 +669,8 @@ class ClientRPCMarket(AbstractMarket):
         ror = (last_sim_price * self.simulation_price_scale - 100) / 100
 
         # adjust to calibrated NetLogo to S&P500
+        # do we need to calibrate AMMPS to S&P as well?
+
         # ror = self.sp500_std * (ror - self.netlogo_ror) / self.netlogo_std + self.sp500_ror
 
         return ror
