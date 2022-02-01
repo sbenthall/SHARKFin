@@ -1,5 +1,5 @@
 #!/bin/bash
 # Proper header for a Bash script.
-pip install -r ~/hark/HARK_ABM_INTRO_public/HARK/requirements.txt
-cd /home/sb/HARK_ABM_INTRO_public/HARK
+pip install -r ../requirements.txt
+cd /home/sb/SHARKFin/simulate
 python3 run_simulations.py $1 ${2:+"-t $2"}

@@ -34,7 +34,7 @@ with open('config.yml', 'r') as stream:
 AZURE = config['azure']
 
 if AZURE:
-    import sharkfin.azure_storage
+    from sharkfin import azure_storage
 
 
 
