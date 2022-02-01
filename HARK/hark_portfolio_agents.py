@@ -550,6 +550,8 @@ class ClientRPCMarket(AbstractMarket):
         self.simulation_price_scale = 1
         self.default_sim_price = 400
 
+        # stuff from MarketPNL that we may or may not need
+
         # Empirical data -- redundant with FinanceModel!
         sp500_ror = 0.000628
         sp500_std = 0.011988
@@ -583,7 +585,12 @@ class ClientRPCMarket(AbstractMarket):
 
         self.seed_limit = seed_limit
 
-        #RPC initialization
+        self.latest_price = None
+
+        self.init_rpc()
+        
+
+    def init_rpc(self):
         self.connection = pika.BlockingConnection(
             pika.ConnectionParameters(host='localhost'))
 
@@ -597,9 +604,11 @@ class ClientRPCMarket(AbstractMarket):
             on_message_callback=self.on_response,
             auto_ack=True)
 
+
     def on_response(self, ch, method, props, body):
         if self.corr_id == props.correlation_id:
             self.response = body
+
 
     def run_market(self, seed=None, buy_sell=(0, 0)):
         if seed is None:
@@ -609,7 +618,6 @@ class ClientRPCMarket(AbstractMarket):
         self.last_seed = seed
         self.last_buy_sell = buy_sell
         self.seeds.append(seed)
-
 
         data = {
             'seed': seed,
@@ -627,8 +635,10 @@ class ClientRPCMarket(AbstractMarket):
                 correlation_id=self.corr_id,
             ),
             body=json.dumps(data))
+
         while self.response is None:
             self.connection.process_data_events()
+
         self.latest_price = float(self.response)
 
     def get_transactions(self, seed = 0, buy_sell = (0,0)):
