@@ -1,7 +1,7 @@
 import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 import HARK.ConsumptionSaving.ConsIndShockModel as cism
 from HARK.core import distribute_params
-from utilities import AgentList
+from sharkfin.utilities import AgentList
 from datetime import datetime
 from HARK.distribution import Uniform
 import io
@@ -38,7 +38,7 @@ with open('config.yml', 'r') as stream:
 AZURE = config['azure']
 
 if AZURE:
-    import azure_storage
+    import sharkfin.azure_storage
 
 
 ### Initializing agents
@@ -993,7 +993,7 @@ class AttentionSimulation():
         """
         agent.assign_parameters(AdjustPrb = 1.0)
         agent.solve()
-        asset_normalized = agent.state_now['aNrm'] + agent.control['cNrm']
+        asset_normalized = agent.state_now['aNrm'] + agent.controls['cNrm']
 
         # ShareFunc takes normalized market assets as argument
         risky_share = agent.solution[0].ShareFuncAdj(

@@ -25,16 +25,16 @@ import util as UTIL
 import random
 
 ## TODO configuration file for this value!
-sys.path.append('../../HARK')
+# sys.path.append('../../HARK')
 
 # is this the correct config file?
-with open('../HARK/config.yml', 'r') as stream:
+with open('config.yml', 'r') as stream:
     config = yaml.safe_load(stream)
 
 AZURE = config['azure']
 
 if AZURE:
-    import azure_storage
+    import sharkfin.azure_storage
 
 
 
