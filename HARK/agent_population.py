@@ -115,6 +115,23 @@ class AgentPopulation:
                         # assert parameter.value is not list
                         agent_params[key_param] = parameter.value
 
+                else:
+                    if parameter.kind == "agent":
+                        for agent in range(self.agent_class_count):
+                            if isinstance(parameter.value[agent], list):
+                                # if the parameter is a list, it's agent and time
+                                agent_params[key_param] = [
+                                    parameter.value[agent][t] for t in range(t_cycle)
+                                ]
+                            else:
+                                agent_params[key_param] = parameter.value[agent]
+                    elif parameter.kind == "time":
+                        agent_params[key_param] = [
+                            parameter.value[t] for t in range(t_cycle)
+                        ]
+                    else:
+                        agent_params[key_param] = parameter.value
+
             agent_dicts.append(agent_params)
 
         self.agent_dicts = agent_dicts
