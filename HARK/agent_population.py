@@ -15,6 +15,47 @@ class AgentPopulation:
     t_cycle: int = None
     agent_class_count: int = None
 
+    def __post_init__(self):
+
+        self.time_var = self.agent_class.time_vary
+        self.time_inv = self.agent_class.time_inv
+
+        param_dict = self.parameter_dict
+
+        # if agent_clas_count is not specified, infer from parameters
+        if self.agent_class_count is None:
+
+            agent_class_count = 1
+            for key_param in param_dict:
+                parameter = param_dict[key_param]
+                if parameter.kind == "agent":
+                    if isinstance(parameter.value, list):
+                        agent_class_count = max(agent_class_count, len(parameter.value))
+                    elif isinstance(parameter.value, Distribution) or isinstance(
+                        parameter.value, IndexDistribution
+                    ):
+                        # distributions may be passed without specifying counts
+                        # so in this case we leave evaluation of number of agents for later
+                        agent_class_count = 1
+                        break
+
+            self.agent_class_count = agent_class_count
+
+        if self.t_cycle is None:
+
+            t_cycle = 1
+            for key_param in param_dict:
+                if parameter.kind == "time":
+                    if isinstance(parameter.value, list):
+                        t_cycle = max(t_cycle, len(parameter.value))
+                    # there may not be a good use for this feature yet as time varying distributions
+                    # are entered as list of moments (Avg, Std, Count, etc)
+                    elif isinstance(parameter.value, Distribution) or isinstance(
+                        parameter.value, IndexDistribution
+                    ):
+                        t_cycle = 1
+                        break
+            self.t_cycle = t_cycle
 
     def parse_params(self):
 
