@@ -57,6 +57,24 @@ class AgentPopulation:
                         break
             self.t_cycle = t_cycle
 
+    def approx_distributions(self, approx_params: dict):
+
+        param_dict = self.parameter_dict
+
+        self.distributions = {}
+
+        for key in approx_params:
+            if key in param_dict and isinstance(param_dict[key].value, Distribution):
+                discrete_distribution = param_dict[key].value.approx(approx_params[key])
+                self.distributions[key] = (param_dict[key], discrete_distribution)
+                param_dict[key] = discrete_distribution.X
+            else:
+                print(
+                    "Warning: parameter {} is not a Distribution found in agent class {}".format(
+                        key, self.agent_class
+                    )
+                )
+
     def parse_params(self):
 
         param_dict = self.parameter_dict
