@@ -1,25 +1,20 @@
 from collections import namedtuple
+from dataclasses import dataclass
 from typing import NewType
+
 from HARK.core import AgentType
+from HARK.distribution import Distribution, IndexDistribution
 
-Parameters = NewType("Parameters", "dict")
+ParameterDict = NewType("ParameterDict", dict)
 
 
+@dataclass
 class AgentPopulation:
-    def __init__(
-        self,
-        agent_class: AgentType,
-        parameter_dict: Parameters,
-        t_cycle: int,
-        agent_class_count: int,
-    ):
-        self.agent_class = agent_class
-        self.parameter_dict = parameter_dict
-        self.t_cycle = t_cycle
-        self.agent_class_count = agent_class_count
+    agent_class: AgentType
+    parameter_dict: ParameterDict
+    t_cycle: int = None
+    agent_class_count: int = None
 
-        self.time_var = agent_class.time_vary_
-        self.time_inv = agent_class.time_inv_
 
     def parse_params(self):
 
