@@ -84,39 +84,36 @@ class AgentPopulation:
             agent_params = {}
 
             for key_param in param_dict:
+                parameter = param_dict[key_param]
 
                 if key_param in self.time_var:
                     # parameters that vary over time have to be repeated
                     parameter_per_t = []
                     for t in range(self.t_cycle):
-                        if param_dict[key_param].kind == "agent":
-                            if param_dict[key_param].value is list:
+                        if parameter.kind == "agent":
+                            if isinstance(parameter.value, list):
                                 # if the parameter is a list, it's agent and time
-                                parameter_per_t.append(
-                                    param_dict[key_param].value[agent][t]
-                                )
+                                parameter_per_t.append(parameter.value[agent][t])
                             else:
-                                parameter_per_t.append(
-                                    param_dict[key_param].value[agent]
-                                )
-                        elif param_dict[key_param].kind == "time":
+                                parameter_per_t.append(parameter.value[agent])
+                        elif parameter.kind == "time":
                             # if kind is time, it applies to all agents but varies over time
-                            # assert param_dict[key_param].value is list
-                            parameter_per_t.append(param_dict[key_param].value[t])
-                        elif param_dict[key_param].kind == "fixed":
+                            # assert parameter.value is list
+                            parameter_per_t.append(parameter.value[t])
+                        elif parameter.kind == "fixed":
                             # if kind is fixed, it applies to all agents at all times
-                            # assert param_dict[key_param].value is not list
-                            parameter_per_t.append(param_dict[key_param].value)
+                            # assert parameter.value is not list
+                            parameter_per_t.append(parameter.value)
 
                     agent_params[key_param] = parameter_per_t
 
                 elif key_param in self.time_inv:
-                    if param_dict[key_param].kind == "agent":
-                        # assert param_dict[key_param].value is list
-                        agent_params[key_param] = param_dict[key_param].value[agent]
-                    if param_dict[key_param].kind == "fixed":
-                        # assert param_dict[key_param].value is not list
-                        agent_params[key_param] = param_dict[key_param].value
+                    if parameter.kind == "agent":
+                        # assert parameter.value is list
+                        agent_params[key_param] = parameter.value[agent]
+                    if parameter.kind == "fixed":
+                        # assert parameter.value is not list
+                        agent_params[key_param] = parameter.value
 
             agent_dicts.append(agent_params)
 
