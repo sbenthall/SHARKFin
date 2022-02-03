@@ -138,7 +138,9 @@ class AgentPopulation:
 
     def create_distributed_agents(self):
 
-        self.agents = [self.agent_class(parameters) for parameters in self.agent_dicts]
+        self.agents = [
+            self.agent_class.__init__(**agent_dict) for agent_dict in self.agent_dicts
+        ]
 
     def solve_distributed_agents(self):
 
