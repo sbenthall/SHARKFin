@@ -154,7 +154,6 @@ class AgentPopulation:
 
 class AgentPopulationSolution:
     def __init__(self, agent_population):
-
         self.agent_population = agent_population
 
 
@@ -162,25 +161,25 @@ t_cycle = 3
 agent_class_count = 3
 
 parameters = {}
-parameters["T_cycle"] = t_cycle
-parameters["AgentClassCount"] = agent_class_count
 
-hark_param = namedtuple("HARK_parameter", "value kind")
+Parameter = namedtuple("Parameter", "value, kind")
 
-parameters["CRRA"] = hark_param(2.0, "fixed")  # applies to all
+parameters["AgentCount"] = Parameter([100, 100, 100], "agent")
+parameters["CRRA"] = Parameter(2.0, "fixed")  # applies to all
 # applies per distinct agent type at all times
-parameters["DiscFac"] = hark_param([0.96, 0.97, 0.98], "agent")
+parameters["DiscFac"] = Parameter([0.96, 0.97, 0.98], "agent")
 # applies to all per time cycle
-parameters["LivPrb"] = hark_param([0.98, 0.98, 0.98], "time")
+parameters["LivPrb"] = Parameter([0.98, 0.98, 0.98], "time")
 # applies to each agent each cycle
-parameters["TranShkStd"] = hark_param(
+parameters["TranShkStd"] = Parameter(
     [[0.2, 0.2, 0.2], [0.2, 0.2, 0.2], [0.2, 0.2, 0.2]], "agent"
 )
 
-parameters = Parameters(parameters)
+parameters = ParameterDict(parameters)
 
 from HARK.ConsumptionSaving.ConsIndShockModel import IndShockConsumerType
 
-agent_pop = AgentPopulation(IndShockConsumerType, parameters, 3, 3)
+# important to pass initialized agent so time_vary and time_inv are filled out
+agent_pop = AgentPopulation(IndShockConsumerType(), parameters)
 
 agent_pop.parse_params()
