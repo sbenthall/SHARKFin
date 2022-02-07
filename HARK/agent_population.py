@@ -1,9 +1,9 @@
-from collections import namedtuple
 from dataclasses import dataclass
 from typing import NewType
 
 from HARK.core import AgentType
 from HARK.distribution import Distribution, IndexDistribution
+from xarray import DataArray
 
 ParameterDict = NewType("ParameterDict", dict)
 
@@ -28,16 +28,11 @@ class AgentPopulation:
             agent_class_count = 1
             for key_param in param_dict:
                 parameter = param_dict[key_param]
-                if parameter.kind == "agent":
-                    if isinstance(parameter.value, list):
-                        agent_class_count = max(agent_class_count, len(parameter.value))
-                    elif isinstance(parameter.value, Distribution) or isinstance(
-                        parameter.value, IndexDistribution
-                    ):
-                        # distributions may be passed without specifying counts
-                        # so in this case we leave evaluation of number of agents for later
-                        agent_class_count = 1
-                        break
+                if isinstance(parameter, DataArray) and parameter.dims[0] == "agent":
+                    agent_class_count = max(agent_class_count, parameter.shape[0])
+                elif isinstance(parameter, (Distribution, IndexDistribution)):
+                    t_cycle = None
+                    break
 
             self.agent_class_count = agent_class_count
 
@@ -45,16 +40,14 @@ class AgentPopulation:
 
             t_cycle = 1
             for key_param in param_dict:
-                if parameter.kind == "time":
-                    if isinstance(parameter.value, list):
-                        t_cycle = max(t_cycle, len(parameter.value))
+                parameter = param_dict[key_param]
+                if isinstance(parameter, DataArray) and parameter.dims[-1] == "time":
+                    t_cycle = max(t_cycle, parameter.shape[-1])
                     # there may not be a good use for this feature yet as time varying distributions
                     # are entered as list of moments (Avg, Std, Count, etc)
-                    elif isinstance(parameter.value, Distribution) or isinstance(
-                        parameter.value, IndexDistribution
-                    ):
-                        t_cycle = 1
-                        break
+                elif isinstance(parameter, (Distribution, IndexDistribution)):
+                    t_cycle = None
+                    break
             self.t_cycle = t_cycle
 
     def approx_distributions(self, approx_params: dict):
@@ -64,8 +57,8 @@ class AgentPopulation:
         self.distributions = {}
 
         for key in approx_params:
-            if key in param_dict and isinstance(param_dict[key].value, Distribution):
-                discrete_distribution = param_dict[key].value.approx(approx_params[key])
+            if key in param_dict and isinstance(param_dict[key], Distribution):
+                discrete_distribution = param_dict[key].approx(approx_params[key])
                 self.distributions[key] = (param_dict[key], discrete_distribution)
                 param_dict[key] = discrete_distribution.X
             else:
@@ -79,7 +72,7 @@ class AgentPopulation:
 
         param_dict = self.parameter_dict
 
-        agent_dicts = []
+        agent_dicts = []  # container for dictionaries of each agent subgroup
         for agent in range(self.agent_class_count):
             agent_params = {}
 
@@ -90,47 +83,47 @@ class AgentPopulation:
                     # parameters that vary over time have to be repeated
                     parameter_per_t = []
                     for t in range(self.t_cycle):
-                        if parameter.kind == "agent":
-                            if isinstance(parameter.value, list):
-                                # if the parameter is a list, it's agent and time
-                                parameter_per_t.append(parameter.value[agent][t])
-                            else:
-                                parameter_per_t.append(parameter.value[agent])
-                        elif parameter.kind == "time":
-                            # if kind is time, it applies to all agents but varies over time
-                            # assert parameter.value is list
-                            parameter_per_t.append(parameter.value[t])
-                        elif parameter.kind == "fixed":
+                        if isinstance(parameter, DataArray):
+                            if parameter.dims[0] == "agent":
+                                if parameter.dims[-1] == "time":
+                                    # if the parameter is a list, it's agent and time
+                                    parameter_per_t.append(parameter[agent][t].item())
+                                else:
+                                    parameter_per_t.append(parameter[agent].item())
+                            elif parameter.dims[0] == "time":
+                                # if kind is time, it applies to all agents but varies over time
+                                parameter_per_t.append(parameter[t].item())
+                        elif isinstance(parameter, (int, float)):
                             # if kind is fixed, it applies to all agents at all times
-                            # assert parameter.value is not list
-                            parameter_per_t.append(parameter.value)
+                            parameter_per_t.append(parameter)
 
                     agent_params[key_param] = parameter_per_t
 
                 elif key_param in self.time_inv:
-                    if parameter.kind == "agent":
-                        # assert parameter.value is list
-                        agent_params[key_param] = parameter.value[agent]
-                    if parameter.kind == "fixed":
-                        # assert parameter.value is not list
-                        agent_params[key_param] = parameter.value
+                    if (
+                        isinstance(parameter, DataArray)
+                        and parameter.dims[0] == "agent"
+                    ):
+                        agent_params[key_param] = parameter[agent].item()
+                    elif isinstance(parameter, (int, float)):
+                        agent_params[key_param] = parameter
 
                 else:
-                    if parameter.kind == "agent":
-                        for agent in range(self.agent_class_count):
-                            if isinstance(parameter.value[agent], list):
+                    if isinstance(parameter, DataArray):
+                        if parameter.dims[0] == "agent":
+                            if parameter.dims[-1] == "time":
                                 # if the parameter is a list, it's agent and time
                                 agent_params[key_param] = [
-                                    parameter.value[agent][t] for t in range(t_cycle)
+                                    parameter[agent][t].item() for t in range(t_cycle)
                                 ]
                             else:
-                                agent_params[key_param] = parameter.value[agent]
-                    elif parameter.kind == "time":
-                        agent_params[key_param] = [
-                            parameter.value[t] for t in range(t_cycle)
-                        ]
-                    else:
-                        agent_params[key_param] = parameter.value
+                                agent_params[key_param] = parameter[agent].item()
+                        elif parameter.dims[0] == "time":
+                            agent_params[key_param] = [
+                                parameter[t].item() for t in range(t_cycle)
+                            ]
+                    elif isinstance(parameter, (int, float)):
+                        agent_params[key_param] = parameter
 
             agent_dicts.append(agent_params)
 
@@ -162,17 +155,15 @@ agent_class_count = 3
 
 parameters = {}
 
-Parameter = namedtuple("Parameter", "value, kind")
-
-parameters["AgentCount"] = Parameter([100, 100, 100], "agent")
-parameters["CRRA"] = Parameter(2.0, "fixed")  # applies to all
+parameters["AgentCount"] = DataArray([100, 100, 100], dims=("agent"))
+parameters["CRRA"] = 2.0  # applies to all
 # applies per distinct agent type at all times
-parameters["DiscFac"] = Parameter([0.96, 0.97, 0.98], "agent")
+parameters["DiscFac"] = DataArray([0.96, 0.97, 0.98], dims=("agent"))
 # applies to all per time cycle
-parameters["LivPrb"] = Parameter([0.98, 0.98, 0.98], "time")
+parameters["LivPrb"] = DataArray([0.98, 0.98, 0.98], dims=("time"))
 # applies to each agent each cycle
-parameters["TranShkStd"] = Parameter(
-    [[0.2, 0.2, 0.2], [0.2, 0.2, 0.2], [0.2, 0.2, 0.2]], "agent"
+parameters["TranShkStd"] = DataArray(
+    [[0.2, 0.2, 0.2], [0.2, 0.2, 0.2], [0.2, 0.2, 0.2]], dims=("agent", "time")
 )
 
 parameters = ParameterDict(parameters)
