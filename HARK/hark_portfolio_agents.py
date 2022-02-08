@@ -19,6 +19,7 @@ import yaml
 import json
 import pika
 import uuid
+import time
 
 from abc import ABC, abstractmethod
 
@@ -637,6 +638,7 @@ class ClientRPCMarket(AbstractMarket):
             body=json.dumps(data))
 
         while self.response is None:
+            time.sleep(4)
             self.connection.process_data_events()
 
         self.latest_price = float(self.response)
