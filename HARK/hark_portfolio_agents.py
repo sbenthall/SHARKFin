@@ -25,9 +25,9 @@ from abc import ABC, abstractmethod
 
 import sys
 
-sys.path.append(".")
+sys.path.append('.')
 ## TODO configuration file for this value!
-sys.path.append("../PNL/py")
+sys.path.append('../PNL/py')
 
 import util as UTIL
 import pnl as pnl
@@ -37,10 +37,10 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-with open("config_cloud.yml", "r") as stream:
+with open('config_cloud.yml', 'r') as stream:
     config = yaml.safe_load(stream)
 
-AZURE = config["azure"]
+AZURE = config['azure']
 
 if AZURE:
     import azure_storage
@@ -86,13 +86,8 @@ def distribute(agents, dist_params):
             distribute_params(
                 agent,
                 param,
-<<<<<<< Updated upstream
-                dist_params[param]["n"],
-                Uniform(bot=dist_params[param]["bot"], top=dist_params[param]["top"]),
-=======
                 dist_params[param]['n'],
                 Uniform(bot=dist_params[param]['bot'], top=dist_params[param]['top']),
->>>>>>> Stashed changes
             )
             for agent in agents
         ]
@@ -154,28 +149,21 @@ class AgentPopulation:
         )
 
     def agent_df(self):
-        """
+        '''
         Output a dataframe for agent attributes
 
         returns agent_df from class_stats
-        """
+        '''
 
         records = []
 
         for agent in self.agents:
-            for i, aLvl in enumerate(agent.state_now["aLvl"]):
+            for i, aLvl in enumerate(agent.state_now['aLvl']):
                 record = {
-<<<<<<< Updated upstream
-                    "aLvl": aLvl,
-                    "mNrm": agent.state_now["mNrm"][i],
-                    "cNrm": agent.controls["cNrm"][i]
-                    if "cNrm" in agent.controls
-=======
                     'aLvl': aLvl,
                     'mNrm': agent.state_now['mNrm'][i],
                     'cNrm': agent.controls['cNrm'][i]
                     if 'cNrm' in agent.controls
->>>>>>> Stashed changes
                     else None,
                 }
 
@@ -196,19 +184,12 @@ class AgentPopulation:
         records = []
 
         for agent in self.agents:
-            for i, aLvl in enumerate(agent.state_now["aLvl"]):
+            for i, aLvl in enumerate(agent.state_now['aLvl']):
                 record = {
-<<<<<<< Updated upstream
-                    "aLvl": aLvl,
-                    "mNrm": agent.state_now["mNrm"][i],
-                    # difference between mNrm and the equilibrium mNrm from BST
-                    "mNrm_ratio_StE": agent.state_now["mNrm"][i] / agent.mNrmStE,
-=======
                     'aLvl': aLvl,
                     'mNrm': agent.state_now['mNrm'][i],
                     # difference between mNrm and the equilibrium mNrm from BST
                     'mNrm_ratio_StE': agent.state_now['mNrm'][i] / agent.mNrmStE,
->>>>>>> Stashed changes
                 }
 
                 for dp in self.dist_params:
@@ -220,26 +201,11 @@ class AgentPopulation:
 
         class_stats = (
             agent_df.groupby(list(self.dist_params.keys()))
-<<<<<<< Updated upstream
-            .aggregate(["mean", "std"])
-=======
             .aggregate(['mean', 'std'])
->>>>>>> Stashed changes
             .reset_index()
         )
 
         cs = class_stats
-<<<<<<< Updated upstream
-        cs["label"] = round(cs["CRRA"], 2).apply(lambda x: f"CRRA: {x}, ") + round(
-            cs["DiscFac"], 2
-        ).apply(lambda x: f"DiscFac: {x}")
-        cs["aLvl_mean"] = cs["aLvl"]["mean"]
-        cs["aLvl_std"] = cs["aLvl"]["std"]
-        cs["mNrm_mean"] = cs["mNrm"]["mean"]
-        cs["mNrm_std"] = cs["mNrm"]["std"]
-        cs["mNrm_ratio_StE_mean"] = cs["mNrm_ratio_StE"]["mean"]
-        cs["mNrm_ratio_StE_std"] = cs["mNrm_ratio_StE"]["std"]
-=======
         cs['label'] = round(cs['CRRA'], 2).apply(lambda x: f'CRRA: {x}, ') + round(
             cs['DiscFac'], 2
         ).apply(lambda x: f"DiscFac: {x}")
@@ -249,7 +215,6 @@ class AgentPopulation:
         cs['mNrm_std'] = cs['mNrm']['std']
         cs['mNrm_ratio_StE_mean'] = cs['mNrm_ratio_StE']['mean']
         cs['mNrm_ratio_StE_std'] = cs['mNrm_ratio_StE']['std']
->>>>>>> Stashed changes
 
         if store:
             self.stored_class_stats = class_stats
@@ -272,13 +237,8 @@ class AgentPopulation:
         n_per_class: int
             number of agents to instantiate per class
         """
-<<<<<<< Updated upstream
-        num_classes = math.prod([dist_params[dp]["n"] for dp in dist_params])
-        agent_batches = [{"AgentCount": num_classes}] * n_per_class
-=======
         num_classes = math.prod([dist_params[dp]['n'] for dp in dist_params])
         agent_batches = [{'AgentCount': num_classes}] * n_per_class
->>>>>>> Stashed changes
 
         agents = [
             cpm.PortfolioConsumerType(
@@ -297,11 +257,7 @@ class AgentPopulation:
         Sets up the agents with their state for the state of the simulation
         """
         for agent in self.agents:
-<<<<<<< Updated upstream
-            agent.track_vars += ["pLvl", "mNrm", "cNrm", "Share", "Risky"]
-=======
             agent.track_vars += ['pLvl', 'mNrm', 'cNrm', 'Share', 'Risky']
->>>>>>> Stashed changes
 
             agent.assign_parameters(AdjustPrb=1.0)
             agent.T_sim = 1000  # arbitrary!
@@ -319,11 +275,7 @@ class AgentPopulation:
                 ind_shock_double.solve()
                 mNrmStE = ind_shock_double.solution[0].mNrmStE
 
-<<<<<<< Updated upstream
-                agent.state_now["mNrm"][:] = mNrmStE
-=======
                 agent.state_now['mNrm'][:] = mNrmStE
->>>>>>> Stashed changes
                 agent.mNrmStE = (
                     mNrmStE  # saving this for later, in case we do the analysis.
                 )
@@ -332,16 +284,6 @@ class AgentPopulation:
                 mNrm = (
                     self.stored_class_stats.copy()
                     .set_index([dp for dp in self.dist_params])
-<<<<<<< Updated upstream
-                    .xs((idx))["mNrm"]["mean"]
-                )
-                agent.state_now["mNrm"][:] = mNrm
-
-            agent.state_now["aNrm"] = agent.state_now["mNrm"] - agent.solution[
-                0
-            ].cFuncAdj(agent.state_now["mNrm"])
-            agent.state_now["aLvl"] = agent.state_now["aNrm"] * agent.state_now["pLvl"]
-=======
                     .xs((idx))['mNrm']['mean']
                 )
                 agent.state_now['mNrm'][:] = mNrm
@@ -350,7 +292,6 @@ class AgentPopulation:
                 0
             ].cFuncAdj(agent.state_now['mNrm'])
             agent.state_now['aLvl'] = agent.state_now['aNrm'] * agent.state_now['pLvl']
->>>>>>> Stashed changes
 
 
 ######
@@ -500,14 +441,14 @@ class FinanceModel:
     def asset_price_stats(self):
         price_stats = {}
 
-        price_stats["min_asset_price"] = min(self.prices)
-        price_stats["max_asset_price"] = max(self.prices)
+        price_stats['min_asset_price'] = min(self.prices)
+        price_stats['max_asset_price'] = max(self.prices)
 
-        price_stats["idx_min_asset_price"] = np.argmin(self.prices)
-        price_stats["idx_max_asset_price"] = np.argmax(self.prices)
+        price_stats['idx_min_asset_price'] = np.argmin(self.prices)
+        price_stats['idx_max_asset_price'] = np.argmax(self.prices)
 
-        price_stats["mean_asset_price"] = np.mean(self.prices)
-        price_stats["std_asset_price"] = np.std(self.prices)
+        price_stats['mean_asset_price'] = np.mean(self.prices)
+        price_stats['std_asset_price'] = np.std(self.prices)
 
         return price_stats
 
@@ -573,11 +514,7 @@ class FinanceModel:
             ex_cg_q_ror, ex_cg_q_std, self.dividend_ror, self.dividend_std
         )
 
-<<<<<<< Updated upstream
-        market_risky_params = {"RiskyAvg": 1 + cg_w_div_ror, "RiskyStd": cg_w_div_std}
-=======
         market_risky_params = {'RiskyAvg': 1 + cg_w_div_ror, 'RiskyStd': cg_w_div_std}
->>>>>>> Stashed changes
 
         return market_risky_params
 
@@ -598,15 +535,11 @@ class FinanceModel:
 
 
 class AbstractMarket(ABC):
-    """
+    '''
     Abstract class from which market models should inherit
 
     defines common methods for all market models.
-<<<<<<< Updated upstream
-    """
-=======
     '''
->>>>>>> Stashed changes
 
     @abstractmethod
     def run_market():
@@ -668,16 +601,12 @@ class ClientRPCMarket(AbstractMarket):
 
     def init_rpc(self):
         self.connection = pika.BlockingConnection(
-<<<<<<< Updated upstream
-            pika.ConnectionParameters(host="localhost")
-=======
             pika.ConnectionParameters(host='localhost')
->>>>>>> Stashed changes
         )
 
         self.channel = self.connection.channel()
 
-        result = self.channel.queue_declare(queue="", exclusive=True)
+        result = self.channel.queue_declare(queue='', exclusive=True)
         self.callback_queue = result.method.queue
 
         self.channel.basic_consume(
@@ -699,17 +628,13 @@ class ClientRPCMarket(AbstractMarket):
         self.last_buy_sell = buy_sell
         self.seeds.append(seed)
 
-<<<<<<< Updated upstream
-        data = {"seed": seed, "bl": buy_sell[0], "sl": buy_sell[1]}
-=======
         data = {'seed': seed, 'bl': buy_sell[0], 'sl': buy_sell[1]}
->>>>>>> Stashed changes
 
         self.response = None
         self.corr_id = str(uuid.uuid4())
         self.channel.basic_publish(
-            exchange="",
-            routing_key="rpc_queue",
+            exchange='',
+            routing_key='rpc_queue',
             properties=pika.BasicProperties(
                 reply_to=self.callback_queue,
                 correlation_id=self.corr_id,
@@ -853,11 +778,7 @@ class MarketPNL(AbstractMarket):
         # use run_market() first to create logs
         if os.path.exists(logfile):
             try:
-<<<<<<< Updated upstream
-                transactions = pd.read_csv(logfile, delimiter="\t")
-=======
                 transactions = pd.read_csv(logfile, delimiter='\t')
->>>>>>> Stashed changes
                 return transactions
             except Exception as e:
                 raise (Exception(f"Error loading transactions from local file: {e}"))
@@ -867,7 +788,7 @@ class MarketPNL(AbstractMarket):
                 remote_transaction_file_name = os.path.join("pnl", tail)
                 csv_data = azure_storage.download_blob(remote_transaction_file_name)
 
-                df = pd.read_csv(io.StringIO(csv_data), delimiter="\t")
+                df = pd.read_csv(io.StringIO(csv_data), delimiter='\t')
 
                 if len(df.columns) < 3:
                     raise Exception(
@@ -889,7 +810,7 @@ class MarketPNL(AbstractMarket):
         transactions = self.get_transactions(seed=seed, buy_sell=buy_sell)
 
         try:
-            prices = transactions["TrdPrice"]
+            prices = transactions['TrdPrice']
         except Exception as e:
             raise Exception(
                 f"get_simulation_price(seed = {seed},"
@@ -1167,14 +1088,14 @@ class AttentionSimulation:
         self.broker = Broker(market)
 
         self.history = {}
-        self.history["buy_sell"] = []
-        self.history["owned_shares"] = []
-        self.history["total_assets"] = []
-        self.history["mean_income_level"] = []
-        self.history["total_consumption_level"] = []
-        self.history["permshock_std"] = []
-        self.history["class_stats"] = []
-        self.history["total_pop_stats"] = []
+        self.history['buy_sell'] = []
+        self.history['owned_shares'] = []
+        self.history['total_assets'] = []
+        self.history['mean_income_level'] = []
+        self.history['total_consumption_level'] = []
+        self.history['permshock_std'] = []
+        self.history['class_stats'] = []
+        self.history['total_pop_stats'] = []
 
         # assign macro-days to each agent
         for agent in self.agents:
@@ -1215,8 +1136,8 @@ class AttentionSimulation:
         """
         agent.assign_parameters(AdjustPrb=1.0)
         agent.solve()
-        cNrm = agent.controls["cNrm"] if "cNrm" in agent.controls else 0
-        asset_normalized = agent.state_now["aNrm"] + cNrm
+        cNrm = agent.controls['cNrm'] if 'cNrm' in agent.controls else 0
+        asset_normalized = agent.state_now['aNrm'] + cNrm
 
         # ShareFunc takes normalized market assets as argument
         risky_share = agent.solution[0].ShareFuncAdj(asset_normalized)
@@ -1225,11 +1146,7 @@ class AttentionSimulation:
         risky_asset_wealth = (
             risky_share
             * asset_normalized
-<<<<<<< Updated upstream
-            * agent.state_now["pLvl"]
-=======
             * agent.state_now['pLvl']
->>>>>>> Stashed changes
             * self.dollars_per_hark_money_unit
         )
 
@@ -1248,22 +1165,6 @@ class AttentionSimulation:
         data = None
         try:
             data_dict = {
-<<<<<<< Updated upstream
-                "t": range(len(self.fm.prices[1:])),
-                "prices": self.fm.prices[1:],
-                "buy": [bs[0] for bs in self.broker.buy_sell_history],
-                "sell": [bs[1] for bs in self.broker.buy_sell_history],
-                "buy_macro": [bs[0] for bs in self.broker.buy_sell_macro_history],
-                "sell_macro": [bs[1] for bs in self.broker.buy_sell_macro_history],
-                "owned": self.history["owned_shares"],
-                "total_assets": self.history["total_assets"],
-                "mean_income": self.history["mean_income_level"],
-                "total_consumption": self.history["total_consumption_level"],
-                "permshock_std": self.history["permshock_std"],
-                "ror": self.fm.ror_list,
-                "expected_ror": self.fm.expected_ror_list[1:],
-                "expected_std": self.fm.expected_std_list[1:],
-=======
                 't': range(len(self.fm.prices[1:])),
                 'prices': self.fm.prices[1:],
                 'buy': [bs[0] for bs in self.broker.buy_sell_history],
@@ -1278,7 +1179,6 @@ class AttentionSimulation:
                 'ror': self.fm.ror_list,
                 'expected_ror': self.fm.expected_ror_list[1:],
                 'expected_std': self.fm.expected_std_list[1:],
->>>>>>> Stashed changes
             }
 
             data = pd.DataFrame.from_dict(data_dict)
@@ -1289,21 +1189,6 @@ class AttentionSimulation:
                 "Lengths:"
                 + str(
                     {
-<<<<<<< Updated upstream
-                        "t": len(self.fm.prices),
-                        "prices": len(self.fm.prices),
-                        "buy": len(
-                            [None] + [bs[0] for bs in self.broker.buy_sell_history]
-                        ),
-                        "sell": len(
-                            [None] + [bs[1] for bs in self.broker.buy_sell_history]
-                        ),
-                        "owned": len(self.history["owned_shares"]),
-                        "total_assets": len(self.history["total_assets"]),
-                        "ror": len([None] + self.fm.ror_list),
-                        "expected_ror": len(self.fm.expected_ror_list),
-                        "expected_std": len(self.fm.expected_std_list),
-=======
                         't': len(self.fm.prices),
                         'prices': len(self.fm.prices),
                         'buy': len(
@@ -1317,7 +1202,6 @@ class AttentionSimulation:
                         'ror': len([None] + self.fm.ror_list),
                         'expected_ror': len(self.fm.expected_ror_list),
                         'expected_std': len(self.fm.expected_std_list),
->>>>>>> Stashed changes
                     }
                 )
             )
@@ -1339,13 +1223,8 @@ class AttentionSimulation:
         ## For risky asset gains in the simulated quarter,
         ## use only the dividend.
         true_risky_expectations = {
-<<<<<<< Updated upstream
-            "RiskyAvg": agent.parameters["RiskyAvg"],
-            "RiskyStd": agent.parameters["RiskyStd"],
-=======
             "RiskyAvg": agent.parameters['RiskyAvg'],
             "RiskyStd": agent.parameters['RiskyStd'],
->>>>>>> Stashed changes
         }
 
         dividend_risky_params = {
@@ -1363,11 +1242,7 @@ class AttentionSimulation:
         # Selling off shares if necessary to
         # finance this period's consumption
         asset_level_in_shares = (
-<<<<<<< Updated upstream
-            agent.state_now["aLvl"] * self.dollars_per_hark_money_unit / self.fm.rap()
-=======
             agent.state_now['aLvl'] * self.dollars_per_hark_money_unit / self.fm.rap()
->>>>>>> Stashed changes
         )
 
         delta = asset_level_in_shares - agent.shares
@@ -1382,27 +1257,11 @@ class AttentionSimulation:
         fig, ax = plt.subplots(
             4,
             1,
-<<<<<<< Updated upstream
-            sharex="col",
-=======
             sharex='col',
->>>>>>> Stashed changes
             # sharey='col',
             figsize=(12, 16),
         )
 
-<<<<<<< Updated upstream
-        ax[0].plot(data["total_assets"], alpha=0.5, label="total assets")
-        ax[0].plot(
-            [p * o for (p, o) in zip(data["prices"], data["owned"])],
-            alpha=0.5,
-            label="owned share value",
-        )
-        ax[0].plot(
-            [100 * o for (p, o) in zip(data["prices"], data["owned"])],
-            alpha=0.5,
-            label="owned share quantity * p_0",
-=======
         ax[0].plot(data['total_assets'], alpha=0.5, label='total assets')
         ax[0].plot(
             [p * o for (p, o) in zip(data['prices'], data['owned'])],
@@ -1413,19 +1272,18 @@ class AttentionSimulation:
             [100 * o for (p, o) in zip(data['prices'], data['owned'])],
             alpha=0.5,
             label='owned share quantity * p_0',
->>>>>>> Stashed changes
         )
         ax[0].legend()
 
-        ax[1].plot(data["buy"], alpha=0.5, label="buy")
-        ax[1].plot(data["sell"], alpha=0.5, label="sell")
+        ax[1].plot(data['buy'], alpha=0.5, label='buy')
+        ax[1].plot(data['sell'], alpha=0.5, label='sell')
         ax[1].legend()
 
-        ax[2].plot(data["ror"], alpha=0.5, label="ror")
-        ax[2].plot(data["expected_ror"], alpha=0.5, label="expected ror")
+        ax[2].plot(data['ror'], alpha=0.5, label='ror')
+        ax[2].plot(data['expected_ror'], alpha=0.5, label='expected ror')
         ax[2].legend()
 
-        ax[3].plot(data["prices"], alpha=0.5, label="prices")
+        ax[3].plot(data['prices'], alpha=0.5, label='prices')
         ax[3].legend()
 
         ax[0].set_title("Simulation History")
@@ -1434,20 +1292,16 @@ class AttentionSimulation:
 
         plt.show()
 
-<<<<<<< Updated upstream
-    def report_class_stats(self, stat="aLvl", stat_history=None):
-=======
     def report_class_stats(self, stat='aLvl', stat_history=None):
->>>>>>> Stashed changes
         if stat_history is None:
-            stat_history = self.history["class_stats"]
+            stat_history = self.history['class_stats']
 
-        for d, cs in enumerate(self.history["class_stats"]):
-            cs["time"] = d
+        for d, cs in enumerate(self.history['class_stats']):
+            cs['time'] = d
 
-        data = pd.concat(self.history["class_stats"])
+        data = pd.concat(self.history['class_stats'])
 
-        ax = sns.lineplot(data=data, x="time", y="aLvl_mean", hue="label")
+        ax = sns.lineplot(data=data, x='time', y='aLvl_mean', hue='label')
         ax.set_title("mean aLvl by class subpopulation")
 
     def simulate(self, quarters=None, start=True):
@@ -1518,32 +1372,20 @@ class AttentionSimulation:
         Tracks the current state of agent's total assets and owned shares
         """
         tal = (
-<<<<<<< Updated upstream
-            sum([agent.state_now["aLvl"].sum() for agent in self.agents])
-=======
             sum([agent.state_now['aLvl'].sum() for agent in self.agents])
->>>>>>> Stashed changes
             * self.dollars_per_hark_money_unit
         )
         os = sum([sum(agent.shares) for agent in self.agents])
 
         mpl = (
-<<<<<<< Updated upstream
-            mean([agent.state_now["pLvl"].mean() for agent in self.agents])
-=======
             mean([agent.state_now['pLvl'].mean() for agent in self.agents])
->>>>>>> Stashed changes
             * self.dollars_per_hark_money_unit
         )
 
         tcl = (
             sum(
                 [
-<<<<<<< Updated upstream
-                    (agent.controls["cNrm"] * agent.state_now["pLvl"]).sum()
-=======
                     (agent.controls['cNrm'] * agent.state_now['pLvl']).sum()
->>>>>>> Stashed changes
                     for agent in self.agents
                     if agent.macro_day == day
                 ]
@@ -1553,25 +1395,19 @@ class AttentionSimulation:
 
         permshock_std = np.array(
             [
-<<<<<<< Updated upstream
-                agent.shocks["PermShk"]
-                for agent in self.agents
-                if "PermShk" in agent.shocks
-=======
                 agent.shocks['PermShk']
                 for agent in self.agents
                 if 'PermShk' in agent.shocks
->>>>>>> Stashed changes
             ]
         ).std()
 
-        self.history["owned_shares"].append(os)
-        self.history["total_assets"].append(tal)
-        self.history["mean_income_level"].append(mpl)
-        self.history["total_consumption_level"].append(tcl)
-        self.history["permshock_std"].append(permshock_std)
-        self.history["class_stats"].append(self.pop.class_stats(store=False))
-        self.history["total_pop_stats"].append(self.pop.agent_df())
+        self.history['owned_shares'].append(os)
+        self.history['total_assets'].append(tal)
+        self.history['mean_income_level'].append(mpl)
+        self.history['total_consumption_level'].append(tcl)
+        self.history['permshock_std'].append(permshock_std)
+        self.history['class_stats'].append(self.pop.class_stats(store=False))
+        self.history['total_pop_stats'].append(self.pop.agent_df())
 
     def update_agent_wealth_capital_gains(self, old_share_price, ror):
         """
@@ -1590,46 +1426,34 @@ class AttentionSimulation:
             new_raw = agent.shares * new_share_price
 
             delta_aNrm = (new_raw - old_raw) / (
-<<<<<<< Updated upstream
-                self.dollars_per_hark_money_unit * agent.state_now["pLvl"]
-=======
                 self.dollars_per_hark_money_unit * agent.state_now['pLvl']
->>>>>>> Stashed changes
             )
 
             # update normalized market assets
             # if agent.state_now['aNrm'] < delta_aNrm:
             #     breakpoint()
 
-            agent.state_now["aNrm"] = agent.state_now["aNrm"] + delta_aNrm
+            agent.state_now['aNrm'] = agent.state_now['aNrm'] + delta_aNrm
 
-<<<<<<< Updated upstream
-            if (agent.state_now["aNrm"] < 0).any():
-=======
             if (agent.state_now['aNrm'] < 0).any():
->>>>>>> Stashed changes
                 print(
                     f"ERROR: Agent with CRRA {agent.parameters['CRRA']}"
                     + "has negative aNrm after capital gains update."
                 )
                 print("Setting normalize assets and shares to 0.")
-                agent.state_now["aNrm"][(agent.state_now["aNrm"] < 0)] = 0.0
+                agent.state_now['aNrm'][(agent.state_now['aNrm'] < 0)] = 0.0
                 ## TODO: This change in shares needs to be registered with the Broker.
-                agent.shares[(agent.state_now["aNrm"] == 0)] = 0
+                agent.shares[(agent.state_now['aNrm'] == 0)] = 0
 
             # update non-normalized market assets
-<<<<<<< Updated upstream
-            agent.state_now["aLvl"] = agent.state_now["aNrm"] * agent.state_now["pLvl"]
-=======
             agent.state_now['aLvl'] = agent.state_now['aNrm'] * agent.state_now['pLvl']
->>>>>>> Stashed changes
 
     def ror_volatility(self):
         """
         Returns the volatility of the rate of return.
         Must be run after a simulation.
         """
-        return self.data()["ror"].dropna().std()
+        return self.data()['ror'].dropna().std()
 
     def ror_mean(self):
         """
@@ -1637,77 +1461,43 @@ class AttentionSimulation:
         Must be run after a simulation
         """
 
-        return self.data()["ror"].dropna().mean()
+        return self.data()['ror'].dropna().mean()
 
     def buy_sell_stats(self):
         bs_stats = {}
         buy_limits, sell_limits = list(zip(*self.broker.buy_sell_history))
 
-        bs_stats["max_buy_limit"] = max(buy_limits)
-        bs_stats["max_sell_limit"] = max(sell_limits)
+        bs_stats['max_buy_limit'] = max(buy_limits)
+        bs_stats['max_sell_limit'] = max(sell_limits)
 
-        bs_stats["idx_max_buy_limit"] = np.argmax(buy_limits)
-        bs_stats["idx_max_sell_limit"] = np.argmax(sell_limits)
+        bs_stats['idx_max_buy_limit'] = np.argmax(buy_limits)
+        bs_stats['idx_max_sell_limit'] = np.argmax(sell_limits)
 
-        bs_stats["mean_buy_limit"] = np.mean(buy_limits)
-        bs_stats["mean_sell_limit"] = np.mean(sell_limits)
+        bs_stats['mean_buy_limit'] = np.mean(buy_limits)
+        bs_stats['mean_sell_limit'] = np.mean(sell_limits)
 
-        bs_stats["std_buy_limit"] = np.std(buy_limits)
-        bs_stats["std_sell_limit"] = np.std(sell_limits)
+        bs_stats['std_buy_limit'] = np.std(buy_limits)
+        bs_stats['std_sell_limit'] = np.std(sell_limits)
 
-        bs_stats["kurtosis_buy_limit"] = stats.kurtosis(buy_limits)
-        bs_stats["kurtosis_sell_limit"] = stats.kurtosis(sell_limits)
+        bs_stats['kurtosis_buy_limit'] = stats.kurtosis(buy_limits)
+        bs_stats['kurtosis_sell_limit'] = stats.kurtosis(sell_limits)
 
-        bs_stats["skew_buy_limit"] = stats.skew(buy_limits)
-        bs_stats["skew_sell_limit"] = stats.skew(sell_limits)
+        bs_stats['skew_buy_limit'] = stats.skew(buy_limits)
+        bs_stats['skew_sell_limit'] = stats.skew(sell_limits)
 
         return bs_stats
 
     def sim_stats(self):
 
         ## TODO: Can this processing be made less code-heavy?
-<<<<<<< Updated upstream
-        df_mean = self.history["class_stats"][-1][["label", "aLvl_mean"]]
-=======
         df_mean = self.history['class_stats'][-1][['label', 'aLvl_mean']]
->>>>>>> Stashed changes
         df_mean.columns = df_mean.columns.droplevel(1)
-        sim_stats_mean = df_mean.set_index("label").to_dict()["aLvl_mean"]
+        sim_stats_mean = df_mean.set_index('label').to_dict()['aLvl_mean']
 
-<<<<<<< Updated upstream
-        df_std = self.history["class_stats"][-1][["label", "aLvl_std"]]
-=======
         df_std = self.history['class_stats'][-1][['label', 'aLvl_std']]
->>>>>>> Stashed changes
         df_std.columns = df_std.columns.droplevel(1)
-        sim_stats_std = df_std.set_index("label").to_dict()["aLvl_std"]
+        sim_stats_std = df_std.set_index('label').to_dict()['aLvl_std']
 
-<<<<<<< Updated upstream
-        df_mNrm_ratio_StE_mean = self.history["class_stats"][-1][
-            ["label", "mNrm_ratio_StE_mean"]
-        ]
-        df_mNrm_ratio_StE_mean.columns = df_mNrm_ratio_StE_mean.columns.droplevel(1)
-        sim_stats_mNrm_ratio_StE_mean = df_mNrm_ratio_StE_mean.set_index(
-            "label"
-        ).to_dict()["mNrm_ratio_StE_mean"]
-
-        df_mNrm_ratio_StE_std = self.history["class_stats"][-1][
-            ["label", "mNrm_ratio_StE_std"]
-        ]
-        df_mNrm_ratio_StE_std.columns = df_mNrm_ratio_StE_std.columns.droplevel(1)
-        sim_stats_mNrm_ratio_StE_std = df_mNrm_ratio_StE_std.set_index(
-            "label"
-        ).to_dict()["mNrm_ratio_StE_std"]
-
-        sim_stats_mean = {("aLvl_mean", k): v for k, v in sim_stats_mean.items()}
-        sim_stats_std = {("aLvl_std", k): v for k, v in sim_stats_std.items()}
-        sim_stats_mNrm_ratio_StE_mean = {
-            ("mNrm_ratio_StE_mean", k): v
-            for k, v in sim_stats_mNrm_ratio_StE_mean.items()
-        }
-        sim_stats_mNrm_ratio_StE_std = {
-            ("mNrm_ratio_StE_std", k): v
-=======
         df_mNrm_ratio_StE_mean = self.history['class_stats'][-1][
             ['label', 'mNrm_ratio_StE_mean']
         ]
@@ -1732,11 +1522,10 @@ class AttentionSimulation:
         }
         sim_stats_mNrm_ratio_StE_std = {
             ('mNrm_ratio_StE_std', k): v
->>>>>>> Stashed changes
             for k, v in sim_stats_mNrm_ratio_StE_std.items()
         }
 
-        total_pop_aLvl = self.history["total_pop_stats"][-1]["aLvl"]
+        total_pop_aLvl = self.history['total_pop_stats'][-1]['aLvl']
         total_pop_aLvl_mean = total_pop_aLvl.mean()
         total_pop_aLvl_std = total_pop_aLvl.std()
 
@@ -1750,10 +1539,6 @@ class AttentionSimulation:
         sim_stats.update(sim_stats_mNrm_ratio_StE_mean)
         sim_stats.update(sim_stats_mNrm_ratio_StE_std)
 
-<<<<<<< Updated upstream
-        sim_stats["q"] = self.quarters_per_simulation
-        sim_stats["r"] = self.runs_per_quarter
-=======
         sim_stats['q'] = self.quarters_per_simulation
         sim_stats['r'] = self.runs_per_quarter
 
@@ -1761,32 +1546,22 @@ class AttentionSimulation:
         sim_stats['market_seeds'] = (
             self.broker.market.seeds if 'PNL' in str(sim_stats['market_class']) else []
         )
->>>>>>> Stashed changes
 
-        sim_stats["market_class"] = self.broker.market.__class__
-        sim_stats["market_seeds"] = (
-            self.broker.market.seeds if "PNL" in str(sim_stats["market_class"]) else []
-        )
+        sim_stats['attention'] = self.attention_rate
+        sim_stats['ror_volatility'] = self.ror_volatility()
+        sim_stats['ror_mean'] = self.ror_mean()
 
-        sim_stats["attention"] = self.attention_rate
-        sim_stats["ror_volatility"] = self.ror_volatility()
-        sim_stats["ror_mean"] = self.ror_mean()
+        sim_stats['total_population_aLvl_mean'] = total_pop_aLvl_mean
+        sim_stats['total_population_aLvl_std'] = total_pop_aLvl_std
 
-        sim_stats["total_population_aLvl_mean"] = total_pop_aLvl_mean
-        sim_stats["total_population_aLvl_std"] = total_pop_aLvl_std
+        sim_stats['dividend_ror'] = self.fm.dividend_ror
+        sim_stats['dividend_std'] = self.fm.dividend_std
+        sim_stats['p1'] = self.fm.p1
+        sim_stats['p2'] = self.fm.p2
+        sim_stats['delta_t1'] = self.fm.delta_t1
+        sim_stats['delta_t2'] = self.fm.delta_t2
+        sim_stats['dollars_per_hark_money_unit'] = self.dollars_per_hark_money_unit
 
-<<<<<<< Updated upstream
-        sim_stats["dividend_ror"] = self.fm.dividend_ror
-        sim_stats["dividend_std"] = self.fm.dividend_std
-        sim_stats["p1"] = self.fm.p1
-        sim_stats["p2"] = self.fm.p2
-        sim_stats["delta_t1"] = self.fm.delta_t1
-        sim_stats["delta_t2"] = self.fm.delta_t2
-        sim_stats["dollars_per_hark_money_unit"] = self.dollars_per_hark_money_unit
-
-        sim_stats["seconds"] = (self.end_time - self.start_time).seconds
-=======
         sim_stats['seconds'] = (self.end_time - self.start_time).seconds
->>>>>>> Stashed changes
 
         return sim_stats
