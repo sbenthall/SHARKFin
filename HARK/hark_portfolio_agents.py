@@ -637,9 +637,13 @@ class ClientRPCMarket(AbstractMarket):
             ),
             body=json.dumps(data))
 
+        print('waiting for response...')
+
         while self.response is None:
-            time.sleep(4)
+            #time.sleep(4)
             self.connection.process_data_events()
+
+        print('response received')
 
         self.latest_price = float(self.response)
 
@@ -1516,7 +1520,7 @@ class AttentionSimulation():
         sim_stats['r'] = self.runs_per_quarter
 
         sim_stats['market_class'] = self.broker.market.__class__
-        sim_stats['market_seeds'] = self.broker.market.seeds if 'PNL' in str(sim_stats['market_class']) else []
+        sim_stats['market_seeds'] = self.broker.market.seeds
 
         sim_stats['attention'] = self.attention_rate
         sim_stats['ror_volatility'] = self.ror_volatility()
@@ -1532,7 +1536,6 @@ class AttentionSimulation():
         sim_stats['delta_t1'] = self.fm.delta_t1
         sim_stats['delta_t2'] = self.fm.delta_t2
         sim_stats['dollars_per_hark_money_unit'] = self.dollars_per_hark_money_unit
-
 
         sim_stats['seconds'] = (self.end_time - self.start_time).seconds
 
