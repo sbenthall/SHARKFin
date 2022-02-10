@@ -31,7 +31,7 @@ class AgentPopulation:
                 if isinstance(parameter, DataArray) and parameter.dims[0] == "agent":
                     agent_class_count = max(agent_class_count, parameter.shape[0])
                 elif isinstance(parameter, (Distribution, IndexDistribution)):
-                    t_cycle = None
+                    agent_class_count = None
                     break
 
             self.agent_class_count = agent_class_count
@@ -41,7 +41,7 @@ class AgentPopulation:
             t_cycle = 1
             for key_param in param_dict:
                 parameter = param_dict[key_param]
-                if isinstance(parameter, DataArray) and parameter.dims[-1] == "time":
+                if isinstance(parameter, DataArray) and parameter.dims[-1] == "age":
                     t_cycle = max(t_cycle, parameter.shape[-1])
                     # there may not be a good use for this feature yet as time varying distributions
                     # are entered as list of moments (Avg, Std, Count, etc)
@@ -85,12 +85,12 @@ class AgentPopulation:
                     for t in range(self.t_cycle):
                         if isinstance(parameter, DataArray):
                             if parameter.dims[0] == "agent":
-                                if parameter.dims[-1] == "time":
+                                if parameter.dims[-1] == "age":
                                     # if the parameter is a list, it's agent and time
                                     parameter_per_t.append(parameter[agent][t].item())
                                 else:
                                     parameter_per_t.append(parameter[agent].item())
-                            elif parameter.dims[0] == "time":
+                            elif parameter.dims[0] == "age":
                                 # if kind is time, it applies to all agents but varies over time
                                 parameter_per_t.append(parameter[t].item())
                         elif isinstance(parameter, (int, float)):
@@ -111,14 +111,14 @@ class AgentPopulation:
                 else:
                     if isinstance(parameter, DataArray):
                         if parameter.dims[0] == "agent":
-                            if parameter.dims[-1] == "time":
+                            if parameter.dims[-1] == "age":
                                 # if the parameter is a list, it's agent and time
                                 agent_params[key_param] = [
                                     parameter[agent][t].item() for t in range(t_cycle)
                                 ]
                             else:
                                 agent_params[key_param] = parameter[agent].item()
-                        elif parameter.dims[0] == "time":
+                        elif parameter.dims[0] == "age":
                             agent_params[key_param] = [
                                 parameter[t].item() for t in range(t_cycle)
                             ]
@@ -160,10 +160,10 @@ parameters["CRRA"] = 2.0  # applies to all
 # applies per distinct agent type at all times
 parameters["DiscFac"] = DataArray([0.96, 0.97, 0.98], dims=("agent"))
 # applies to all per time cycle
-parameters["LivPrb"] = DataArray([0.98, 0.98, 0.98], dims=("time"))
+parameters["LivPrb"] = DataArray([0.98, 0.98, 0.98], dims=("age"))
 # applies to each agent each cycle
 parameters["TranShkStd"] = DataArray(
-    [[0.2, 0.2, 0.2], [0.2, 0.2, 0.2], [0.2, 0.2, 0.2]], dims=("agent", "time")
+    [[0.2, 0.2, 0.2], [0.2, 0.2, 0.2], [0.2, 0.2, 0.2]], dims=("agent", "age")
 )
 
 parameters = ParameterDict(parameters)
@@ -174,3 +174,5 @@ from HARK.ConsumptionSaving.ConsIndShockModel import IndShockConsumerType
 agent_pop = AgentPopulation(IndShockConsumerType(), parameters)
 
 agent_pop.parse_params()
+
+# Avoid "cycle"
