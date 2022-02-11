@@ -1402,6 +1402,7 @@ class AttentionSimulation():
         self.history['permshock_std'].append(permshock_std)
         self.history['class_stats'].append(self.pop.class_stats(store=False))
         self.history['total_pop_stats'].append(self.pop.agent_df())
+        self.history['buy_sell'].append(self.broker.buy_sell_history[-1])
 
     def update_agent_wealth_capital_gains(self, old_share_price, ror):
         """
