@@ -1,7 +1,7 @@
 import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 import HARK.ConsumptionSaving.ConsIndShockModel as cism
 from HARK.core import distribute_params
-from utilities import AgentList
+from sharkfin.utilities import AgentList
 from datetime import datetime
 from HARK.distribution import Uniform
 import io
@@ -43,7 +43,7 @@ with open('config_cloud.yml', 'r') as stream:
 AZURE = config['azure']
 
 if AZURE:
-    import azure_storage
+    from sharkfin import azure_storage
 
 
 ### Initializing agents
