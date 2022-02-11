@@ -38,9 +38,9 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 with open('config_cloud.yml', 'r') as stream:
-    config = yaml.safe_load(stream)
+    config_cloud = yaml.safe_load(stream)
 
-AZURE = config['azure']
+AZURE = config_cloud['azure']
 
 if AZURE:
     from sharkfin import azure_storage

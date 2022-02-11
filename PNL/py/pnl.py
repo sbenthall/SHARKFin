@@ -28,7 +28,7 @@ import random
 # sys.path.append('../../HARK')
 
 # is this the correct config file?
-with open('config.yml', 'r') as stream:
+with open('config_cloud.yml', 'r') as stream:
     config = yaml.safe_load(stream)
 
 AZURE = config['azure']
