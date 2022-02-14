@@ -3,6 +3,7 @@ from typing import NewType
 
 from HARK.core import AgentType
 from HARK.distribution import Distribution, IndexDistribution
+from HARK.distribution import Uniform
 from xarray import DataArray
 
 ParameterDict = NewType("ParameterDict", dict)
@@ -19,6 +20,10 @@ class AgentPopulation:
 
         self.time_var = self.agent_class.time_vary
         self.time_inv = self.agent_class.time_inv
+
+        self.infer_counts()
+
+    def infer_counts(self):
 
         param_dict = self.parameter_dict
 
@@ -60,13 +65,15 @@ class AgentPopulation:
             if key in param_dict and isinstance(param_dict[key], Distribution):
                 discrete_distribution = param_dict[key].approx(approx_params[key])
                 self.distributions[key] = (param_dict[key], discrete_distribution)
-                param_dict[key] = discrete_distribution.X
+                param_dict[key] = DataArray(discrete_distribution.X, dims="agent")
             else:
                 print(
                     "Warning: parameter {} is not a Distribution found in agent class {}".format(
                         key, self.agent_class
                     )
                 )
+
+        self.infer_counts()
 
     def parse_params(self):
 
@@ -158,7 +165,7 @@ parameters = {}
 parameters["AgentCount"] = DataArray([100, 100, 100], dims=("agent"))
 parameters["CRRA"] = 2.0  # applies to all
 # applies per distinct agent type at all times
-parameters["DiscFac"] = DataArray([0.96, 0.97, 0.98], dims=("agent"))
+parameters["DiscFac"] = Uniform(0.96, 0.98)
 # applies to all per time cycle
 parameters["LivPrb"] = DataArray([0.98, 0.98, 0.98], dims=("age"))
 # applies to each agent each cycle
@@ -168,11 +175,17 @@ parameters["TranShkStd"] = DataArray(
 
 parameters = ParameterDict(parameters)
 
+approx_params = {
+    "DiscFac": 3,  # number of discrete points
+}
+
 from HARK.ConsumptionSaving.ConsIndShockModel import IndShockConsumerType
 
 # important to pass initialized agent so time_vary and time_inv are filled out
 agent_pop = AgentPopulation(IndShockConsumerType(), parameters)
 
+agent_pop.approx_distributions(approx_params)
+
 agent_pop.parse_params()
 
-# Avoid "cycle"
+a = 1
