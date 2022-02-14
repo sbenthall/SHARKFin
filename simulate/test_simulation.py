@@ -90,7 +90,7 @@ def run_simulation(
     attsim = hpa.AttentionSimulation(pop, fm, a = a, q = q, r = r, market = market)
     attsim.simulate()
 
-    return attsim.sim_stats(), attsim.history
+    return attsim.data(), attsim.sim_stats(), attsim.history
 
 
 if __name__ == '__main__':
@@ -101,7 +101,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    sim_stats, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=2, r=2, market=market)
+    data, sim_stats, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=2, r=2, market=market)
 
     print(sim_stats)
 
@@ -112,3 +112,6 @@ if __name__ == '__main__':
 
     history_df = pd.DataFrame(dict([(k,pd.Series(v)) for k,v in history.items()]))
     history_df.to_csv(f'{args.save_as}_history.csv')
+
+    data.to_csv(f'{args.save_as}_data.csv')
+
