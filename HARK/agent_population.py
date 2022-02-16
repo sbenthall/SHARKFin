@@ -13,7 +13,7 @@ ParameterDict = NewType("ParameterDict", dict)
 class AgentPopulation:
     agent_class: AgentType
     parameter_dict: ParameterDict
-    t_cycle: int = None
+    t_age: int = None
     agent_class_count: int = None
 
     def __post_init__(self):
@@ -41,19 +41,19 @@ class AgentPopulation:
 
             self.agent_class_count = agent_class_count
 
-        if self.t_cycle is None:
+        if self.t_age is None:
 
-            t_cycle = 1
+            t_age = 1
             for key_param in param_dict:
                 parameter = param_dict[key_param]
                 if isinstance(parameter, DataArray) and parameter.dims[-1] == "age":
-                    t_cycle = max(t_cycle, parameter.shape[-1])
+                    t_age = max(t_age, parameter.shape[-1])
                     # there may not be a good use for this feature yet as time varying distributions
                     # are entered as list of moments (Avg, Std, Count, etc)
                 elif isinstance(parameter, (Distribution, IndexDistribution)):
-                    t_cycle = None
+                    t_age = None
                     break
-            self.t_cycle = t_cycle
+            self.t_age = t_age
 
     def approx_distributions(self, approx_params: dict):
 
@@ -89,7 +89,7 @@ class AgentPopulation:
                 if key_param in self.time_var:
                     # parameters that vary over time have to be repeated
                     parameter_per_t = []
-                    for t in range(self.t_cycle):
+                    for t in range(self.t_age):
                         if isinstance(parameter, DataArray):
                             if parameter.dims[0] == "agent":
                                 if parameter.dims[-1] == "age":
@@ -121,13 +121,13 @@ class AgentPopulation:
                             if parameter.dims[-1] == "age":
                                 # if the parameter is a list, it's agent and time
                                 agent_params[key_param] = [
-                                    parameter[agent][t].item() for t in range(t_cycle)
+                                    parameter[agent][t].item() for t in range(t_age)
                                 ]
                             else:
                                 agent_params[key_param] = parameter[agent].item()
                         elif parameter.dims[0] == "age":
                             agent_params[key_param] = [
-                                parameter[t].item() for t in range(t_cycle)
+                                parameter[t].item() for t in range(t_age)
                             ]
                     elif isinstance(parameter, (int, float)):
                         agent_params[key_param] = parameter
@@ -157,7 +157,7 @@ class AgentPopulationSolution:
         self.agent_population = agent_population
 
 
-t_cycle = 3
+t_age = 3
 agent_class_count = 3
 
 parameters = {}
