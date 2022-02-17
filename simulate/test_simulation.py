@@ -1,10 +1,13 @@
+import sys
+sys.path.append('..')
+
 import argparse
 from datetime import datetime
 import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 from HARK.Calibration.Income.IncomeTools import (
      sabelhaus_song_var_profile,
 )
-import hark_portfolio_agents as hpa
+import sharkfin.hark_portfolio_agents as hpa
 from itertools import product
 import json
 from math import exp
@@ -14,10 +17,10 @@ import numpy as np
 import math
 import os
 import pandas as pd
-import sys
 import time
 import uuid
 import yaml
+import pprint
 
 parser = argparse.ArgumentParser()
 parser.add_argument("save_as", help="The name of the output for sim_stats")
@@ -32,7 +35,7 @@ with open('config_cloud.yml', 'r') as stream:
 AZURE = config['azure']
 
 if AZURE:
-    import azure_storage
+    import sharkfin.azure_storage
 
 timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
@@ -88,16 +91,29 @@ def run_simulation(
     attsim = hpa.AttentionSimulation(pop, fm, a = a, q = q, r = r, market = market)
     attsim.simulate()
 
-    return attsim.sim_stats()
+    return attsim.data(), attsim.sim_stats(), attsim.history
 
 
 if __name__ == '__main__':
-    market = hpa.MarketPNL(
+    # requires market server to be running
+    market = hpa.ClientRPCMarket(
         seed_limit = 150
     )
 
     args = parser.parse_args()
 
-    sim_stats = run_simulation(agent_parameters, dist_params, 1, a=0.2, q=1, r=1, market=market)
+    data, sim_stats, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=4, r=4, market=market)
 
-    pd.DataFrame(sim_stats).to_csv(f'{args.save_as}.csv')
+    with open(f'{args.save_as}.txt', 'w+') as f:
+        f.write(str(sim_stats))
+
+    # df.to_csv(f'{args.save_as}.csv')
+
+    history_df = pd.DataFrame(dict([(k,pd.Series(v)) for k,v in history.items()]))
+    history_df.to_csv(f'{args.save_as}_history.csv')
+
+    data.to_csv(f'{args.save_as}_data.csv')
+
+    pp = pprint.PrettyPrinter(indent=4)
+    pp.pprint(sim_stats)
+

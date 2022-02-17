@@ -1,10 +1,13 @@
+import sys
+sys.path.append('..')
+
 import argparse
 from datetime import datetime
 import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 from HARK.Calibration.Income.IncomeTools import (
      sabelhaus_song_var_profile,
 )
-import hark_portfolio_agents as hpa
+from sharkfin import hark_portfolio_agents as hpa
 from itertools import product
 import json
 from math import exp
@@ -32,7 +35,7 @@ with open('config_cloud.yml', 'r') as stream:
 AZURE = config['azure']
 
 if AZURE:
-    import azure_storage
+    from sharkfin import azure_storage
 
 timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
