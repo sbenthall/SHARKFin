@@ -1355,7 +1355,8 @@ class AttentionSimulation:
                     self.track(day)
 
                     # combine these steps?
-                    risky_asset_price = self.fm.add_ror(ror)
+                    # add_ror appends to internal history list
+                    risky_asset_price = self.fm.add_ror(ror) 
                     self.fm.calculate_risky_expectations()
 
                     day = day + 1

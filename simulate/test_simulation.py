@@ -20,6 +20,7 @@ import pandas as pd
 import time
 import uuid
 import yaml
+import pprint
 
 parser = argparse.ArgumentParser()
 parser.add_argument("save_as", help="The name of the output for sim_stats")
@@ -101,9 +102,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    data, sim_stats, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=2, r=2, market=market)
-
-    print(sim_stats)
+    data, sim_stats, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=4, r=4, market=market)
 
     with open(f'{args.save_as}.txt', 'w+') as f:
         f.write(str(sim_stats))
@@ -114,4 +113,7 @@ if __name__ == '__main__':
     history_df.to_csv(f'{args.save_as}_history.csv')
 
     data.to_csv(f'{args.save_as}_data.csv')
+
+    pp = pprint.PrettyPrinter(indent=4)
+    pp.pprint(sim_stats)
 
