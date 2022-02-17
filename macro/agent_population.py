@@ -2,8 +2,12 @@ from dataclasses import dataclass
 from typing import NewType
 
 from HARK.core import AgentType
-from HARK.distribution import Distribution, IndexDistribution
-from HARK.distribution import Uniform
+from HARK.distribution import (
+    Uniform,
+    Distribution,
+    IndexDistribution,
+    combine_indep_dstns,
+)
 from xarray import DataArray
 
 ParameterDict = NewType("ParameterDict", dict)
@@ -59,19 +63,31 @@ class AgentPopulation:
 
         param_dict = self.parameter_dict
 
-        self.distributions = {}
+        self.continuous_distributions = {}
+
+        self.discrete_distributions = {}
 
         for key in approx_params:
             if key in param_dict and isinstance(param_dict[key], Distribution):
-                discrete_distribution = param_dict[key].approx(approx_params[key])
-                self.distributions[key] = (param_dict[key], discrete_distribution)
-                param_dict[key] = DataArray(discrete_distribution.X, dims="agent")
+                discrete_points = approx_params[key]
+                discrete_distribution = param_dict[key].approx(discrete_points)
+                self.continuous_distributions[key] = param_dict[key]
+                self.discrete_distributions[key] = discrete_distribution
             else:
                 print(
                     "Warning: parameter {} is not a Distribution found in agent class {}".format(
                         key, self.agent_class
                     )
                 )
+
+        if len(self.discrete_distributions) > 1:
+            joint_dist = combine_indep_dstns(
+                *list(self.discrete_distributions.values())
+            )
+
+        keys = list(self.discrete_distributions.keys())
+        for i in range(len(self.discrete_distributions)):
+            param_dict[keys[i]] = DataArray(joint_dist.X[i], dims=("agent"))
 
         self.infer_counts()
 
@@ -164,7 +180,7 @@ agent_class_count = 3
 parameters = {}
 
 parameters["AgentCount"] = DataArray([100, 100, 100], dims=("agent"))
-parameters["CRRA"] = 2.0  # applies to all
+parameters["CRRA"] = Uniform(6.0, 10.0)
 # applies per distinct agent type at all times
 parameters["DiscFac"] = Uniform(0.96, 0.98)
 # applies to all per time cycle
@@ -176,8 +192,10 @@ parameters["TranShkStd"] = DataArray(
 
 parameters = ParameterDict(parameters)
 
+# number of discrete points
 approx_params = {
-    "DiscFac": 3,  # number of discrete points
+    "CRRA": 4,
+    "DiscFac": 3,
 }
 
 from HARK.ConsumptionSaving.ConsIndShockModel import IndShockConsumerType
