@@ -143,6 +143,7 @@ class AgentPopulation:
         ]
 
     def solve_distributed_agents(self):
+        # see Market class for an example of how to solve distributed agents in parallel
 
         for agent in self.agents:
             agent.solve()
