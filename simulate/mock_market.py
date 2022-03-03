@@ -19,6 +19,10 @@ c = counter()
 def on_request(ch, method, props, body):
     data = json.loads(body)
 
+    if 'end_simulation' in data and data['end_simulation'] is True:
+        channel.stop_consuming()
+        return
+
     print(f'seed: {data["seed"]}, bl: {data["bl"]}, sl: {data["sl"]}')
 
     response = data['seed'] + data['bl'] + data['sl']

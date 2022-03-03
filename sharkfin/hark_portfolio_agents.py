@@ -554,6 +554,10 @@ class AbstractMarket(ABC):
     def daily_rate_of_return(self, seed: int, buy_sell: tuple[int, int]):
         pass
 
+    @abstractmethod
+    def close_market():
+        pass
+
 
 class ClientRPCMarket(AbstractMarket):
     def __init__(self, seed_limit=None):
@@ -631,16 +635,7 @@ class ClientRPCMarket(AbstractMarket):
         data = {'seed': seed, 'bl': buy_sell[0], 'sl': buy_sell[1]}
 
         self.response = None
-        self.corr_id = str(uuid.uuid4())
-        self.channel.basic_publish(
-            exchange='',
-            routing_key='rpc_queue',
-            properties=pika.BasicProperties(
-                reply_to=self.callback_queue,
-                correlation_id=self.corr_id,
-            ),
-            body=json.dumps(data),
-        )
+        self.publish(data)
 
         print('waiting for response...')
 
@@ -680,6 +675,26 @@ class ClientRPCMarket(AbstractMarket):
         # ror = self.sp500_std * (ror - self.netlogo_ror) / self.netlogo_std + self.sp500_ror
 
         return ror
+
+    def publish(self, data):
+        self.corr_id = str(uuid.uuid4())
+        self.channel.basic_publish(
+            exchange='',
+            routing_key='rpc_queue',
+            properties=pika.BasicProperties(
+                reply_to=self.callback_queue,
+                correlation_id=self.corr_id,
+            ),
+            body=json.dumps(data),
+        )
+
+
+    def close_market(self): 
+        self.publish({'end_simulation': False})
+
+        self.connection.close()
+
+
 
 
 class MarketPNL(AbstractMarket):
@@ -843,6 +858,9 @@ class MarketPNL(AbstractMarket):
 
         return ror
 
+    def close_market():
+        return
+
 
 class MockMarket(AbstractMarket):
     """
@@ -915,6 +933,9 @@ class MockMarket(AbstractMarket):
         )
 
         return ror
+
+    def close_market():
+        return
 
 
 ####
