@@ -635,6 +635,7 @@ class ClientRPCMarket(AbstractMarket):
         data = {'seed': seed, 'bl': buy_sell[0], 'sl': buy_sell[1]}
 
         self.response = None
+
         self.publish(data)
 
         print('waiting for response...')
@@ -690,7 +691,7 @@ class ClientRPCMarket(AbstractMarket):
 
 
     def close_market(self): 
-        self.publish({'end_simulation': False})
+        self.publish({'end_simulation': True})
 
         self.connection.close()
 
