@@ -1015,6 +1015,9 @@ class Broker:
 
         return buy_sell, self.market.daily_rate_of_return()
 
+    def close():
+        self.market.close_market()
+
 
 #####
 #    AttentionSimulation class
@@ -1384,7 +1387,7 @@ class AttentionSimulation:
 
                     day = day + 1
 
-            market.close_market()
+            broker.close()
 
         self.end_time = datetime.now()
 
