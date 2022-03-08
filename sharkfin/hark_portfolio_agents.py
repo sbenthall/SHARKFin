@@ -860,7 +860,7 @@ class MarketPNL(AbstractMarket):
 
         return ror
 
-    def close_market():
+    def close_market(self):
         return
 
 
@@ -936,7 +936,7 @@ class MockMarket(AbstractMarket):
 
         return ror
 
-    def close_market():
+    def close_market(self):
         return
 
 
@@ -1015,7 +1015,7 @@ class Broker:
 
         return buy_sell, self.market.daily_rate_of_return()
 
-    def close():
+    def close(self):
         self.market.close_market()
 
 
@@ -1387,7 +1387,7 @@ class AttentionSimulation:
 
                     day = day + 1
 
-            broker.close()
+            self.broker.close()
 
         self.end_time = datetime.now()
 
