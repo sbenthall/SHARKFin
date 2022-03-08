@@ -1387,7 +1387,7 @@ class AttentionSimulation:
 
                     day = day + 1
 
-            self.broker.close()
+        self.broker.close()
 
         self.end_time = datetime.now()
 
