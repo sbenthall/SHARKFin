@@ -20,6 +20,7 @@ import json
 import pika
 import uuid
 import time
+from typing import Tuple
 
 from abc import ABC, abstractmethod
 
@@ -546,12 +547,12 @@ class AbstractMarket(ABC):
         pass
 
     @abstractmethod
-    def get_simulation_price(self, seed: int, buy_sell: tuple[int, int]):
+    def get_simulation_price(self, seed: int, buy_sell: Tuple[int, int]):
         # does this need to be an abstract method or can it be encapsulated in daily_rate_of_return?
         pass
 
     @abstractmethod
-    def daily_rate_of_return(self, seed: int, buy_sell: tuple[int, int]):
+    def daily_rate_of_return(self, seed: int, buy_sell: Tuple[int, int]):
         pass
 
     @abstractmethod
@@ -1382,6 +1383,8 @@ class AttentionSimulation:
                     self.fm.calculate_risky_expectations()
 
                     day = day + 1
+
+            market.close_market()
 
         self.end_time = datetime.now()
 
