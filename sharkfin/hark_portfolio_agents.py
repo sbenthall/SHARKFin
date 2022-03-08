@@ -633,7 +633,7 @@ class ClientRPCMarket(AbstractMarket):
         self.last_buy_sell = buy_sell
         self.seeds.append(seed)
 
-        data = {'seed': seed, 'bl': buy_sell[0], 'sl': buy_sell[1]}
+        data = {'seed': seed, 'bl': buy_sell[0], 'sl': buy_sell[1], 'end_simulation': False}
 
         self.response = None
 
@@ -692,7 +692,7 @@ class ClientRPCMarket(AbstractMarket):
 
 
     def close_market(self): 
-        self.publish({'end_simulation': True})
+        self.publish({'seed': 0, 'bl': 0, 'sl': 0, 'end_simulation': True})
 
         self.connection.close()
 
