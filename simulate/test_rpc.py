@@ -1,4 +1,7 @@
-import hark_portfolio_agents as hpa
+import sys
+sys.path.append('..')
+
+from sharkfin import hark_portfolio_agents as hpa
 	
 market = hpa.ClientRPCMarket()
 
@@ -14,5 +17,7 @@ for i in range(10):
 	ror = market.daily_rate_of_return()
 
 	print(market.latest_price, ror)
+
+market.close_market()
 
 
