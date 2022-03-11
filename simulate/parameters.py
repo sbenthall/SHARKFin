@@ -1,6 +1,8 @@
 from HARK.Calibration.Income.IncomeTools import sabelhaus_song_var_profile
 
 ### Configuring the agent population
+from HARK.distribution import Uniform
+from xarray import DataArray
 
 dist_params = {
     "CRRA": {"bot": 2, "top": 10, "n": 3},  # Chosen for "interesting" results
@@ -28,3 +30,23 @@ agent_parameters = {
     # Adjust non-multiplicative shock to quarterly
     "PermShkStd": [ssvp["PermShkStd"][idx_40] ** 0.25],
 }
+
+### new dictionary for new Agent Population
+
+agent_population_params = {
+    "aNrmInitStd": 0.0,
+    "LivPrb": 0.98 ** 0.25,
+    "PermGroFac": 1.01 ** 0.25,
+    "pLvlInitMean": 1.0,
+    "pLvlInitStd": 0.0,
+    "Rfree": 1.0,
+    "TranShkStd": DataArray([ssvp["TranShkStd"][idx_40] / 2], dims="age"),
+    "PermShkStd": DataArray([ssvp["PermShkStd"][idx_40] ** 0.25], dims="age"),
+}
+
+continuous_dist_params = {
+    "CRRA": Uniform(bot=2, top=10),
+    "DiscFac": Uniform(bot=0.936, top=0.978),
+}
+
+approx_params = {"CRRA": 3, "DiscFac": 2}
