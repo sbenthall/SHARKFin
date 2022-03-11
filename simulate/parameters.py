@@ -20,11 +20,11 @@ agent_parameters = {
     "aNrmInitStd": 0.0,
     "LivPrb": [0.98 ** 0.25],
     "PermGroFac": [1.01 ** 0.25],
-    "pLvlInitMean": 1.0,  # initial distribution of permanent income
+    "pLvlInitMean": 1.0,
+    # initial distribution of permanent income
     "pLvlInitStd": 0.0,
     "Rfree": 1.0,
-    "TranShkStd": [
-        ssvp["TranShkStd"][idx_40] / 2
-    ],  # Adjust non-multiplicative shock to quarterly
+    "TranShkStd": [ssvp["TranShkStd"][idx_40] / 2],
+    # Adjust non-multiplicative shock to quarterly
     "PermShkStd": [ssvp["PermShkStd"][idx_40] ** 0.25],
 }
