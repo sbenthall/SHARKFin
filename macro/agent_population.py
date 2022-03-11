@@ -3,7 +3,6 @@ from typing import NewType
 
 from HARK.core import AgentType
 from HARK.distribution import (
-    Uniform,
     Distribution,
     IndexDistribution,
     combine_indep_dstns,
@@ -58,6 +57,8 @@ class AgentPopulation:
                     t_age = None
                     break
             self.t_age = t_age
+
+        # return t_age and agent_class_count
 
     def approx_distributions(self, approx_params: dict):
 
@@ -136,15 +137,11 @@ class AgentPopulation:
                         if parameter.dims[0] == "agent":
                             if parameter.dims[-1] == "age":
                                 # if the parameter is a list, it's agent and time
-                                agent_params[key_param] = [
-                                    parameter[agent][t].item() for t in range(t_age)
-                                ]
+                                agent_params[key_param] = list(parameter[agent].item())
                             else:
-                                agent_params[key_param] = parameter[agent].item()
+                                agent_params[key_param] = list(parameter[agent].item())
                         elif parameter.dims[0] == "age":
-                            agent_params[key_param] = [
-                                parameter[t].item() for t in range(t_age)
-                            ]
+                            agent_params[key_param] = [parameter.item()]
                     elif isinstance(parameter, (int, float)):
                         agent_params[key_param] = parameter
 
@@ -155,7 +152,7 @@ class AgentPopulation:
     def create_distributed_agents(self):
 
         self.agents = [
-            self.agent_class.__init__(**agent_dict) for agent_dict in self.agent_dicts
+            self.agent_class.__class__(**agent_dict) for agent_dict in self.agent_dicts
         ]
 
     def solve_distributed_agents(self):
@@ -168,43 +165,50 @@ class AgentPopulation:
 
         self.solution = [agent.solution for agent in self.agents]
 
+    def init_simulation(self, T_sim=1000):
+        """
+        Sets up the agents with their state for the state of the simulation
+        """
+        for agent in self.agents:
+            agent.track_vars += ["pLvl", "mNrm", "cNrm", "Share", "Risky"]
+            agent.T_sim = T_sim
+            agent.initialize_sim()
+
 
 class AgentPopulationSolution:
     def __init__(self, agent_population):
         self.agent_population = agent_population
 
 
-t_age = 3
-agent_class_count = 3
-
-parameters = {}
-
-parameters["AgentCount"] = DataArray([100, 100, 100], dims=("agent"))
-parameters["CRRA"] = Uniform(6.0, 10.0)
-# applies per distinct agent type at all times
-parameters["DiscFac"] = Uniform(0.96, 0.98)
-# applies to all per time cycle
-parameters["LivPrb"] = DataArray([0.98, 0.98, 0.98], dims=("age"))
-# applies to each agent each cycle
-parameters["TranShkStd"] = DataArray(
-    [[0.2, 0.2, 0.2], [0.2, 0.2, 0.2], [0.2, 0.2, 0.2]], dims=("agent", "age")
-)
-
-parameters = ParameterDict(parameters)
-
-# number of discrete points
-approx_params = {
-    "CRRA": 4,
-    "DiscFac": 3,
-}
-
-from HARK.ConsumptionSaving.ConsIndShockModel import IndShockConsumerType
-
-# important to pass initialized agent so time_vary and time_inv are filled out
-agent_pop = AgentPopulation(IndShockConsumerType(), parameters)
-
-agent_pop.approx_distributions(approx_params)
-
-agent_pop.parse_params()
-
-a = 1
+# t_age = 3
+# agent_class_count = 3
+#
+# parameters = {}
+#
+# parameters["AgentCount"] = DataArray([100, 100, 100], dims=("agent"))
+# parameters["CRRA"] = Uniform(6.0, 10.0)
+# # applies per distinct agent type at all times
+# parameters["DiscFac"] = Uniform(0.96, 0.98)
+# # applies to all per time cycle
+# parameters["LivPrb"] = DataArray([0.98, 0.98, 0.98], dims=("age"))
+# # applies to each agent each cycle
+# parameters["TranShkStd"] = DataArray(
+#     [[0.2, 0.2, 0.2], [0.2, 0.2, 0.2], [0.2, 0.2, 0.2]], dims=("agent", "age")
+# )
+#
+# parameters = ParameterDict(parameters)
+#
+# # number of discrete points
+# approx_params = {
+#     "CRRA": 4,
+#     "DiscFac": 3,
+# }
+#
+# from HARK.ConsumptionSaving.ConsIndShockModel import IndShockConsumerType
+#
+# # important to pass initialized agent so time_vary and time_inv are filled out
+# agent_pop = AgentPopulation(IndShockConsumerType(), parameters)
+#
+# agent_pop.approx_distributions(approx_params)
+#
+# agent_pop.parse_params()
