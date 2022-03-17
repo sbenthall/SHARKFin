@@ -605,6 +605,9 @@ class ClientRPCMarket(AbstractMarket):
         self.rpc_host_env_var = 'RPCHOST'
         self.rpc_queue_env_var = 'RPCQUEUE'
 
+        self.rpc_queue_name = self._get_rpc_queue_name()
+        self.rpc_host_name = self._get_rpc_market_host()
+
         self.init_rpc()
 
     def _get_rpc_market_host(self):
@@ -633,7 +636,7 @@ class ClientRPCMarket(AbstractMarket):
 
         
         self.connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host=self._get_rpc_market_host())
+            pika.ConnectionParameters(host=self.rpc_host_name)
         )
 
         self.channel = self.connection.channel()
