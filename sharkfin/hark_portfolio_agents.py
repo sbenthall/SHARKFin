@@ -601,17 +601,44 @@ class ClientRPCMarket(AbstractMarket):
         self.seed_limit = seed_limit
 
         self.latest_price = None
+        # Env variables for setting the rpc server host and the queue name
+        self.rpc_host_env_var = 'RPCHOST'
+        self.rpc_queue_env_var = 'RPCQUEUE'
 
         self.init_rpc()
 
+    def _get_rpc_market_host(self):
+        ''' method to get the env variable contining the hostname of the rpc server
+            if the varible is not set it will fallback to localhost
+        '''
+        if self.rpc_host_env_var in os.environ:
+            rpc_host = os.environ[self.rpc_host_env_var]
+        else:
+            rpc_host = 'localhost'
+        return rpc_host
+    
+    def _get_rpc_queue_name(self):
+        ''' method to get the env variable containing the queue name to be used for the rpc calls
+            if the variable is not set it will fall back to a blank name
+        '''
+        if self.rpc_queue_env_var in os.environ:
+            rpc_queue_name = os.environ[self.rpc_queue_env_var]
+        else:
+            rpc_queue_name = ''
+        return rpc_queue_name
+
+
+
     def init_rpc(self):
+
+        
         self.connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host='localhost')
+            pika.ConnectionParameters(host=self._get_rpc_market_host())
         )
 
         self.channel = self.connection.channel()
 
-        result = self.channel.queue_declare(queue='', exclusive=True)
+        result = self.channel.queue_declare(queue=self._get_rpc_queue_name(), exclusive=True)
         self.callback_queue = result.method.queue
 
         self.channel.basic_consume(
