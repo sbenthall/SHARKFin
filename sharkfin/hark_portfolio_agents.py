@@ -697,8 +697,6 @@ class ClientRPCMarket(AbstractMarket):
         self.connection.close()
 
 
-
-
 class MarketPNL(AbstractMarket):
     """
     A wrapper around the Market PNL model with methods for getting

@@ -74,7 +74,8 @@ def run_simulation(
     q = None,
     r = 1,
     fm = None,
-    market = None):
+    market = None,
+    dphm=1500):
 
     # initialize population
     pop = hpa.AgentPopulation(agent_parameters, dist_params, 5)
@@ -102,7 +103,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    data, sim_stats, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=4, r=4, market=market)
+    data, sim_stats, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=4, r=4, market=market, dphm=1500)
 
     with open(f'{args.save_as}.txt', 'w+') as f:
         f.write(str(sim_stats))
