@@ -7,3 +7,4 @@ pyNetLogo
 seaborn
 pyyaml
 pytest
+pika
