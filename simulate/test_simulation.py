@@ -103,7 +103,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if self.rpc_host_env_var in os.environ:
+    if "BROKERSCALE" in os.environ:
         dphm = int(os.environ["BROKERSCALE"])
     else:
         dphm = 1500
