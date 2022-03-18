@@ -627,7 +627,7 @@ class ClientRPCMarket(AbstractMarket):
         if self.rpc_queue_env_var in os.environ:
             rpc_queue_name = os.environ[self.rpc_queue_env_var]
         else:
-            rpc_queue_name = ''
+            rpc_queue_name = 'rpc_queue'
         return rpc_queue_name
 
 
@@ -672,7 +672,7 @@ class ClientRPCMarket(AbstractMarket):
         print('waiting for response...')
 
         while self.response is None:
-            #time.sleep(4)
+            time.sleep(4)
             self.connection.process_data_events()
 
         print('response received')
