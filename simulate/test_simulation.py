@@ -103,7 +103,12 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    data, sim_stats, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=4, r=4, market=market, dphm=1500)
+    if self.rpc_host_env_var in os.environ:
+        dphm = int(os.environ["BROKERSCALE"])
+    else:
+        dphm = 1500
+    
+    data, sim_stats, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=4, r=60, market=market, dphm=dphm)
 
     with open(f'{args.save_as}.txt', 'w+') as f:
         f.write(str(sim_stats))
