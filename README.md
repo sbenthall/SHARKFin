@@ -20,6 +20,12 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
+Run the automated tests:
+
+```
+python -m pytest sharkfin
+```
+
 ## Configuration
 
 TBD
