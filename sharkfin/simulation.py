@@ -1,26 +1,12 @@
-import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
-import HARK.ConsumptionSaving.ConsIndShockModel as cism
-from HARK.core import distribute_params
 from sharkfin.utilities import *
 from datetime import datetime
-from HARK.distribution import Uniform
-import io
-import itertools
-import math
 import matplotlib.pyplot as plt
 import numpy as np
-import os
 import pandas as pd
 import random
 import seaborn as sns
 from statistics import mean
 from scipy import stats
-import yaml
-import json
-import pika
-import uuid
-import time
-from typing import Tuple
 
 class AttentionSimulation:
     """
@@ -380,7 +366,7 @@ class AttentionSimulation:
 
                     # combine these steps?
                     # add_ror appends to internal history list
-                    risky_asset_price = self.fm.add_ror(ror) 
+                    self.fm.add_ror(ror) 
                     self.fm.calculate_risky_expectations()
 
                     day = day + 1

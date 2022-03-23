@@ -1,8 +1,7 @@
 import os, uuid
-from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient, __version__
+from azure.storage.blob import BlobServiceClient
 
 import json
-import pandas as pd
 
 import logging
 
