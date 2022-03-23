@@ -1,28 +1,9 @@
-import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
-import HARK.ConsumptionSaving.ConsIndShockModel as cism
-from HARK.core import distribute_params
 from sharkfin.utilities import *
-from datetime import datetime
-from HARK.distribution import Uniform
-import io
-import itertools
-import math
-import matplotlib.pyplot as plt
 import numpy as np
-import os
-import pandas as pd
-import random
-import seaborn as sns
-from statistics import mean
-from scipy import stats
-import yaml
 import json
 import pika
 import uuid
-import time
-from typing import Tuple
 
-from abc import ABC, abstractmethod
 
 class ClientRPCMarket(AbstractMarket):
     def __init__(self, seed_limit=None):
@@ -32,24 +13,17 @@ class ClientRPCMarket(AbstractMarket):
         # stuff from MarketPNL that we may or may not need
 
         # Empirical data -- redundant with FinanceModel!
-        sp500_ror = 0.000628
-        sp500_std = 0.011988
 
         # limits the seeds
         seed_limit = None
 
         # Storing the last market arguments used for easy access to most
         # recent data
-        last_buy_sell = None
-        last_seed = None
 
-        seeds = None
 
         # config object for PNL - do we need for AMMPS?
-        config = None
 
         # sample - modifier for the seed
-        sample = 0
 
         # self.config = UTIL.read_config(
         #     config_file = config_file,
