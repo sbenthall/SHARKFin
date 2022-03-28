@@ -1,6 +1,6 @@
 # SHARKFin
 
-_Simulating Heterogeneous Agents (Resources and Toolkit) with Finance_
+_Simulating Heterogeneous Agents Research Toolkit) with Finance_
 
 ## Development Installation
 
