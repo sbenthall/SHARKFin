@@ -141,3 +141,6 @@ dmypy.json
 cython_debug/
 
 .idea
+HARK/netlogo*
+Hark/NetLogo
+.vscode
