@@ -7,7 +7,7 @@ import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 from HARK.Calibration.Income.IncomeTools import (
      sabelhaus_song_var_profile,
 )
-import sharkfin.hark_portfolio_agents as hpa
+# import sharkfin.hark_portfolio_agents as hpa
 from itertools import product
 import json
 from math import exp
@@ -22,12 +22,17 @@ import uuid
 import yaml
 import pprint
 
+from sharkfin.markets.ammps import ClientRPCMarket
+from sharkfin.broker import *
+from sharkfin.expectations import *
+from sharkfin.population import *
+from sharkfin.simulation import *
+
 parser = argparse.ArgumentParser()
 parser.add_argument("save_as", help="The name of the output for sim_stats")
 parser.add_argument("-t",
                     "--tag", type=str,
                     help="a string tag to be added to the output files")
-
 
 timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
@@ -70,10 +75,10 @@ def run_simulation(
     dphm=1500):
 
     # initialize population
-    pop = hpa.AgentPopulation(agent_parameters, dist_params, 5)
+    pop = AgentPopulation(agent_parameters, dist_params, 5)
 
     # Initialize the financial model
-    fm = hpa.FinanceModel() if fm is None else fm
+    fm = FinanceModel() if fm is None else fm
 
     fm.calculate_risky_expectations()
     agent_parameters.update(fm.risky_expectations())
@@ -89,13 +94,13 @@ def run_simulation(
 
 if __name__ == '__main__':
     # requires market server to be running
-    market = hpa.ClientRPCMarket(
+    market = ClientRPCMarket(
         seed_limit = 150
     )
 
     args = parser.parse_args()
 
-    data, sim_stats, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=4, r=4, market=market, dphm=1500)
+    data, sim_stats, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=1, r=1, market=market, dphm=1500)
 
     with open(f'{args.save_as}.txt', 'w+') as f:
         f.write(str(sim_stats))
