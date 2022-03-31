@@ -1080,10 +1080,11 @@ class AttentionSimulation:
     start_time = None
     end_time = None
 
-    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500):
+    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500, market_pad=0):
         self.agents = pop.agents
         self.fm = fm
         self.pop = pop
+        self.market_pad = market_pad
 
         self.dollars_per_hark_money_unit = dphm
 
@@ -1102,7 +1103,7 @@ class AttentionSimulation:
             self.attention_rate = 1 / self.runs_per_quarter
 
         # Create the Market wrapper
-        market = MarketPNL() if market is None else market
+        market = MockMarket() if market is None else market
         self.broker = Broker(market)
 
         self.history = {}
