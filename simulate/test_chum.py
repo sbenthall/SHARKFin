@@ -22,6 +22,7 @@ import yaml
 import pprint
 
 from sharkfin.markets import MockMarket
+from sharkfin.markets.ammps import ClientRPCMarket
 from sharkfin.population import AgentPopulation
 from sharkfin.simulation import CalibrationSimulation
 from sharkfin.expectations import FinanceModel
@@ -97,10 +98,10 @@ def run_simulation(
 if __name__ == '__main__':
     # requires market server to be running
 
-    market = MockMarket()
-    # market = hpa.ClientRPCMarket(
-    #     seed_limit = 150
-    # )
+    # market = MockMarket()
+    market = ClientRPCMarket(
+        seed_limit = 150
+    )
 
     args = parser.parse_args()
 
