@@ -1,6 +1,6 @@
 import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 import HARK.ConsumptionSaving.ConsIndShockModel as cism
-from sharkfin.utilities import *
+from utilities import *
 import math
 import pandas as pd
 import random

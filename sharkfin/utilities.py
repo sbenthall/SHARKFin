@@ -1,5 +1,4 @@
 from HARK.core import distribute_params
-from sharkfin.utilities import *
 from HARK.distribution import Uniform
 import math
 import numpy as np
