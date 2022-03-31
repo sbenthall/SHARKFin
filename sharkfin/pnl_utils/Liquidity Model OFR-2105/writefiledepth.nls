@@ -1,0 +1,500 @@
+;********************************************************************************************************************************************************************************
+;Writing ORDERBOOK DEPTH to CSV File
+;********************************************************************************************************************************************************************************
+
+to writeFileTitleDepth
+    file-open "OrderBookDepth.csv"
+    file-type "Time"
+    file-type ", "
+    file-type "80"
+    file-type ", "
+    file-type "80.25"
+    file-type ", "
+    file-type "80.50"
+    file-type ", "
+    file-type "80.75"
+    file-type ", "
+    file-type "81"
+    file-type ", "
+    file-type "81.25"
+    file-type ", "
+    file-type "81.50"
+    file-type ", "
+    file-type "81.75"
+    file-type ", "
+    file-type "82"
+    file-type ", "
+    file-type "82.25"
+    file-type ", "
+    file-type "82.50"
+    file-type ", "
+    file-type "82.75"
+    file-type ", "
+    file-type "83"
+    file-type ", "
+    file-type "83.25"
+    file-type ", "
+    file-type "83.50"
+    file-type ", "
+    file-type "83.75"
+    file-type ", "
+    file-type "84"
+    file-type ", "
+    file-type "84.25"
+    file-type ", "
+    file-type "84.50"
+    file-type ", "
+    file-type "84.75"
+    file-type ", "
+    file-type "85"
+    file-type ", "
+    file-type "85.25"
+    file-type ", "
+    file-type "85.50"
+    file-type ", "
+    file-type "85.75"
+    file-type ", "
+    file-type "86"
+    file-type ", "
+    file-type "86.25"
+    file-type ", "
+    file-type "86.50"
+    file-type ", "
+    file-type "86.75"
+    file-type ", "
+    file-type "87"
+    file-type ", "
+    file-type "87.25"
+    file-type ", "
+    file-type "87.50"
+    file-type ", "
+    file-type "87.75"
+    file-type ", "
+    file-type "88"
+    file-type ", "
+    file-type "88.25"
+    file-type ", "
+    file-type "88.50"
+    file-type ", "
+    file-type "88.75"
+    file-type ", "
+    file-type "89"
+    file-type ", "
+    file-type "89.25"
+    file-type ", "
+    file-type "89.50"
+    file-type ", "
+    file-type "89.75"
+    file-type ", "
+    file-type "90"
+    file-type ", "
+    file-type "90.25"
+    file-type ", "
+    file-type "90.50"
+    file-type ", "
+    file-type "90.75"
+    file-type ", "
+    file-type "91"
+    file-type ", "
+    file-type "91.25"
+    file-type ", "
+    file-type "91.50"
+    file-type ", "
+    file-type "91.75"
+    file-type ", "
+    file-type "92"
+    file-type ", "
+    file-type "92.25"
+    file-type ", "
+    file-type "92.50"
+    file-type ", "
+    file-type "92.75"
+    file-type ", "
+    file-type "93"
+    file-type ", "
+    file-type "93.25"
+    file-type ", "
+    file-type "93.50"
+    file-type ", "
+    file-type "93.75"
+    file-type ", "
+    file-type "94"
+    file-type ", "
+    file-type "94.25"
+    file-type ", "
+    file-type "94.50"
+    file-type ", "
+    file-type "94.75"
+    file-type ", "
+    file-type "95"
+    file-type ", "
+    file-type "95.25"
+    file-type ", "
+    file-type "95.50"
+    file-type ", "
+    file-type "95.75"
+    file-type ", "
+    file-type "96"
+    file-type ", "
+    file-type "96.25"
+    file-type ", "
+    file-type "96.50"
+    file-type ", "
+    file-type "96.75"
+    file-type ", "
+    file-type "97"
+    file-type ", "
+    file-type "97.25"
+    file-type ", "
+    file-type "97.50"
+    file-type ", "
+    file-type "97.75"
+    file-type ", "
+    file-type "98"
+    file-type ", "
+    file-type "98.25"
+    file-type ", "
+    file-type "98.50"
+    file-type ", "
+    file-type "98.75"
+    file-type ", "
+    file-type "99"
+    file-type ", "
+    file-type "99.25"
+    file-type ", "
+    file-type "99.50"
+    file-type ", "
+    file-type "99.75"
+    file-type ", "
+    file-type "100"
+    file-type ", "
+    file-type "100.25"
+    file-type ", "
+    file-type "100.50"
+    file-type ", "
+    file-type "100.75"
+    file-type ", "
+    file-type "101"
+    file-type ", "
+    file-type "101.25"
+    file-type ", "
+    file-type "101.50"
+    file-type ", "
+    file-type "101.75"
+    file-type ", "
+    file-type "102"
+    file-type ", "
+    file-type "102.25"
+    file-type ", "
+    file-type "102.50"
+    file-type ", "
+    file-type "102.75"
+    file-type ", "
+    file-type "103"
+    file-type ", "
+    file-type "103.25"
+    file-type ", "
+    file-type "103.50"
+    file-type ", "
+    file-type "103.75"
+    file-type ", "
+    file-type "104"
+    file-type ", "
+    file-type "104.25"
+    file-type ", "
+    file-type "104.50"
+    file-type ", "
+    file-type "104.75"
+    file-type ", "
+    file-type "105"
+    file-type ", "
+    file-type "105.25"
+    file-type ", "
+    file-type "105.50"
+    file-type ", "
+    file-type "105.75"
+    file-type ", "
+    file-type "106"
+    file-type ", "
+    file-type "106.25"
+    file-type ", "
+    file-type "106.50"
+    file-type ", "
+    file-type "106.75"
+    file-type ", "
+    file-type "107"
+    file-type ", "
+    file-type "107.25"
+    file-type ", "
+    file-type "107.50"
+    file-type ", "
+    file-type "107.75"
+    file-type ", "
+    file-type "108"
+    file-type ", "
+    file-type "108.25"
+    file-type ", "
+    file-type "108.50"
+    file-type ", "
+    file-type "108.75"
+    file-type ", "
+    file-type "109"
+    file-type ", "
+    file-type "109.25"
+    file-type ", "
+    file-type "109.50"
+    file-type ", "
+    file-type "109.75"
+    file-print ", "
+    file-close
+end 
+
+to writetofiledepth 
+  file-open "OrderBookDepth.csv"
+  file-type hourOutput ;TIME
+  file-type ":" 
+  file-type minute 
+  file-type ", "
+  ifelse (frequency 8000 numberOrderBid > 0) [file-type (-1 * frequency 8000 numberOrderBid) ][file-type frequency 8000 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8025 numberOrderBid > 0) [file-type (-1 * frequency 8025 numberOrderBid) ][file-type frequency 8025 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8050 numberOrderBid > 0) [file-type (-1 * frequency 8050 numberOrderBid) ][file-type frequency 8050 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8075 numberOrderBid > 0) [file-type (-1 * frequency 8075 numberOrderBid) ][file-type frequency 8075 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8100 numberOrderBid > 0) [file-type (-1 * frequency 8100 numberOrderBid) ][file-type frequency 8100 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8125 numberOrderBid > 0) [file-type (-1 * frequency 8125 numberOrderBid) ][file-type frequency 8125 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8150 numberOrderBid > 0) [file-type (-1 * frequency 8150 numberOrderBid) ][file-type frequency 8150 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8175 numberOrderBid > 0) [file-type (-1 * frequency 8175 numberOrderBid) ][file-type frequency 8175 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8200 numberOrderBid > 0) [file-type (-1 * frequency 8200 numberOrderBid) ][file-type frequency 8200 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8225 numberOrderBid > 0) [file-type (-1 * frequency 8225 numberOrderBid) ][file-type frequency 8225 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8250 numberOrderBid > 0) [file-type (-1 * frequency 8250 numberOrderBid) ][file-type frequency 8250 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8275 numberOrderBid > 0) [file-type (-1 * frequency 8275 numberOrderBid) ][file-type frequency 8275 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8300 numberOrderBid > 0) [file-type (-1 * frequency 8300 numberOrderBid) ][file-type frequency 8300 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8325 numberOrderBid > 0) [file-type (-1 * frequency 8325 numberOrderBid) ][file-type frequency 8325 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8350 numberOrderBid > 0) [file-type (-1 * frequency 8350 numberOrderBid) ][file-type frequency 8350 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8375 numberOrderBid > 0) [file-type (-1 * frequency 8375 numberOrderBid) ][file-type frequency 8375 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8400 numberOrderBid > 0) [file-type (-1 * frequency 8400 numberOrderBid) ][file-type frequency 8400 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8425 numberOrderBid > 0) [file-type (-1 * frequency 8425 numberOrderBid) ][file-type frequency 8425 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8450 numberOrderBid > 0) [file-type (-1 * frequency 8450 numberOrderBid) ][file-type frequency 8450 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8475 numberOrderBid > 0) [file-type (-1 * frequency 8475 numberOrderBid) ][file-type frequency 8475 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8500 numberOrderBid > 0) [file-type (-1 * frequency 8500 numberOrderBid) ][file-type frequency 8500 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8525 numberOrderBid > 0) [file-type (-1 * frequency 8525 numberOrderBid) ][file-type frequency 8525 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8550 numberOrderBid > 0) [file-type (-1 * frequency 8550 numberOrderBid) ][file-type frequency 8550 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8575 numberOrderBid > 0) [file-type (-1 * frequency 8575 numberOrderBid) ][file-type frequency 8575 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8600 numberOrderBid > 0) [file-type (-1 * frequency 8600 numberOrderBid) ][file-type frequency 8600 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8625 numberOrderBid > 0) [file-type (-1 * frequency 8625 numberOrderBid) ][file-type frequency 8625 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8650 numberOrderBid > 0) [file-type (-1 * frequency 8650 numberOrderBid) ][file-type frequency 8650 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8675 numberOrderBid > 0) [file-type (-1 * frequency 8675 numberOrderBid) ][file-type frequency 8675 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8700 numberOrderBid > 0) [file-type (-1 * frequency 8700 numberOrderBid) ][file-type frequency 8700 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8725 numberOrderBid > 0) [file-type (-1 * frequency 8725 numberOrderBid) ][file-type frequency 8725 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8750 numberOrderBid > 0) [file-type (-1 * frequency 8750 numberOrderBid) ][file-type frequency 8750 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8775 numberOrderBid > 0) [file-type (-1 * frequency 8775 numberOrderBid) ][file-type frequency 8775 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8800 numberOrderBid > 0) [file-type (-1 * frequency 8800 numberOrderBid) ][file-type frequency 8800 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8825 numberOrderBid > 0) [file-type (-1 * frequency 8825 numberOrderBid) ][file-type frequency 8825 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8850 numberOrderBid > 0) [file-type (-1 * frequency 8850 numberOrderBid) ][file-type frequency 8850 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8875 numberOrderBid > 0) [file-type (-1 * frequency 8875 numberOrderBid) ][file-type frequency 8875 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8900 numberOrderBid > 0) [file-type (-1 * frequency 8900 numberOrderBid) ][file-type frequency 8900 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8925 numberOrderBid > 0) [file-type (-1 * frequency 8925 numberOrderBid) ][file-type frequency 8925 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8950 numberOrderBid > 0) [file-type (-1 * frequency 8950 numberOrderBid) ][file-type frequency 8950 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 8975 numberOrderBid > 0) [file-type (-1 * frequency 8975 numberOrderBid) ][file-type frequency 8975 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9000 numberOrderBid > 0) [file-type (-1 * frequency 9000 numberOrderBid) ][file-type frequency 9000 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9025 numberOrderBid > 0) [file-type (-1 * frequency 9025 numberOrderBid) ][file-type frequency 9025 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9050 numberOrderBid > 0) [file-type (-1 * frequency 9050 numberOrderBid) ][file-type frequency 9050 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9075 numberOrderBid > 0) [file-type (-1 * frequency 9075 numberOrderBid) ][file-type frequency 9075 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9100 numberOrderBid > 0) [file-type (-1 * frequency 9100 numberOrderBid) ][file-type frequency 9100 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9125 numberOrderBid > 0) [file-type (-1 * frequency 9125 numberOrderBid) ][file-type frequency 9125 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9150 numberOrderBid > 0) [file-type (-1 * frequency 9150 numberOrderBid) ][file-type frequency 9150 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9175 numberOrderBid > 0) [file-type (-1 * frequency 9175 numberOrderBid) ][file-type frequency 9175 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9200 numberOrderBid > 0) [file-type (-1 * frequency 9200 numberOrderBid) ][file-type frequency 9200 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9225 numberOrderBid > 0) [file-type (-1 * frequency 9225 numberOrderBid) ][file-type frequency 9225 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9250 numberOrderBid > 0) [file-type (-1 * frequency 9250 numberOrderBid) ][file-type frequency 9250 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9275 numberOrderBid > 0) [file-type (-1 * frequency 9275 numberOrderBid) ][file-type frequency 9275 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9300 numberOrderBid > 0) [file-type (-1 * frequency 9300 numberOrderBid) ][file-type frequency 9300 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9325 numberOrderBid > 0) [file-type (-1 * frequency 9325 numberOrderBid) ][file-type frequency 9325 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9350 numberOrderBid > 0) [file-type (-1 * frequency 9350 numberOrderBid) ][file-type frequency 9350 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9375 numberOrderBid > 0) [file-type (-1 * frequency 9375 numberOrderBid) ][file-type frequency 9375 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9400 numberOrderBid > 0) [file-type (-1 * frequency 9400 numberOrderBid) ][file-type frequency 9400 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9425 numberOrderBid > 0) [file-type (-1 * frequency 9425 numberOrderBid) ][file-type frequency 9425 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9450 numberOrderBid > 0) [file-type (-1 * frequency 9450 numberOrderBid) ][file-type frequency 9450 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9475 numberOrderBid > 0) [file-type (-1 * frequency 9475 numberOrderBid) ][file-type frequency 9475 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9500 numberOrderBid > 0) [file-type (-1 * frequency 9500 numberOrderBid) ][file-type frequency 9500 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9525 numberOrderBid > 0) [file-type (-1 * frequency 9525 numberOrderBid) ][file-type frequency 9525 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9550 numberOrderBid > 0) [file-type (-1 * frequency 9550 numberOrderBid) ][file-type frequency 9550 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9575 numberOrderBid > 0) [file-type (-1 * frequency 9575 numberOrderBid) ][file-type frequency 9575 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9600 numberOrderBid > 0) [file-type (-1 * frequency 9600 numberOrderBid) ][file-type frequency 9600 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9625 numberOrderBid > 0) [file-type (-1 * frequency 9625 numberOrderBid) ][file-type frequency 9625 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9650 numberOrderBid > 0) [file-type (-1 * frequency 9650 numberOrderBid) ][file-type frequency 9650 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9675 numberOrderBid > 0) [file-type (-1 * frequency 9675 numberOrderBid) ][file-type frequency 9675 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9700 numberOrderBid > 0) [file-type (-1 * frequency 9700 numberOrderBid) ][file-type frequency 9700 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9725 numberOrderBid > 0) [file-type (-1 * frequency 9725 numberOrderBid) ][file-type frequency 9725 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9750 numberOrderBid > 0) [file-type (-1 * frequency 9750 numberOrderBid) ][file-type frequency 9750 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9775 numberOrderBid > 0) [file-type (-1 * frequency 9775 numberOrderBid) ][file-type frequency 9775 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9800 numberOrderBid > 0) [file-type (-1 * frequency 9800 numberOrderBid) ][file-type frequency 9800 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9825 numberOrderBid > 0) [file-type (-1 * frequency 9825 numberOrderBid) ][file-type frequency 9825 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9850 numberOrderBid > 0) [file-type (-1 * frequency 9850 numberOrderBid) ][file-type frequency 9850 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9875 numberOrderBid > 0) [file-type (-1 * frequency 9875 numberOrderBid) ][file-type frequency 9875 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9900 numberOrderBid > 0) [file-type (-1 * frequency 9900 numberOrderBid) ][file-type frequency 9900 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9925 numberOrderBid > 0) [file-type (-1 * frequency 9925 numberOrderBid) ][file-type frequency 9925 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9950 numberOrderBid > 0) [file-type (-1 * frequency 9950 numberOrderBid) ][file-type frequency 9950 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 9975 numberOrderBid > 0) [file-type (-1 * frequency 9975 numberOrderBid) ][file-type frequency 9975 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10000 numberOrderBid > 0) [file-type (-1 * frequency 10000 numberOrderBid) ][file-type frequency 10000 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10025 numberOrderBid > 0) [file-type (-1 * frequency 10025 numberOrderBid) ][file-type frequency 10025 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10050 numberOrderBid > 0) [file-type (-1 * frequency 10050 numberOrderBid) ][file-type frequency 10050 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10075 numberOrderBid > 0) [file-type (-1 * frequency 10075 numberOrderBid) ][file-type frequency 10075 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10100 numberOrderBid > 0) [file-type (-1 * frequency 10100 numberOrderBid) ][file-type frequency 10100 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10125 numberOrderBid > 0) [file-type (-1 * frequency 10125 numberOrderBid) ][file-type frequency 10125 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10150 numberOrderBid > 0) [file-type (-1 * frequency 10150 numberOrderBid) ][file-type frequency 10150 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10175 numberOrderBid > 0) [file-type (-1 * frequency 10175 numberOrderBid) ][file-type frequency 10175 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10200 numberOrderBid > 0) [file-type (-1 * frequency 10200 numberOrderBid) ][file-type frequency 10200 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10225 numberOrderBid > 0) [file-type (-1 * frequency 10225 numberOrderBid) ][file-type frequency 10225 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10250 numberOrderBid > 0) [file-type (-1 * frequency 10250 numberOrderBid) ][file-type frequency 10250 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10275 numberOrderBid > 0) [file-type (-1 * frequency 10275 numberOrderBid) ][file-type frequency 10275 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10300 numberOrderBid > 0) [file-type (-1 * frequency 10300 numberOrderBid) ][file-type frequency 10300 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10325 numberOrderBid > 0) [file-type (-1 * frequency 10325 numberOrderBid) ][file-type frequency 10325 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10350 numberOrderBid > 0) [file-type (-1 * frequency 10350 numberOrderBid) ][file-type frequency 10350 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10375 numberOrderBid > 0) [file-type (-1 * frequency 10375 numberOrderBid) ][file-type frequency 10375 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10400 numberOrderBid > 0) [file-type (-1 * frequency 10400 numberOrderBid) ][file-type frequency 10400 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10425 numberOrderBid > 0) [file-type (-1 * frequency 10425 numberOrderBid) ][file-type frequency 10425 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10450 numberOrderBid > 0) [file-type (-1 * frequency 10450 numberOrderBid) ][file-type frequency 10450 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10475 numberOrderBid > 0) [file-type (-1 * frequency 10475 numberOrderBid) ][file-type frequency 10475 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10500 numberOrderBid > 0) [file-type (-1 * frequency 10500 numberOrderBid) ][file-type frequency 10500 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10525 numberOrderBid > 0) [file-type (-1 * frequency 10525 numberOrderBid) ][file-type frequency 10525 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10550 numberOrderBid > 0) [file-type (-1 * frequency 10550 numberOrderBid) ][file-type frequency 10550 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10575 numberOrderBid > 0) [file-type (-1 * frequency 10575 numberOrderBid) ][file-type frequency 10575 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10600 numberOrderBid > 0) [file-type (-1 * frequency 10600 numberOrderBid) ][file-type frequency 10600 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10625 numberOrderBid > 0) [file-type (-1 * frequency 10625 numberOrderBid) ][file-type frequency 10625 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10650 numberOrderBid > 0) [file-type (-1 * frequency 10650 numberOrderBid) ][file-type frequency 10650 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10675 numberOrderBid > 0) [file-type (-1 * frequency 10675 numberOrderBid) ][file-type frequency 10675 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10700 numberOrderBid > 0) [file-type (-1 * frequency 10700 numberOrderBid) ][file-type frequency 10700 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10725 numberOrderBid > 0) [file-type (-1 * frequency 10725 numberOrderBid) ][file-type frequency 10725 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10750 numberOrderBid > 0) [file-type (-1 * frequency 10750 numberOrderBid) ][file-type frequency 10750 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10775 numberOrderBid > 0) [file-type (-1 * frequency 10775 numberOrderBid) ][file-type frequency 10775 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10800 numberOrderBid > 0) [file-type (-1 * frequency 10800 numberOrderBid) ][file-type frequency 10800 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10825 numberOrderBid > 0) [file-type (-1 * frequency 10825 numberOrderBid) ][file-type frequency 10825 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10850 numberOrderBid > 0) [file-type (-1 * frequency 10850 numberOrderBid) ][file-type frequency 10850 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10875 numberOrderBid > 0) [file-type (-1 * frequency 10875 numberOrderBid) ][file-type frequency 10875 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10900 numberOrderBid > 0) [file-type (-1 * frequency 10900 numberOrderBid) ][file-type frequency 10900 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10925 numberOrderBid > 0) [file-type (-1 * frequency 10925 numberOrderBid) ][file-type frequency 10925 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10950 numberOrderBid > 0) [file-type (-1 * frequency 10950 numberOrderBid) ][file-type frequency 10950 numberOrderAsk]
+  file-type ", "
+  ifelse (frequency 10975 numberOrderBid > 0) [file-type (-1 * frequency 10975 numberOrderBid) ][file-type frequency 10975 numberOrderAsk]
+  file-print ", "
+  file-close
+end 
+;code by Mark Paddrik
