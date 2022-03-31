@@ -1,0 +1,148 @@
+;********************************************************************************************************************************************************************************
+;Writing AUDIT TRAIL to CSV File
+;line output: ORDER ID| HON1 | HON2 | ACCOUNT | BUYSELL | FUNCCODE | TIME | CTI | ASKPRICE | ASKQUANTITY | BIDPRICE | BIDQUANTITY | EXCHANGE | MAX SHOW FLAG | MATCH NUMBER | TANSACTION ID
+;********************************************************************************************************************************************************************************
+
+to writeFileTitles
+    file-open "OrderBook.csv"
+    file-type "ORDER ID"
+    file-type ", "
+    file-type "HON1"
+    file-type ", "
+    file-type "HON2"
+    file-type ", "
+    file-type "ACCOUNT"
+    file-type ", "
+    file-type "BUYSELL"
+    file-type ", "
+    file-type "FUNCCODE"
+    file-type ", "
+    file-type "PRICE"
+    file-type ", "
+    file-type "QUANTITY"
+    file-type ", "
+    file-type "TIME"
+    file-type ", "
+    file-type "CONFTIME"
+    file-type ", "
+    file-type "CTI"
+    file-type ", "
+    file-type "ASKPRICE"
+    file-type ", "
+    file-type "ASKQUANTITY"
+    file-type ", "
+    file-type "BIDPRICE"
+    file-type ", "
+    file-type "BIDQUANTITY"
+    file-type ", "
+    file-type "EXCHANGE"
+    file-type ", "
+    file-type "MAX SHOW FLAG"
+    file-type ", "
+    file-type "MATCH NUMBER"
+    file-type ", "
+    file-type "TRANSACTION ID"
+    file-print ", "
+    file-close
+end 
+;code by Mark Paddrik
+to writetofile [ OID Action TradedPrice q traderType TID OrderBuyOrSell? matchnumber aHON1 aHON2]  
+  set tradeExNumber (1 + tradeExNumber)
+    
+  let newCurrentBidPrice 0
+  let newCurrentAskPrice 0
+ 
+  if count orders with [OrderB/A = "Buy"] > 0 and count orders with [OrderB/A = "Sell"] > 0 [
+      let newFirstBuy first (sort-on [(- PriceOrder)] orders with [OrderB/A = "Buy"] )
+      let newFirstSell first (sort-on [PriceOrder] orders with [OrderB/A = "Sell"])
+     
+      ask newFirstBuy [
+        set newCurrentBidPrice OrderPrice
+      ]
+      
+      ask newFirstSell [
+        set newCurrentAskPrice OrderPrice
+      ]
+    ]
+  
+  file-open "OrderBook.csv"
+  file-type OID
+  file-type ", "
+  file-type aHON1 ;HON1
+  file-type ", "
+  file-type aHON2 ;HON2
+  file-type ", "
+  file-type TID ;FIRM
+  file-type ", "
+  file-type OrderBuyOrSell? ;BUYSELL
+  file-type ", "
+  if(Action = "Buy" or Action = "Sell" )
+  [
+    file-type "001" ;FUNCCODE
+    file-type ", "
+  ]
+  if(Action = "Bought" or Action = "Sold" )
+  [
+    file-type "105" ;FUNCCODE
+    file-type ", "
+  ]
+  if(Action = "Cancel" )
+  [
+    file-type "003" ;FUNCCODE
+    file-type ", "
+  ]
+  if(Action = "Modify" )
+  [
+    file-type "002" ;FUNCCODE
+    file-type ", "
+  ]
+  file-type ((TradedPrice / 4 + 1000)) ;PRICE
+  file-type ", "
+  file-type q ;QUANTITY
+  file-type ", "
+  file-type hourOutput ;TIME
+  file-type ":" 
+  file-type minute 
+  file-type ", "
+  file-type hourOutput ;CONFTIME
+  file-type ":" 
+  file-type minute 
+  file-type ", "
+  if(traderType = "LiquidityDemander")
+  [
+    file-type "1" ;CTI
+    file-type ", "
+  ]
+  if(traderType = "MarketMakers")
+  [
+    file-type "2" ;CTI
+    file-type ", "
+  ]
+  if(traderType = "LiquiditySupplier")
+  [
+    file-type "3" ;CTI
+    file-type ", "
+  ]
+  file-type ((newCurrentAskPrice / 4 + 1000)) ;ASKPRICE
+  file-type ", "
+  set numberOrderAsk []
+  histoSetupTestSell
+  file-type occurrences (((newCurrentAskPrice / 4) * 100) + 100000) numberOrderAsk ;ASKQUANTITY
+  file-type ", "
+  file-type ((newCurrentBidPrice / 4 + 1000)) ;BIDPRICE
+  file-type ", "
+  set numberOrderBid []
+  histoSetupTestBuy
+  file-type occurrences (((newCurrentBidPrice / 4) * 100) + 100000) numberOrderBid ;BIDQUANTITY
+  file-type ", "
+  file-type "OFR" ;EXCHANGE
+  file-type ", "
+  file-type "-" ;MAX SHOW FLAG 
+  file-type ", "
+  file-type matchnumber ;Match ID
+  file-type ", "
+  file-type tradeExNumber ;TRANSACTION ID
+  file-print ", "
+  file-close
+end 
+;code by Mark Paddrik

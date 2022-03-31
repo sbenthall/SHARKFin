@@ -1,0 +1,131 @@
+;code by Mark Paddrik
+;; Setup for Trader
+;********************************************************************************************************************************************************************************
+to LD_Setup 
+  set typeOfTrader "LiquidityDemander"
+  set speed (random-poisson liquidity_Demander_Arrival_Rate) + 1
+  set tradeSpeedAdjustment (random 30) + 1
+  set tradeStatus "Transact"
+  set orderNumber 0
+  set countticks 0
+  set tradeAccount 0
+  set sharesOwned 0
+  set totalBought 1
+  set totalSold 1
+  set averageBoughtPrice 0
+  set averageSoldPrice 0
+  set totalCanceled 0
+  set buysell "B"
+  set modify 0
+  set openOrders []
+end
+;code by Mark Paddrik
+;; Distribution of Order Quantity
+;********************************************************************************************************************************************************************************
+to distOrderLiquidityDemander
+  let randDraw random 100
+  set tradeQuantity 1 * liquidityDemanderOrderSizeMultipler
+  if(randDraw > 31)[set tradeQuantity 2 * liquidityDemanderOrderSizeMultipler]
+  if(randDraw > 50)[set tradeQuantity 3 * liquidityDemanderOrderSizeMultipler]
+  if(randDraw > 63)[set tradeQuantity 4 * liquidityDemanderOrderSizeMultipler]
+  if(randDraw > 73)[set tradeQuantity 5 * liquidityDemanderOrderSizeMultipler]
+  if(randDraw > 82)[set tradeQuantity 6 * liquidityDemanderOrderSizeMultipler]
+  if(randDraw > 94)[set tradeQuantity 7 * liquidityDemanderOrderSizeMultipler]
+end
+
+;code by Mark Paddrik
+;Distribution of Price Selection
+;********************************************************************************************************************************************************************************
+to distPriceLiquidityDemanderBuy
+  let randDraw random 10000
+  set tradePrice price - 10
+  if(randDraw < 2800 and ticks > 5001)[set tradePrice price + 5]
+  if(randDraw < 4400 and randDraw >= 2800)[set tradePrice price - 1 ]
+  if(randDraw < 5600 and randDraw >= 4400)[set tradePrice price - 2 ]
+  if(randDraw < 6500 and randDraw >= 5600)[set tradePrice price - 3 ]
+  if(randDraw < 7200 and randDraw >= 6500)[set tradePrice price - 4 ]
+  if(randDraw < 7800 and randDraw >= 7200)[set tradePrice price - 5 ]
+  if(randDraw < 8400 and randDraw >= 7800)[set tradePrice price - 6 ]
+  if(randDraw < 8800 and randDraw >= 8400)[set tradePrice price - 7 ]
+  if(randDraw < 9300 and randDraw >= 8800)[set tradePrice price - 8 ]
+  if(randDraw < 9600 and randDraw >= 9300)[set tradePrice price - 9 ]
+end
+
+to distPriceLiquidityDemanderSell
+  let randDraw random 10000
+  set tradePrice price + 10
+  if(randDraw < 2800 and ticks > 5001)[set tradePrice price - 5 ]
+  if(randDraw < 4400 and randDraw >= 2800)[set tradePrice price + 1 ]
+  if(randDraw < 5600 and randDraw >= 4400)[set tradePrice price + 2 ]
+  if(randDraw < 6500 and randDraw >= 5600)[set tradePrice price + 3 ]
+  if(randDraw < 7200 and randDraw >= 6500)[set tradePrice price + 4 ]
+  if(randDraw < 7800 and randDraw >= 7200)[set tradePrice price + 5 ]
+  if(randDraw < 8400 and randDraw >= 7800)[set tradePrice price + 6 ]
+  if(randDraw < 8800 and randDraw >= 8400)[set tradePrice price + 7 ]
+  if(randDraw < 9300 and randDraw >= 8800)[set tradePrice price + 8 ]
+  if(randDraw < 9600 and randDraw >= 9300)[set tradePrice price + 9 ]
+end
+
+;code by Mark Paddrik
+;Strategy
+;********************************************************************************************************************************************************************************
+to liquidityDemanderStrategy
+  foreach openorders [
+    ask ?[ 
+      if(AuditTrail = true)[
+        writetofile OrderID "Cancel" OrderPrice OrderQuantity TraderWhoType tradernumber 1 "-" HON1 HON2
+      ]
+      die
+    ]
+  ]
+  
+  set openorders []
+  
+  if(timeseries = True and ticks > 5000)
+  [
+    if sum [sharesOwned] of traders with [typeOfTrader = "LiquidityDemander"] < timeseriesvalue [
+       if (resethillclimbto50 = -1)[
+         set ProbabilityBuyofLiqyuidityDemander 50
+       ]
+       set resethillclimbto50 1
+       set ProbabilityBuyofLiqyuidityDemander (ProbabilityBuyofLiqyuidityDemander + (sqrt(100 - ProbabilityBuyofLiqyuidityDemander)) / 100)
+    ]
+    if sum [sharesOwned] of traders with [typeOfTrader = "LiquidityDemander"] > timeseriesvalue [
+       if (resethillclimbto50 = 1)[
+         set ProbabilityBuyofLiqyuidityDemander 50
+       ]
+       set resethillclimbto50 -1
+       set ProbabilityBuyofLiqyuidityDemander (ProbabilityBuyofLiqyuidityDemander - (sqrt(abs(ProbabilityBuyofLiqyuidityDemander))) / 100)
+    ]
+  ]
+   
+  let randDraw random 10000
+  ifelse randDraw < ((ProbabilityBuyofLiqyuidityDemander * 100) + 125) [
+     set tradeStatus "Buy"
+     distPriceLiquidityDemanderBuy
+     distOrderLiquidityDemander
+  ][
+     set tradeStatus "Sell"
+     distPriceLiquidityDemanderSell
+     distOrderLiquidityDemander
+  ]
+  
+  hatch-orders 1 [Order_Setup tradePrice tradeStatus traderNumber tradeQuantity myself typeOfTrader]
+end
+
+;code by Mark Paddrik
+;*****************************************************************************************************************************
+; Reporting
+;*****************************************************************************************************************************
+
+to-report avgSharesLiquidityDemander
+ ifelse((count turtles with [typeOfTrader = "LiquidityDemander"]) > 0)
+ [report precision (((sum [sharesOwned] of traders with [typeOfTrader = "LiquidityDemander"])) / (count traders with [typeOfTrader = "LiquidityDemander"]))  2
+ ][report 0]
+end
+;code by Mark Paddrik
+to-report accountValueLiquidityDemander
+  ifelse((count turtles with [typeOfTrader = "LiquidityDemander"]) > 0)
+  [report precision ((sum [tradeAccount] of traders with [typeOfTrader = "LiquidityDemander"]) / (count traders with [typeOfTrader = "LiquidityDemander"])) 2 
+  ][report 0]
+end
