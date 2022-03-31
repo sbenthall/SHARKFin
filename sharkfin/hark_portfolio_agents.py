@@ -21,6 +21,7 @@ import pika
 import uuid
 import time
 from typing import Tuple
+import os
 
 from abc import ABC, abstractmethod
 
@@ -736,12 +737,14 @@ class MarketPNL(AbstractMarket):
     def __init__(
         self,
         sample=0,
-        config_file="../PNL/macroliquidity.ini",
-        config_local_file="../PNL/macroliquidity_local.ini",
+        config_file="pnl_uitils/macroliquidity.ini",
+        config_local_file="pnl_utils/macroliquidity_local.ini",
         seed_limit=None,
     ):
+        
         self.config = UTIL.read_config(
-            config_file=config_file, config_local_file=config_local_file
+            config_file=self.get_config_path(config_file), 
+            config_local_file=self.get_config_path(config_local_file)
         )
 
         self.sample = 0
@@ -749,6 +752,11 @@ class MarketPNL(AbstractMarket):
 
         if seed_limit is not None:
             self.seed_limit = seed_limit
+
+    def get_config_path(self, path):
+        dirname = os.path.dirname(os.path.abspath(__file__))
+
+        return dirname + '/' + path
 
     def run_market(self, seed=0, buy_sell=0):
         """
