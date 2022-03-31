@@ -1,5 +1,5 @@
 from utilities import *
-from . import AbstractMarket
+from sharkfin.markets import AbstractMarket
 import numpy as np
 import json
 import pika

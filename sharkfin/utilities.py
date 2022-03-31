@@ -3,6 +3,7 @@ from HARK.distribution import Uniform
 import math
 import numpy as np
 import random
+from itertools import chain
 
 # Agent List
 class AgentList:

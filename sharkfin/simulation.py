@@ -7,6 +7,8 @@ import random
 import seaborn as sns
 from statistics import mean
 from scipy import stats
+from sharkfin.markets import MockMarket
+from sharkfin.broker import Broker
 
 class AttentionSimulation:
     """
@@ -88,7 +90,7 @@ class AttentionSimulation:
             self.attention_rate = 1 / self.runs_per_quarter
 
         # Create the Market wrapper
-        market = MarketPNL() if market is None else market
+        market = MockMarket() if market is None else market
         self.broker = Broker(market)
 
         self.history = {}

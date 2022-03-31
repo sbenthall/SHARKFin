@@ -1,11 +1,16 @@
-import sharkfin.hark_portfolio_agents as hpa
+from sharkfin.markets.pnl import MarketPNL
+from sharkfin.markets import MockMarket
+from sharkfin.broker import *
+from sharkfin.expectations import *
+from sharkfin.population import *
+from sharkfin.simulation import *
 import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 from HARK.Calibration.Income.IncomeTools import (
      sabelhaus_song_var_profile,
 )
 
 def test_mock_market():
-  mock = hpa.MockMarket()
+  mock = MockMarket()
 
   mock.run_market()
 
@@ -53,10 +58,10 @@ def test_simulation():
 
     n_per_class = 1
 
-    pop = hpa.AgentPopulation(agent_parameters, dist_params, n_per_class)
+    pop = AgentPopulation(agent_parameters, dist_params, n_per_class)
     
     #initialize the financial model
-    fm = hpa.FinanceModel()
+    fm = FinanceModel()
     
     fm.calculate_risky_expectations()
     agent_parameters.update(fm.risky_expectations())
@@ -71,7 +76,7 @@ def test_simulation():
     r = 1
     market = None
     
-    attsim = hpa.AttentionSimulation(pop, fm, a=a, q=q, r=r, market=market)
+    attsim = AttentionSimulation(pop, fm, a=a, q=q, r=r, market=market)
     attsim.simulate()
 
     ## testing for existence of this class stat

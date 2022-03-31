@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import numpy as np
 
 class AbstractMarket(ABC):
     '''
@@ -52,6 +53,8 @@ class MockMarket(AbstractMarket):
     # recent data
     last_buy_sell = None
     last_seed = None
+
+    seeds = []
 
     def __init__(self):
         pass

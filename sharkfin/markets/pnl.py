@@ -1,18 +1,14 @@
 from sharkfin.markets import AbstractMarket
-sys.path.append('../PNL/py')
 
-import util as UTIL
-import pnl as pnl
+import sharkfin.pnl_utils.py.pnl as pnl
+import sharkfin.pnl_utils.py.util as UTIL
 
 import logging
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-with open('config_cloud.yml', 'r') as stream:
-    config_cloud = yaml.safe_load(stream)
-
-AZURE = config_cloud['azure']
+AZURE = pnl.AZURE
 
 if AZURE:
     from sharkfin import azure_storage
