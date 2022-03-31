@@ -1,4 +1,4 @@
-import hark_portfolio_agents as hpa
+import sharkfin.hark_portfolio_agents as hpa
 import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 from HARK.Calibration.Income.IncomeTools import (
      sabelhaus_song_var_profile,
@@ -13,14 +13,17 @@ def test_mock_market():
 
   ror = mock.daily_rate_of_return(buy_sell=(0,0))
 
-def test_pnl_market():
-  mock = hpa.MarketPNL()
-
-  mock.run_market(buy_sell=(0,0))
-
-  price = mock.get_simulation_price()
-
-  ror = mock.daily_rate_of_return(buy_sell=(0,0))
+# See #72 #74 - either make this conditional on proper PNL installation
+# or remove if we are deprecating that feature
+#
+#def test_pnl_market():
+#  mock = hpa.MarketPNL()
+#
+#  mock.run_market(buy_sell=(0,0))
+#
+#  price = mock.get_simulation_price()
+#
+#  ror = mock.daily_rate_of_return(buy_sell=(0,0))
 
 def test_simulation():
     '''
