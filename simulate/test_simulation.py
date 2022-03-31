@@ -1,3 +1,6 @@
+import sys
+sys.path.append('..')
+
 import argparse
 from datetime import datetime
 import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
@@ -19,7 +22,7 @@ import uuid
 import yaml
 import pprint
 
-from sharkfin.market import ammps
+from sharkfin.markets.ammps import ClientRPCMarket
 from sharkfin.broker import *
 from sharkfin.expectations import *
 from sharkfin.population import *
@@ -30,15 +33,6 @@ parser.add_argument("save_as", help="The name of the output for sim_stats")
 parser.add_argument("-t",
                     "--tag", type=str,
                     help="a string tag to be added to the output files")
-
-
-with open('config_cloud.yml', 'r') as stream:
-    config = yaml.safe_load(stream)
-
-AZURE = config['azure']
-
-if AZURE:
-    import sharkfin.azure_storage
 
 timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
