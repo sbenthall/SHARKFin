@@ -7,7 +7,9 @@ import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 from HARK.Calibration.Income.IncomeTools import (
      sabelhaus_song_var_profile,
 )
-import sharkfin.hark_portfolio_agents as hpa
+
+from sharkfin.markets import MockMarket
+from sharkfin.population import AgentPopulation
 from sharkfin.chum import CalibrationSimulation
 from itertools import product
 import json
@@ -71,10 +73,10 @@ def run_simulation(
     dphm=1500):
 
     # initialize population
-    pop = hpa.AgentPopulation(agent_parameters, dist_params, 5)
+    pop = AgentPopulation(agent_parameters, dist_params, 5)
 
     # Initialize the financial model
-    fm = hpa.FinanceModel() if fm is None else fm
+    fm = FinanceModel() if fm is None else fm
 
     fm.calculate_risky_expectations()
     agent_parameters.update(fm.risky_expectations())
@@ -93,7 +95,7 @@ def run_simulation(
 
 if __name__ == '__main__':
     # requires market server to be running
-    market = hpa.MockMarket()
+    market = MockMarket()
 
     args = parser.parse_args()
 
