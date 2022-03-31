@@ -7,10 +7,6 @@ import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 from HARK.Calibration.Income.IncomeTools import (
      sabelhaus_song_var_profile,
 )
-
-from sharkfin.markets import MockMarket
-from sharkfin.population import AgentPopulation
-from sharkfin.chum import CalibrationSimulation
 from itertools import product
 import json
 from math import exp
@@ -24,6 +20,11 @@ import time
 import uuid
 import yaml
 import pprint
+
+from sharkfin.markets import MockMarket
+from sharkfin.population import AgentPopulation
+from sharkfin.simulation import CalibrationSimulation
+from sharkfin.expectations import FinanceModel
 
 parser = argparse.ArgumentParser()
 parser.add_argument("save_as", help="The name of the output for sim_stats")
@@ -86,16 +87,20 @@ def run_simulation(
 
     sim = CalibrationSimulation(pop, fm, a = a, q = q, r = r, market = market)
     print('padding market')
-    sim.pad_market(n_days=30)
+    sim.pad_market(n_days=1)
     print('market padded, beginning agent simulation')
-    sim.simulate()
+    sim.simulate(start=False)
 
     return sim.data(), sim.sim_stats(), sim.history
 
 
 if __name__ == '__main__':
     # requires market server to be running
+
     market = MockMarket()
+    # market = hpa.ClientRPCMarket(
+    #     seed_limit = 150
+    # )
 
     args = parser.parse_args()
 

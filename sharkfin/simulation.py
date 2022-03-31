@@ -577,6 +577,9 @@ class AttentionSimulation:
 
 class CalibrationSimulation(AttentionSimulation):
     def pad_market(self, n_days=30):
+        for agent in self.agents:
+            agent.shares = self.compute_share_demand(agent)
+            
         for day in range(n_days):
             for agent in self.agents:
                 self.broker.transact(np.zeros(1))
