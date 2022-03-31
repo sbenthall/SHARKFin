@@ -84,7 +84,7 @@ def run_simulation(
 
     sim = CalibrationSimulation(pop, fm, a = a, q = q, r = r, market = market)
     print('padding market')
-    sim.pad_market(n_days=1)
+    sim.pad_market(n_days=30)
     print('market padded, beginning agent simulation')
     sim.simulate()
 
