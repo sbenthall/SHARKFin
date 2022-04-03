@@ -29,7 +29,7 @@ def test_mock_market():
 #
 #  ror = mock.daily_rate_of_return(buy_sell=(0,0))
 
-def test_simulation():
+def test_attention_simulation():
     '''
     Sets up and runs an agent population simulation
     '''
