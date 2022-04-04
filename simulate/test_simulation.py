@@ -86,7 +86,7 @@ def run_simulation(
     # Initialize the population model
     pop.init_simulation()
 
-    attsim = hpa.AttentionSimulation(pop, fm, a = a, q = q, r = r, market = market)
+    attsim = AttentionSimulation(pop, fm, a = a, q = q, r = r, market = market)
     attsim.simulate()
 
     return attsim.data(), attsim.sim_stats(), attsim.history
