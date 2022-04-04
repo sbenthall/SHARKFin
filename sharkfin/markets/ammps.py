@@ -1,9 +1,10 @@
-from utilities import *
+from sharkfin.utilities import *
 from sharkfin.markets import AbstractMarket
 import numpy as np
 import json
 import pika
 import uuid
+import os
 
 
 class ClientRPCMarket(AbstractMarket):

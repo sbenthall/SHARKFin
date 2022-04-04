@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import numpy as np
-
+from typing import Tuple
 class AbstractMarket(ABC):
     '''
     Abstract class from which market models should inherit
@@ -13,12 +13,12 @@ class AbstractMarket(ABC):
         pass
 
     @abstractmethod
-    def get_simulation_price(self, seed: int, buy_sell: tuple[int, int]):
+    def get_simulation_price(self, seed: int, buy_sell: Tuple[int, int]):
         # does this need to be an abstract method or can it be encapsulated in daily_rate_of_return?
         pass
 
     @abstractmethod
-    def daily_rate_of_return(self, seed: int, buy_sell: tuple[int, int]):
+    def daily_rate_of_return(self, seed: int, buy_sell: Tuple[int, int]):
         pass
 
     @abstractmethod
