@@ -1,7 +1,7 @@
 from sharkfin.markets import AbstractMarket
 
-import sharkfin.pnl_utils.py.pnl as pnl
-import sharkfin.pnl_utils.py.util as UTIL
+import pnl_market.py.pnl as pnl
+import pnl_market.py.util as UTIL
 
 import logging
 

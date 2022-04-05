@@ -41,7 +41,9 @@ TBD
 
 ## NetLogo Installation
 
-The original SHARKFin installation path uses NetLogo for its market simulation engine.
+The `pnl_market` package, included in this repository, contains code for
+the `MarketPNL` class, which is an implementation of `sharkfin.AbstractMarket`
+that wraps a market simulation written in NetLogo.
 
 The simulation depends on a specific NetLogo version.
 Be sure to have netlogo-5.3.1-64 installed.
@@ -77,7 +79,11 @@ NLmodeldir=./nl/
 NLhomedir=./netlogo-5.3.1-64/
 ```
 
-### Execution
+### Execution - as Market class
+
+TBD
+
+### Execution - Standalone
 
 To run the simulation:
 
