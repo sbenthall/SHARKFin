@@ -123,19 +123,13 @@ def test_calibration_simulation():
     #initialize population model
     pop.init_simulation()
 
-    # arguments to attention simulation
+    # arguments to Calibration simulation
     
-    a = 0.2
     q = 1
     r = 1
     market = None
     
-    sim = CalibrationSimulation(pop, fm, a=a, q=q, r=r, market=market)
-    sim.pad_market(n_days=1)
-    sim.simulate()
+    sim = CalibrationSimulation(pop, fm, q=q, r=r, market=market)
+    sim.simulate(n_days=2)
 
     assert(sim.history['buy_sell'][0] == (0, 0))
-    ## testing for existence of this class stat
-    sim.pop.class_stats()['mNrm_ratio_StE_mean']
-
-    sim.data()['sell_macro']

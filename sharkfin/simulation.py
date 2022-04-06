@@ -110,6 +110,11 @@ class BasicSimulation(AbstractSimulation):
         self.history['class_stats'] = []
         self.history['total_pop_stats'] = []
 
+        # assign macro-days to each agent
+        # This is a somewhat frustrating artifact to be cleaned up...
+        for agent in self.agents:
+            agent.macro_day = 0
+
     def attend(self, agent):
         """
         Cause the agent to attend to the financial model.
@@ -605,7 +610,7 @@ class AttentionSimulation(BasicSimulation):
 
     def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500):
 
-        self.super().__init__(pop, fm, q=q, r=r, market=None, dphm=dphm)
+        super().__init__(pop, fm, q=q, r=r, market=None, dphm=dphm)
 
         # TODO: Make this more variable.
         if a is not None:
@@ -706,8 +711,8 @@ class CalibrationSimulation(BasicSimulation):
         # Initialize share ownership for agents
         if start:
             for agent in self.agents:
-                self.macro_update(agent)
                 agent.shares = self.compute_share_demand(agent)
+                #self.macro_update(agent)
 
         for day in range(n_days):
             for agent in self.agents:
@@ -730,3 +735,10 @@ class CalibrationSimulation(BasicSimulation):
         self.broker.close()
 
         self.end_time = datetime.now()
+
+    def track(self, day):
+        """
+        Tracks the current state of agent's total assets and owned shares
+        """
+
+        self.history['buy_sell'].append(self.broker.buy_sell_history[-1])
