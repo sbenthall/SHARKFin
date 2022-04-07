@@ -4,6 +4,7 @@ import numpy as np
 import json
 import pika
 import uuid
+import os
 
 
 class ClientRPCMarket(AbstractMarket):
@@ -41,11 +42,37 @@ class ClientRPCMarket(AbstractMarket):
 
         self.latest_price = None
 
+        self.rpc_host_env_var = 'RPCHOST'
+        self.rpc_queue_env_var = 'RPCQUEUE'
+
+        self.rpc_queue_name = self._get_rpc_queue_name()
+        self.rpc_host_name = self._get_rpc_market_host()
+
         self.init_rpc()
+
+    def _get_rpc_market_host(self):
+        ''' method to get the env variable contining the hostname of the rpc server
+            if the varible is not set it will fallback to localhost
+        '''
+        if self.rpc_host_env_var in os.environ:
+            rpc_host = os.environ[self.rpc_host_env_var]
+        else:
+            rpc_host = 'localhost'
+        return rpc_host
+    
+    def _get_rpc_queue_name(self):
+        ''' method to get the env variable containing the queue name to be used for the rpc calls
+            if the variable is not set it will fall back to a blank name
+        '''
+        if self.rpc_queue_env_var in os.environ:
+            rpc_queue_name = os.environ[self.rpc_queue_env_var]
+        else:
+            rpc_queue_name = 'rpc_queue'
+        return rpc_queue_name
 
     def init_rpc(self):
         self.connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host='localhost')
+            pika.ConnectionParameters(host=self.rpc_host_name)
         )
 
         self.channel = self.connection.channel()
@@ -121,7 +148,7 @@ class ClientRPCMarket(AbstractMarket):
         self.corr_id = str(uuid.uuid4())
         self.channel.basic_publish(
             exchange='',
-            routing_key='rpc_queue',
+            routing_key=self.rpc_queue_name,
             properties=pika.BasicProperties(
                 reply_to=self.callback_queue,
                 correlation_id=self.corr_id,
