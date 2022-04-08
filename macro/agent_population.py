@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import NewType
 
+import pandas as pd
 from HARK.core import AgentType
 from HARK.distribution import (
     Distribution,
@@ -173,6 +174,79 @@ class AgentPopulation:
             agent.track_vars += ["pLvl", "mNrm", "cNrm", "Share", "Risky"]
             agent.T_sim = T_sim
             agent.initialize_sim()
+
+    def agent_df(self):
+        """
+        Output a dataframe for agent attributes
+
+        returns agent_df from class_stats
+        """
+
+        records = []
+
+        for agent in self.agents:
+            for i, aLvl in enumerate(agent.state_now["aLvl"]):
+                record = {
+                    "aLvl": aLvl,
+                    "mNrm": agent.state_now["mNrm"][i],
+                    "cNrm": agent.controls["cNrm"][i]
+                    if "cNrm" in agent.controls
+                    else None,
+                }
+
+                for dp in self.dist_params:
+                    record[dp] = agent.parameters[dp]
+
+                records.append(record)
+
+        return pd.DataFrame.from_records(records)
+
+    def class_stats(self, store=False):
+        """
+        Output the statistics for each class within the population.
+
+        Currently limited to asset level in the final simulated period (aLvl_T)
+        """
+        # get records for each agent with distributed parameter values and wealth (asset level: aLvl)
+        records = []
+
+        for agent in self.agents:
+            for i, aLvl in enumerate(agent.state_now["aLvl"]):
+                record = {
+                    "aLvl": aLvl,
+                    "mNrm": agent.state_now["mNrm"][i],
+                    # difference between mNrm and the equilibrium mNrm from BST
+                    "mNrm_ratio_StE": agent.state_now["mNrm"][i] / agent.mNrmStE,
+                }
+
+                for dp in self.dist_params:
+                    record[dp] = agent.parameters[dp]
+
+                records.append(record)
+
+        agent_df = pd.DataFrame.from_records(records)
+
+        class_stats = (
+            agent_df.groupby(list(self.dist_params.keys()))
+            .aggregate(["mean", "std"])
+            .reset_index()
+        )
+
+        cs = class_stats
+        cs["label"] = round(cs["CRRA"], 2).apply(lambda x: f"CRRA: {x}, ") + round(
+            cs["DiscFac"], 2
+        ).apply(lambda x: f"DiscFac: {x}")
+        cs["aLvl_mean"] = cs["aLvl"]["mean"]
+        cs["aLvl_std"] = cs["aLvl"]["std"]
+        cs["mNrm_mean"] = cs["mNrm"]["mean"]
+        cs["mNrm_std"] = cs["mNrm"]["std"]
+        cs["mNrm_ratio_StE_mean"] = cs["mNrm_ratio_StE"]["mean"]
+        cs["mNrm_ratio_StE_std"] = cs["mNrm_ratio_StE"]["std"]
+
+        if store:
+            self.stored_class_stats = class_stats
+
+        return class_stats
 
 
 class AgentPopulationSolution:
