@@ -920,6 +920,8 @@ class MockMarket(AbstractMarket):
     last_buy_sell = None
     last_seed = None
 
+    seeds=[]
+
     def __init__(self):
         pass
 

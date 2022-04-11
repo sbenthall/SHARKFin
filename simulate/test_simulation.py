@@ -97,10 +97,10 @@ def run_simulation(
 
 if __name__ == '__main__':
     # requires market server to be running
-    market = hpa.ClientRPCMarket(
-        seed_limit = 150
-    )
-
+    # market = hpa.ClientRPCMarket(
+    #     seed_limit = 150
+    # )
+    market = hpa.MockMarket()
     args = parser.parse_args()
 
     if "BROKERSCALE" in os.environ:
