@@ -94,17 +94,19 @@ def run_simulation(
 
 if __name__ == '__main__':
     # requires market server to be running
+
     
-    market = hpa.ClientRPCMarket(
-        seed_limit = 150
-    )
-    market = hpa.MockMarket()
-    args = parser.parse_args()
 
     if "BROKERSCALE" in os.environ:
         dphm = int(os.environ["BROKERSCALE"])
     else:
         dphm = 1500
+
+    dphm = int(os.environ['BROKERSCALE']) if 'BROKERSCALE' in os.environ else 1500
+    host = os.environ['RPCHOST'] if 'RPCHOST' in os.environ else 'localhost'
+    queue = os.environ['RPCQUEUE'] if 'RPCQUEUE' in os.environ else 'rpc_queue'
+
+    market = ClientRPCMarket(host=host, queue_name=queue)
     
     data, sim_stats, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=4, r=60, market=market, dphm=dphm)
 

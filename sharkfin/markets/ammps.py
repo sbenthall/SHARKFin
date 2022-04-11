@@ -7,7 +7,7 @@ import uuid
 
 
 class ClientRPCMarket(AbstractMarket):
-    def __init__(self, seed_limit=None):
+    def __init__(self, seed_limit=None, queue_name='', host='localhost'):
         self.simulation_price_scale = 1
         self.default_sim_price = 400
 
@@ -41,16 +41,19 @@ class ClientRPCMarket(AbstractMarket):
 
         self.latest_price = None
 
+        self.rpc_queue_name = queue_name
+        self.rpc_host_name = host
+
         self.init_rpc()
 
     def init_rpc(self):
         self.connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host='localhost')
+            pika.ConnectionParameters(host=self.rpc_host_name)
         )
 
         self.channel = self.connection.channel()
 
-        result = self.channel.queue_declare(queue='', exclusive=True)
+        result = self.channel.queue_declare(queue=self.rpc_queue_name, exclusive=True)
         self.callback_queue = result.method.queue
 
         self.channel.basic_consume(
@@ -81,7 +84,7 @@ class ClientRPCMarket(AbstractMarket):
         print('waiting for response...')
 
         while self.response is None:
-            #time.sleep(4)
+            time.sleep(4)
             self.connection.process_data_events()
 
         print('response received')
@@ -121,7 +124,7 @@ class ClientRPCMarket(AbstractMarket):
         self.corr_id = str(uuid.uuid4())
         self.channel.basic_publish(
             exchange='',
-            routing_key='rpc_queue',
+            routing_key=self.rpc_queue_name,
             properties=pika.BasicProperties(
                 reply_to=self.callback_queue,
                 correlation_id=self.corr_id,
