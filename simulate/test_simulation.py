@@ -108,7 +108,7 @@ if __name__ == '__main__':
 
     market = ClientRPCMarket(host=host, queue_name=queue)
     
-    data, sim_stats, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=4, r=60, market=market, dphm=dphm)
+    data, sim_stats, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=1, r=4, market=market, dphm=dphm)
 
     with open(f'{args.save_as}.txt', 'w+') as f:
         f.write(str(sim_stats))
