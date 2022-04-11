@@ -1,11 +1,10 @@
 import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 import HARK.ConsumptionSaving.ConsIndShockModel as cism
 from HARK.core import distribute_params
-from sharkfin.utilities import AgentList
+from sharkfin.utilities import *
 from datetime import datetime
 from HARK.distribution import Uniform
 import io
-import itertools
 import math
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,8 +18,8 @@ import yaml
 import json
 import pika
 import uuid
-import time
 from typing import Tuple
+import os
 
 from abc import ABC, abstractmethod
 
@@ -30,18 +29,15 @@ sys.path.append('.')
 ## TODO configuration file for this value!
 sys.path.append('../PNL/py')
 
-import util as UTIL
-import pnl as pnl
+import sharkfin.pnl_utils.py.pnl as pnl
+import sharkfin.pnl_utils.py.util as UTIL
 
 import logging
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-with open('config_cloud.yml', 'r') as stream:
-    config_cloud = yaml.safe_load(stream)
-
-AZURE = config_cloud['azure']
+AZURE = pnl.AZURE
 
 if AZURE:
     from sharkfin import azure_storage
@@ -568,24 +564,17 @@ class ClientRPCMarket(AbstractMarket):
         # stuff from MarketPNL that we may or may not need
 
         # Empirical data -- redundant with FinanceModel!
-        sp500_ror = 0.000628
-        sp500_std = 0.011988
 
         # limits the seeds
         seed_limit = None
 
         # Storing the last market arguments used for easy access to most
         # recent data
-        last_buy_sell = None
-        last_seed = None
 
-        seeds = None
 
         # config object for PNL - do we need for AMMPS?
-        config = None
 
         # sample - modifier for the seed
-        sample = 0
 
         # self.config = UTIL.read_config(
         #     config_file = config_file,
@@ -769,12 +758,14 @@ class MarketPNL(AbstractMarket):
     def __init__(
         self,
         sample=0,
-        config_file="../PNL/macroliquidity.ini",
-        config_local_file="../PNL/macroliquidity_local.ini",
+        config_file="pnl_uitils/macroliquidity.ini",
+        config_local_file="pnl_utils/macroliquidity_local.ini",
         seed_limit=None,
     ):
+        
         self.config = UTIL.read_config(
-            config_file=config_file, config_local_file=config_local_file
+            config_file=self.get_config_path(config_file), 
+            config_local_file=self.get_config_path(config_local_file)
         )
 
         self.sample = 0
@@ -782,6 +773,11 @@ class MarketPNL(AbstractMarket):
 
         if seed_limit is not None:
             self.seed_limit = seed_limit
+
+    def get_config_path(self, path):
+        dirname = os.path.dirname(os.path.abspath(__file__))
+
+        return dirname + '/' + path
 
     def run_market(self, seed=0, buy_sell=0):
         """
@@ -1112,10 +1108,11 @@ class AttentionSimulation:
     start_time = None
     end_time = None
 
-    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500):
+    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500, market_pad=0):
         self.agents = pop.agents
         self.fm = fm
         self.pop = pop
+        self.market_pad = market_pad
 
         self.dollars_per_hark_money_unit = dphm
 
@@ -1134,7 +1131,7 @@ class AttentionSimulation:
             self.attention_rate = 1 / self.runs_per_quarter
 
         # Create the Market wrapper
-        market = MarketPNL() if market is None else market
+        market = MockMarket() if market is None else market
         self.broker = Broker(market)
 
         self.history = {}
@@ -1412,7 +1409,7 @@ class AttentionSimulation:
 
                     # combine these steps?
                     # add_ror appends to internal history list
-                    risky_asset_price = self.fm.add_ror(ror) 
+                    self.fm.add_ror(ror) 
                     self.fm.calculate_risky_expectations()
 
                     day = day + 1

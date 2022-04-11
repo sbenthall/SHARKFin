@@ -3,8 +3,9 @@ azure-storage-blob
 jpype1
 matplotlib
 numpy
+pika
 pyNetLogo
-seaborn
-pyyaml
 pytest
 pika
+pyyaml
+seaborn

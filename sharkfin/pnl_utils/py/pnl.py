@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pyNetLogo as pnl
 
-import util as UTIL
+from . import util as UTIL
 
 import random
 
@@ -28,7 +28,11 @@ import random
 # sys.path.append('../../HARK')
 
 # is this the correct config file?
-with open('config_cloud.yml', 'r') as stream:
+import os
+
+config_cloud_path = os.path.dirname(os.path.abspath(__file__)) + '/config_pnl_cloud.yml'
+
+with open(config_cloud_path, 'r') as stream:
     config = yaml.safe_load(stream)
 
 AZURE = config['azure']

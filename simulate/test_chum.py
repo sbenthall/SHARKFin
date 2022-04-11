@@ -7,7 +7,6 @@ import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 from HARK.Calibration.Income.IncomeTools import (
      sabelhaus_song_var_profile,
 )
-# import sharkfin.hark_portfolio_agents as hpa
 from itertools import product
 import json
 from math import exp
@@ -22,17 +21,18 @@ import uuid
 import yaml
 import pprint
 
+from sharkfin.markets import MockMarket
 from sharkfin.markets.ammps import ClientRPCMarket
-from sharkfin.broker import *
-from sharkfin.expectations import *
-from sharkfin.population import *
-from sharkfin.simulation import *
+from sharkfin.population import AgentPopulation
+from sharkfin.simulation import CalibrationSimulation
+from sharkfin.expectations import FinanceModel
 
 parser = argparse.ArgumentParser()
 parser.add_argument("save_as", help="The name of the output for sim_stats")
 parser.add_argument("-t",
                     "--tag", type=str,
                     help="a string tag to be added to the output files")
+
 
 timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
@@ -86,27 +86,26 @@ def run_simulation(
     # Initialize the population model
     pop.init_simulation()
 
-    attsim = AttentionSimulation(pop, fm, a = a, q = q, r = r, market = market)
-    attsim.simulate()
+    sim = CalibrationSimulation(pop, fm, a = a, q = q, r = r, market = market)
+    print('padding market')
+    sim.pad_market(n_days=1)
+    print('market padded, beginning agent simulation')
+    sim.simulate(start=False)
 
-    return attsim.data(), attsim.sim_stats(), attsim.history
+    return sim.data(), sim.sim_stats(), sim.history
 
 
 if __name__ == '__main__':
     # requires market server to be running
-    
-    market = hpa.ClientRPCMarket(
+
+    # market = MockMarket()
+    market = ClientRPCMarket(
         seed_limit = 150
     )
-    market = hpa.MockMarket()
+
     args = parser.parse_args()
 
-    if "BROKERSCALE" in os.environ:
-        dphm = int(os.environ["BROKERSCALE"])
-    else:
-        dphm = 1500
-    
-    data, sim_stats, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=4, r=60, market=market, dphm=dphm)
+    data, sim_stats, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=4, r=4, market=market, dphm=1500)
 
     with open(f'{args.save_as}.txt', 'w+') as f:
         f.write(str(sim_stats))
