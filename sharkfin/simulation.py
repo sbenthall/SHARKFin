@@ -700,9 +700,8 @@ class AttentionSimulation(BasicSimulation):
 
         return sim_stats
 
-class CalibrationSimulation(BasicSimulation):
-         
-    def simulate(self, n_days, start=True):
+class CalibrationSimulation(BasicSimulation):        
+    def simulate(self, n_days, start=True, buy_sell_shock=(0, 0)):
         """
         Workhorse method that runs the simulation.
         """
@@ -730,7 +729,20 @@ class CalibrationSimulation(BasicSimulation):
             self.fm.add_ror(ror) 
             self.fm.calculate_risky_expectations()
 
-            day = day + 1
+        # last day shock
+
+        buy = buy_sell_shock[0]
+        sell = -buy_sell_shock[1]
+        self.broker.transact(np.array((buy, sell)))
+        buy_sell, ror = self.broker.trade()
+
+        self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
+        self.track(day+1)
+
+        self.fm.add_ror(ror)
+        self.fm.calculate_risky_expectations()
+
+
 
         self.broker.close()
 
@@ -742,3 +754,47 @@ class CalibrationSimulation(BasicSimulation):
         """
 
         self.history['buy_sell'].append(self.broker.buy_sell_history[-1])
+
+    def data(self):
+        """
+        Returns a Pandas DataFrame of the data from the simulation run.
+        """
+        ## DEBUGGING
+        data = None
+        try:
+            data_dict = {
+                't': range(len(self.fm.prices[1:])),
+                'prices': self.fm.prices[1:],
+                'buy': [bs[0] for bs in self.broker.buy_sell_history],
+                'sell': [bs[1] for bs in self.broker.buy_sell_history],
+                'ror': self.fm.ror_list,
+                'expected_ror': self.fm.expected_ror_list[1:],
+                'expected_std': self.fm.expected_std_list[1:],
+            }
+
+            print(data_dict)
+
+            data = pd.DataFrame.from_dict(data_dict)
+
+        except Exception as e:
+            print(e)
+            print(
+                "Lengths:"
+                + str(
+                    {
+                        't': len(self.fm.prices),
+                        'prices': len(self.fm.prices),
+                        'buy': len(
+                            [None] + [bs[0] for bs in self.broker.buy_sell_history]
+                        ),
+                        'sell': len(
+                            [None] + [bs[1] for bs in self.broker.buy_sell_history]
+                        ),
+                        'ror': len([None] + self.fm.ror_list),
+                        'expected_ror': len(self.fm.expected_ror_list),
+                        'expected_std': len(self.fm.expected_std_list),
+                    }
+                )
+            )
+
+        return data
