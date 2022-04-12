@@ -91,9 +91,9 @@ def run_simulation(
 
     sim = CalibrationSimulation(pop, fm, a = a, q = q, r = r, market = market)
     
-    sim.simulate(30, buy_sell_shock=(buy, sell))
+    sim.simulate(2, buy_sell_shock=(buy, sell))
 
-    return sim.data(), sim.sim_stats(), sim.history
+    return sim.data(), sim.history
 
 def env_param(name, default):
     return os.environ[name] if name in os.environ else default
@@ -103,7 +103,7 @@ if __name__ == '__main__':
     # requires market server to be running
     dphm = int(env_param('BROKERSCALE', 1500))
     host = env_param('RPCHOST', 'localhost')
-    queue = env_param('RPCQUEUE', 'rpc_queue')
+    queue = env_param('RPCQUEUE', '')
     buy = int(env_param('BUYSIZE', 0))
     sell = int(env_param('SELLSIZE', 0))
 
@@ -111,18 +111,13 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    data, sim_stats, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=4, r=4, market=market, dphm=1500)
-
-    with open(f'{args.save_as}.txt', 'w+') as f:
-        f.write(str(sim_stats))
-
-    # df.to_csv(f'{args.save_as}.csv')
+    data, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=4, r=4, market=market, dphm=1500)
 
     history_df = pd.DataFrame(dict([(k,pd.Series(v)) for k,v in history.items()]))
     history_df.to_csv(f'{args.save_as}_history.csv')
 
     data.to_csv(f'{args.save_as}_data.csv')
 
-    pp = pprint.PrettyPrinter(indent=4)
-    pp.pprint(sim_stats)
+    # pp = pprint.PrettyPrinter(indent=4)
+    # pp.pprint(sim_stats)
 
