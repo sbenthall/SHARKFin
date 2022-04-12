@@ -73,7 +73,9 @@ def run_simulation(
     r = 1,
     fm = None,
     market = None,
-    dphm=1500):
+    dphm=1500,
+    buy=0,
+    sell=0):
 
     # initialize population
     pop = AgentPopulation(agent_parameters, dist_params, 5)
@@ -89,16 +91,21 @@ def run_simulation(
 
     sim = CalibrationSimulation(pop, fm, a = a, q = q, r = r, market = market)
     
-    sim.simulate()
+    sim.simulate(30, buy_sell_shock=(buy, sell))
 
     return sim.data(), sim.sim_stats(), sim.history
+
+def env_param(name, default):
+    return os.environ[name] if name in os.environ else default
 
 
 if __name__ == '__main__':
     # requires market server to be running
-    dphm = int(os.environ['BROKERSCALE']) if 'BROKERSCALE' in os.environ else 1500
-    host = os.environ['RPCHOST'] if 'RPCHOST' in os.environ else 'localhost'
-    queue = os.environ['RPCQUEUE'] if 'RPCQUEUE' in os.environ else 'rpc_queue'
+    dphm = int(env_param('BROKERSCALE', 1500))
+    host = env_param('RPCHOST', 'localhost')
+    queue = env_param('RPCQUEUE', 'rpc_queue')
+    buy = int(env_param('BUYSIZE', 0))
+    sell = int(env_param('SELLSIZE', 0))
 
     market = ClientRPCMarket(host=host, queue_name=queue)
 
