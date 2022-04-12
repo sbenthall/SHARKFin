@@ -103,7 +103,7 @@ if __name__ == '__main__':
     # requires market server to be running
     dphm = int(env_param('BROKERSCALE', 1500))
     host = env_param('RPCHOST', 'localhost')
-    queue = env_param('RPCQUEUE', '')
+    queue = env_param('RPCQUEUE', 'rpc_queue')
     buy = int(env_param('BUYSIZE', 0))
     sell = int(env_param('SELLSIZE', 0))
 

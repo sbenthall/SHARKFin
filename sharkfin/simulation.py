@@ -703,7 +703,7 @@ class AttentionSimulation(BasicSimulation):
 class CalibrationSimulation(BasicSimulation):
     def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500):
 
-        super().__init__(pop, fm, q=q, r=r, market=None, dphm=dphm)
+        super().__init__(pop, fm, q=q, r=r, market=market, dphm=dphm)
 
         self.history['run_times'] = []
 
@@ -744,10 +744,11 @@ class CalibrationSimulation(BasicSimulation):
 
 
         # last day shock
-
         start_time = datetime.now()
+
         buy = buy_sell_shock[0]
         sell = -buy_sell_shock[1]
+
         self.broker.transact(np.array((buy, sell)))
         buy_sell, ror = self.broker.trade()
 
@@ -791,7 +792,6 @@ class CalibrationSimulation(BasicSimulation):
                 'market_times': self.history['run_times']
             }
 
-            print(data_dict)
 
             data = pd.DataFrame.from_dict(data_dict)
 
