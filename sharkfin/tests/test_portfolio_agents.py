@@ -135,6 +135,5 @@ def test_calibration_simulation():
     assert(sim.history['buy_sell'][0] == (0, 0))
     # assert(len(sim.history['buy_sell']) == 3) # need the padded day
     data = sim.data()
-    print(data)
 
     assert(len(data['prices']) == 3)
