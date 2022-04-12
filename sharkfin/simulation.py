@@ -722,6 +722,7 @@ class CalibrationSimulation(BasicSimulation):
         for day in range(n_days):
             start_time = datetime.now()
 
+            # is this needed for chum?
             for agent in self.agents:
                 self.broker.transact(np.zeros(1))
 
