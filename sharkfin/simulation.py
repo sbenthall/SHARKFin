@@ -725,7 +725,6 @@ class CalibrationSimulation(BasicSimulation):
             for agent in self.agents:
                 self.broker.transact(np.zeros(1))
 
-            self.broker.transact(self.attend(agent))
             buy_sell, ror = self.broker.trade()
                 
             self.update_agent_wealth_capital_gains(self.fm.rap(), ror)

@@ -75,7 +75,7 @@ class ClientRPCMarket(AbstractMarket):
 
         self.channel = self.connection.channel()
 
-        result = self.channel.queue_declare(queue='', exclusive=True)
+        result = self.channel.queue_declare(queue='', exclusive=False)
         self.callback_queue = result.method.queue
 
         self.channel.basic_consume(
