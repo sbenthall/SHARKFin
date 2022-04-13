@@ -33,7 +33,8 @@ parser.add_argument("save_as", help="The name of the output for sim_stats")
 parser.add_argument("-t",
                     "--tag", type=str,
                     help="a string tag to be added to the output files")
-
+parser.add_argument('-q', '--queue', help='name of rabbitmq queue', default='rpc_queue')
+parser.add_argument('-r', '--rhost', help='rabbitmq server location', default='localhost')
 
 timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
@@ -100,16 +101,20 @@ def env_param(name, default):
 
 
 if __name__ == '__main__':
+    args = parser.parse_args()
+
     # requires market server to be running
     dphm = int(env_param('BROKERSCALE', 1500))
-    host = env_param('RPCHOST', 'localhost')
-    queue = env_param('RPCQUEUE', 'rpc_queue')
+    # host = env_param('RPCHOST', 'localhost')
+    # queue = env_param('RPCQUEUE', 'rpc_queue')
+    host = args.rhost
+    queue = args.queue
     buy = int(env_param('BUYSIZE', 0))
     sell = int(env_param('SELLSIZE', 0))
 
     market = ClientRPCMarket(host=host, queue_name=queue)
 
-    args = parser.parse_args()
+    
 
     data, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=4, r=4, market=market, dphm=1500)
 
