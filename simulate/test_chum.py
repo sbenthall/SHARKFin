@@ -106,7 +106,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # requires market server to be running
-    dphm = int(env_param('BROKERSCALE', 1500))
+    # dphm = int(env_param('BROKERSCALE', 1500))
     # host = env_param('RPCHOST', 'localhost')
     # queue = env_param('RPCQUEUE', 'rpc_queue')
     host = args.rhost
