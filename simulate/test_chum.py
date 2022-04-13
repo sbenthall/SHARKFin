@@ -35,6 +35,8 @@ parser.add_argument("-t",
                     help="a string tag to be added to the output files")
 parser.add_argument('-q', '--queue', help='name of rabbitmq queue', default='rpc_queue')
 parser.add_argument('-r', '--rhost', help='rabbitmq server location', default='localhost')
+parser.add_argument('-b', '--buysize', help='buy size to shock', default=0)
+parser.add_argument('-s', '--sellsize', help='sell size to shock', default=0)
 
 timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
@@ -109,8 +111,8 @@ if __name__ == '__main__':
     # queue = env_param('RPCQUEUE', 'rpc_queue')
     host = args.rhost
     queue = args.queue
-    buy = int(env_param('BUYSIZE', 0))
-    sell = int(env_param('SELLSIZE', 0))
+    buy = args.buysize
+    sell = args.sellsize
 
     market = ClientRPCMarket(host=host, queue_name=queue)
 
