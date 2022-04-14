@@ -6,5 +6,6 @@ numpy
 pika
 pyNetLogo
 pytest
+pika
 pyyaml
 seaborn

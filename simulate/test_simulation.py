@@ -94,13 +94,13 @@ def run_simulation(
 
 if __name__ == '__main__':
     # requires market server to be running
-    market = ClientRPCMarket(
-        seed_limit = 150
-    )
+    dphm = int(os.environ['BROKERSCALE']) if 'BROKERSCALE' in os.environ else 1500
+    host = os.environ['RPCHOST'] if 'RPCHOST' in os.environ else 'localhost'
+    queue = os.environ['RPCQUEUE'] if 'RPCQUEUE' in os.environ else 'rpc_queue'
 
-    args = parser.parse_args()
-
-    data, sim_stats, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=1, r=1, market=market, dphm=1500)
+    market = ClientRPCMarket(host=host, queue_name=queue)
+    
+    data, sim_stats, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=1, r=4, market=market, dphm=dphm)
 
     with open(f'{args.save_as}.txt', 'w+') as f:
         f.write(str(sim_stats))

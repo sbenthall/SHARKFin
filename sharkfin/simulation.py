@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from sharkfin.utilities import *
 from datetime import datetime
 import matplotlib.pyplot as plt
@@ -10,11 +11,32 @@ from scipy import stats
 from sharkfin.markets import MockMarket
 from sharkfin.broker import Broker
 
-class AttentionSimulation:
+class AbstractSimulation(ABC):
+    '''
+    Abstract class from which simulation classews should inherit
+
+    Defines common methods for all SHARK simulations.
+    '''
+
+    @abstractmethod
+    def data(self):
+        """
+        Returns a Pandas DataFrame of the data from the simulation run.
+        """
+        pass
+    
+    @abstractmethod
+    def sim_stats(self, seed: int, buy_sell: tuple[int, int]):
+        pass
+
+    @abstractmethod
+    def simulate(self):
+        pass
+   
+
+class BasicSimulation(AbstractSimulation):
     """
-    Encapsulates the "Oversight Code" functions of the experiment.
-    Connects the Agent population model with a Broker, a Market simulation,
-    and a FinanceModel of expected share prices.
+    A basic version of the SHARK simulation.
 
     Parameters
     ----------
@@ -52,23 +74,14 @@ class AttentionSimulation:
     # Best if an integer.
     days_per_run = None
 
-    ## upping this to make more agents engaged in trade
-    attention_rate = None
-
-    # for tracking history of the simulation
+      # for tracking history of the simulation
     history = {}
-
-    # dividend_ror -> on financial model
-    # dividend_std -> on financial model; on MarketPNL
-
-    # sp500_ror = 0.000628 -> on financial model; on MarketPNL
-    # sp500_std = 0.011988 -> on financial model; on MarketPNL
 
     ## saving the time of simulation start and end
     start_time = None
     end_time = None
 
-    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500):
+    def __init__(self, pop, fm, q=1, r=None, market=None, dphm=1500):
         self.agents = pop.agents
         self.fm = fm
         self.pop = pop
@@ -82,12 +95,6 @@ class AttentionSimulation:
         else:
             self.runs_per_quarter = self.days_per_quarter
         self.days_per_run = self.days_per_quarter / self.runs_per_quarter
-
-        # TODO: Make this more variable.
-        if a is not None:
-            self.attention_rate = a
-        else:
-            self.attention_rate = 1 / self.runs_per_quarter
 
         # Create the Market wrapper
         market = MockMarket() if market is None else market
@@ -104,8 +111,9 @@ class AttentionSimulation:
         self.history['total_pop_stats'] = []
 
         # assign macro-days to each agent
+        # This is a somewhat frustrating artifact to be cleaned up...
         for agent in self.agents:
-            agent.macro_day = random.randrange(self.days_per_quarter)
+            agent.macro_day = 0
 
     def attend(self, agent):
         """
@@ -334,10 +342,8 @@ class AttentionSimulation:
             for run in range(self.runs_per_quarter):
                 # print(f"Q-{quarter}:R-{run}")
 
-                # Set to a number for a fixed seed, or None to rotate
-                for agent in self.agents:
-                    if random.random() < self.attention_rate:
-                        self.broker.transact(self.attend(agent))
+                # Basic simulation has an attention rate of 1
+                self.broker.transact(self.attend(agent))
 
                 buy_sell, ror = self.broker.trade()
                 # print("ror: " + str(ror))
@@ -556,7 +562,6 @@ class AttentionSimulation:
         sim_stats['market_class'] = self.broker.market.__class__
         sim_stats['market_seeds'] = self.broker.market.seeds # seed list should be a requirement for any market class.
 
-        sim_stats['attention'] = self.attention_rate
         sim_stats['ror_volatility'] = self.ror_volatility()
         sim_stats['ror_mean'] = self.ror_mean()
 
@@ -575,20 +580,241 @@ class AttentionSimulation:
 
         return sim_stats
 
-class CalibrationSimulation(AttentionSimulation):
-    def pad_market(self, n_days=30):
+class AttentionSimulation(BasicSimulation):
+    """
+    A simulation in which agent behavior is characterized by:
+     - an attention rate, which is the chance per day of updating expectations
+     - a macro-day, which is the day of each quarter that an agent experiences labor income, dividends, and consumption
+
+    Parameters
+    ----------
+
+    agents: [HARK.AgentType]
+
+    fm: FinanceModel
+
+    q: int - number of quarters
+
+    r: int - runs per quarter
+
+    a: float - attention rate (between 0 and 1)
+
+    market: Market
+
+    dphm: int
+
+    """
+
+    ## upping this to make more agents engaged in trade
+    attention_rate = None
+
+    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500):
+
+        super().__init__(pop, fm, q=q, r=r, market=None, dphm=dphm)
+
+        # TODO: Make this more variable.
+        if a is not None:
+            self.attention_rate = a
+        else:
+            self.attention_rate = 1 / self.runs_per_quarter
+
+        # assign macro-days to each agent
         for agent in self.agents:
-            agent.shares = self.compute_share_demand(agent)
-            
+            agent.macro_day = random.randrange(self.days_per_quarter)
+
+    def simulate(self, quarters=None, start=True):
+        """
+        Workhorse method that runs the simulation.
+
+        In the AttentionSimulation, this is done in a special way:
+         - Agents have a daily attention rate
+         - This is separate from the macro-update day
+        """
+        self.start_time = datetime.now()
+
+        if quarters is None:
+            quarters = self.quarters_per_simulation
+
+        # Initialize share ownership for agents
+        if start:
+            for agent in self.agents:
+                agent.shares = self.compute_share_demand(agent)
+
+        # Main loop
+        for quarter in range(quarters):
+            print(f"Q-{quarter}")
+
+            day = 0
+
+            for run in range(self.runs_per_quarter):
+                # print(f"Q-{quarter}:R-{run}")
+
+                # Set to a number for a fixed seed, or None to rotate
+                for agent in self.agents:
+                    if random.random() < self.attention_rate:
+                        self.broker.transact(self.attend(agent))
+
+                buy_sell, ror = self.broker.trade()
+                # print("ror: " + str(ror))
+
+                new_run = True
+
+                for day_in_run in range(int(self.days_per_run)):
+                    updates = 0
+                    for agent in self.agents:
+                        if agent.macro_day == day:
+                            updates = updates + 1
+                            self.macro_update(agent)
+
+                    if new_run:
+                        new_run = False
+                    else:
+                        # sloppy
+                        # problem is that this should really be nan, nan
+                        # putting 0,0 here is a stopgap to make plotting code simpler
+                        self.broker.buy_sell_history.append((0, 0))
+                        self.broker.buy_sell_macro_history.append((0, 0))
+
+                    # print(f"Q-{quarter}:D-{day}. {updates} macro-updates.")
+
+                    self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
+
+                    self.track(day)
+
+                    # combine these steps?
+                    # add_ror appends to internal history list
+                    self.fm.add_ror(ror) 
+                    self.fm.calculate_risky_expectations()
+
+                    day = day + 1
+
+        self.broker.close()
+
+        self.end_time = datetime.now()
+
+    def sim_stats(self):
+
+        sim_stats = self.super().sim_stats()
+
+        sim_stats['attention'] = self.attention_rate
+
+        return sim_stats
+
+class CalibrationSimulation(BasicSimulation):
+    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500):
+
+        super().__init__(pop, fm, q=q, r=r, market=market, dphm=dphm)
+
+        self.history['run_times'] = []
+
+    def simulate(self, n_days, start=True, buy_sell_shock=(0, 0)):
+        """
+        Workhorse method that runs the simulation.
+        """
+        self.start_time = datetime.now()
+
+        # Initialize share ownership for agents
+        if start:
+            for agent in self.agents:
+                agent.shares = self.compute_share_demand(agent)
+                #self.macro_update(agent)
+
         for day in range(n_days):
+            start_time = datetime.now()
+
+            # is this needed for chum?
             for agent in self.agents:
                 self.broker.transact(np.zeros(1))
 
             buy_sell, ror = self.broker.trade()
-
+                
             self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
 
-            self.track(day)
-
-            risky_asset_price = self.fm.add_ror(ror)
+            # combine these steps?
+            # add_ror appends to internal history list
+            self.fm.add_ror(ror) 
             self.fm.calculate_risky_expectations()
+
+            end_time = datetime.now()
+
+            time_delta = end_time - start_time
+
+            self.track(day, time_delta)
+
+
+
+        # last day shock
+        start_time = datetime.now()
+
+        buy = buy_sell_shock[0]
+        sell = -buy_sell_shock[1]
+
+        self.broker.transact(np.array((buy, sell)))
+        buy_sell, ror = self.broker.trade()
+
+        self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
+
+        self.fm.add_ror(ror)
+        self.fm.calculate_risky_expectations()
+
+        end_time = datetime.now()
+        time_delta = end_time - start_time
+
+        self.track(day+1, time_delta)
+
+        self.broker.close()
+
+        self.end_time = datetime.now()
+
+    def track(self, day, time_delta):
+        """
+        Tracks the current state of agent's total assets and owned shares
+        """
+
+        self.history['buy_sell'].append(self.broker.buy_sell_history[-1])
+        self.history['run_times'].append(time_delta)
+
+    def data(self):
+        """
+        Returns a Pandas DataFrame of the data from the simulation run.
+        """
+        ## DEBUGGING
+        data = None
+        try:
+            data_dict = {
+                't': range(len(self.fm.prices[1:])),
+                'prices': self.fm.prices[1:],
+                'buy': [bs[0] for bs in self.broker.buy_sell_history],
+                'sell': [bs[1] for bs in self.broker.buy_sell_history],
+                'ror': self.fm.ror_list,
+                'expected_ror': self.fm.expected_ror_list[1:],
+                'expected_std': self.fm.expected_std_list[1:],
+                'market_times': self.history['run_times']
+            }
+
+
+            data = pd.DataFrame.from_dict(data_dict)
+
+        except Exception as e:
+            print(e)
+            print(
+                "Lengths:"
+                + str(
+                    {
+                        't': len(self.fm.prices),
+                        'prices': len(self.fm.prices),
+                        'buy': len(
+                            [None] + [bs[0] for bs in self.broker.buy_sell_history]
+                        ),
+                        'sell': len(
+                            [None] + [bs[1] for bs in self.broker.buy_sell_history]
+                        ),
+                        'ror': len([None] + self.fm.ror_list),
+                        'expected_ror': len(self.fm.expected_ror_list),
+                        'expected_std': len(self.fm.expected_std_list),
+                        'market_times': len(self.history['time_delta'])
+                    }
+                )
+            )
+
+        return data

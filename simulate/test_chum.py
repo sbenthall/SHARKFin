@@ -7,6 +7,7 @@ import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 from HARK.Calibration.Income.IncomeTools import (
      sabelhaus_song_var_profile,
 )
+
 from itertools import product
 import json
 from math import exp
@@ -32,7 +33,10 @@ parser.add_argument("save_as", help="The name of the output for sim_stats")
 parser.add_argument("-t",
                     "--tag", type=str,
                     help="a string tag to be added to the output files")
-
+parser.add_argument('-q', '--queue', help='name of rabbitmq queue', default='rpc_queue')
+parser.add_argument('-r', '--rhost', help='rabbitmq server location', default='localhost')
+parser.add_argument('-b', '--buysize', help='buy size to shock', default=0)
+parser.add_argument('-s', '--sellsize', help='sell size to shock', default=0)
 
 timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
@@ -72,7 +76,9 @@ def run_simulation(
     r = 1,
     fm = None,
     market = None,
-    dphm=1500):
+    dphm=1500,
+    buy=0,
+    sell=0):
 
     # initialize population
     pop = AgentPopulation(agent_parameters, dist_params, 5)
@@ -87,36 +93,38 @@ def run_simulation(
     pop.init_simulation()
 
     sim = CalibrationSimulation(pop, fm, a = a, q = q, r = r, market = market)
-    print('padding market')
-    sim.pad_market(n_days=1)
-    print('market padded, beginning agent simulation')
-    sim.simulate(start=False)
+    
+    sim.simulate(2, buy_sell_shock=(buy, sell))
 
-    return sim.data(), sim.sim_stats(), sim.history
+    return sim.data(), sim.history
+
+def env_param(name, default):
+    return os.environ[name] if name in os.environ else default
 
 
 if __name__ == '__main__':
-    # requires market server to be running
-
-    # market = MockMarket()
-    market = ClientRPCMarket(
-        seed_limit = 150
-    )
-
     args = parser.parse_args()
 
-    data, sim_stats, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=4, r=4, market=market, dphm=1500)
+    # requires market server to be running
+    # dphm = int(env_param('BROKERSCALE', 1500))
+    # host = env_param('RPCHOST', 'localhost')
+    # queue = env_param('RPCQUEUE', 'rpc_queue')
+    host = args.rhost
+    queue = args.queue
+    buy = args.buysize
+    sell = args.sellsize
 
-    with open(f'{args.save_as}.txt', 'w+') as f:
-        f.write(str(sim_stats))
+    market = ClientRPCMarket(host=host, queue_name=queue)
 
-    # df.to_csv(f'{args.save_as}.csv')
+    
+
+    data, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=4, r=4, market=market, dphm=1500)
 
     history_df = pd.DataFrame(dict([(k,pd.Series(v)) for k,v in history.items()]))
     history_df.to_csv(f'{args.save_as}_history.csv')
 
     data.to_csv(f'{args.save_as}_data.csv')
 
-    pp = pprint.PrettyPrinter(indent=4)
-    pp.pprint(sim_stats)
+    # pp = pprint.PrettyPrinter(indent=4)
+    # pp.pprint(sim_stats)
 
