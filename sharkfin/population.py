@@ -1,65 +1,178 @@
-import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
-import HARK.ConsumptionSaving.ConsIndShockModel as cism
-from sharkfin.utilities import *
-import math
+from dataclasses import dataclass
+from typing import NewType
+
 import pandas as pd
-import random
+from HARK.core import AgentType
+from HARK.distribution import (
+    Distribution,
+    IndexDistribution,
+    combine_indep_dstns,
+)
+from xarray import DataArray
 
+ParameterDict = NewType("ParameterDict", dict)
+
+
+@dataclass
 class AgentPopulation:
-    """
-    A class encapsulating the population of 'macroeconomy' agents.
+    agent_class: AgentType
+    parameter_dict: ParameterDict
+    t_age: int = None
+    agent_class_count: int = None
 
-    These agents will be initialized with a distribution of parameters,
-    such as risk aversion and discount factor.
+    def __post_init__(self):
 
-    Parameters
-    ------------
+        self.time_var = self.agent_class.time_vary
+        self.time_inv = self.agent_class.time_inv
 
-    base_parameters: Dict
-        A dictionary of parameters to be shared by all agents.
-        These correspond to parameters of the HARK ConsPortfolioModel AgentType
+        self.dist_params = []
+        param_dict = self.parameter_dict
+        for key_param in param_dict:
+            parameter = param_dict[key_param]
+            if isinstance(parameter, DataArray) and parameter.dims[0] == "agent":
+                self.dist_params.append(key_param)
 
-    dist_params: dict of dicts
-        A dictionary with [m] values. Keys are parameters.
-        Values are dicts with keys: bot, top, n.
-        These define a discretized uniform spread of values.
+        self.infer_counts()
 
-    n_per_class: int
-        The values of dist_params define a space of n^m
-        agent classes.
-        This value is the number of agents [l] of each class to include in
-        population.
-        Total population will be l*n^m
-    """
+    def infer_counts(self):
 
-    agents = None
-    base_parameters = None
-    stored_class_stats = None
-    dist_params = None
+        param_dict = self.parameter_dict
 
-    def __init__(self, base_parameters, dist_params, n_per_class):
-        self.base_parameters = base_parameters
-        self.dist_params = dist_params
-        self.agents = self.create_distributed_agents(
-            self.base_parameters, dist_params, n_per_class
-        )
+        # if agent_clas_count is not specified, infer from parameters
+        if self.agent_class_count is None:
+
+            agent_class_count = 1
+            for key_param in param_dict:
+                parameter = param_dict[key_param]
+                if isinstance(parameter, DataArray) and parameter.dims[0] == "agent":
+                    agent_class_count = max(agent_class_count, parameter.shape[0])
+                elif isinstance(parameter, (Distribution, IndexDistribution)):
+                    agent_class_count = None
+                    break
+
+            self.agent_class_count = agent_class_count
+
+        if self.t_age is None:
+
+            t_age = 1
+            for key_param in param_dict:
+                parameter = param_dict[key_param]
+                if isinstance(parameter, DataArray) and parameter.dims[-1] == "age":
+                    t_age = max(t_age, parameter.shape[-1])
+                    # there may not be a good use for this feature yet as time varying distributions
+                    # are entered as list of moments (Avg, Std, Count, etc)
+                elif isinstance(parameter, (Distribution, IndexDistribution)):
+                    t_age = None
+                    break
+            self.t_age = t_age
+
+        # return t_age and agent_class_count
+
+    def approx_distributions(self, approx_params: dict):
+
+        param_dict = self.parameter_dict
+
+        self.continuous_distributions = {}
+
+        self.discrete_distributions = {}
+
+        for key in approx_params:
+            if key in param_dict and isinstance(param_dict[key], Distribution):
+                discrete_points = approx_params[key]
+                discrete_distribution = param_dict[key].approx(discrete_points)
+                self.continuous_distributions[key] = param_dict[key]
+                self.discrete_distributions[key] = discrete_distribution
+            else:
+                print(
+                    "Warning: parameter {} is not a Distribution found in agent class {}".format(
+                        key, self.agent_class
+                    )
+                )
+
+        if len(self.discrete_distributions) > 1:
+            joint_dist = combine_indep_dstns(
+                *list(self.discrete_distributions.values())
+            )
+
+        keys = list(self.discrete_distributions.keys())
+        for i in range(len(self.discrete_distributions)):
+            param_dict[keys[i]] = DataArray(joint_dist.X[i], dims=("agent"))
+
+        self.infer_counts()
+
+    def parse_params(self):
+
+        param_dict = self.parameter_dict
+
+        agent_dicts = []  # container for dictionaries of each agent subgroup
+        for agent in range(self.agent_class_count):
+            agent_params = {}
+
+            for key_param in param_dict:
+                parameter = param_dict[key_param]
+
+                if key_param in self.time_var:
+                    # parameters that vary over time have to be repeated
+                    parameter_per_t = []
+                    for t in range(self.t_age):
+                        if isinstance(parameter, DataArray):
+                            if parameter.dims[0] == "agent":
+                                if parameter.dims[-1] == "age":
+                                    # if the parameter is a list, it's agent and time
+                                    parameter_per_t.append(parameter[agent][t].item())
+                                else:
+                                    parameter_per_t.append(parameter[agent].item())
+                            elif parameter.dims[0] == "age":
+                                # if kind is time, it applies to all agents but varies over time
+                                parameter_per_t.append(parameter[t].item())
+                        elif isinstance(parameter, (int, float)):
+                            # if kind is fixed, it applies to all agents at all times
+                            parameter_per_t.append(parameter)
+
+                    agent_params[key_param] = parameter_per_t
+
+                elif key_param in self.time_inv:
+                    if (
+                        isinstance(parameter, DataArray)
+                        and parameter.dims[0] == "agent"
+                    ):
+                        agent_params[key_param] = parameter[agent].item()
+                    elif isinstance(parameter, (int, float)):
+                        agent_params[key_param] = parameter
+
+                else:
+                    if isinstance(parameter, DataArray):
+                        if parameter.dims[0] == "agent":
+                            if parameter.dims[-1] == "age":
+                                # if the parameter is a list, it's agent and time
+                                agent_params[key_param] = list(parameter[agent].item())
+                            else:
+                                agent_params[key_param] = list(parameter[agent].item())
+                        elif parameter.dims[0] == "age":
+                            agent_params[key_param] = [parameter.item()]
+                    elif isinstance(parameter, (int, float)):
+                        agent_params[key_param] = parameter
+
+            agent_dicts.append(agent_params)
+
+        self.agent_dicts = agent_dicts
 
     def agent_df(self):
-        '''
+        """
         Output a dataframe for agent attributes
 
         returns agent_df from class_stats
-        '''
+        """
 
         records = []
 
         for agent in self.agents:
-            for i, aLvl in enumerate(agent.state_now['aLvl']):
+            for i, aLvl in enumerate(agent.state_now["aLvl"]):
                 record = {
-                    'aLvl': aLvl,
-                    'mNrm': agent.state_now['mNrm'][i],
-                    'cNrm': agent.controls['cNrm'][i]
-                    if 'cNrm' in agent.controls
+                    "aLvl": aLvl,
+                    "mNrm": agent.state_now["mNrm"][i],
+                    "cNrm": agent.controls["cNrm"][i]
+                    if "cNrm" in agent.controls
                     else None,
                 }
 
@@ -80,12 +193,12 @@ class AgentPopulation:
         records = []
 
         for agent in self.agents:
-            for i, aLvl in enumerate(agent.state_now['aLvl']):
+            for i, aLvl in enumerate(agent.state_now["aLvl"]):
                 record = {
-                    'aLvl': aLvl,
-                    'mNrm': agent.state_now['mNrm'][i],
+                    "aLvl": aLvl,
+                    "mNrm": agent.state_now["mNrm"][i],
                     # difference between mNrm and the equilibrium mNrm from BST
-                    'mNrm_ratio_StE': agent.state_now['mNrm'][i] / agent.mNrmStE,
+                    "mNrm_ratio_StE": agent.state_now["mNrm"][i] / agent.mNrmStE,
                 }
 
                 for dp in self.dist_params:
@@ -97,94 +210,47 @@ class AgentPopulation:
 
         class_stats = (
             agent_df.groupby(list(self.dist_params.keys()))
-            .aggregate(['mean', 'std'])
+            .aggregate(["mean", "std"])
             .reset_index()
         )
 
         cs = class_stats
-        cs['label'] = round(cs['CRRA'], 2).apply(lambda x: f'CRRA: {x}, ') + round(
-            cs['DiscFac'], 2
+        cs["label"] = round(cs["CRRA"], 2).apply(lambda x: f"CRRA: {x}, ") + round(
+            cs["DiscFac"], 2
         ).apply(lambda x: f"DiscFac: {x}")
-        cs['aLvl_mean'] = cs['aLvl']['mean']
-        cs['aLvl_std'] = cs['aLvl']['std']
-        cs['mNrm_mean'] = cs['mNrm']['mean']
-        cs['mNrm_std'] = cs['mNrm']['std']
-        cs['mNrm_ratio_StE_mean'] = cs['mNrm_ratio_StE']['mean']
-        cs['mNrm_ratio_StE_std'] = cs['mNrm_ratio_StE']['std']
+        cs["aLvl_mean"] = cs["aLvl"]["mean"]
+        cs["aLvl_std"] = cs["aLvl"]["std"]
+        cs["mNrm_mean"] = cs["mNrm"]["mean"]
+        cs["mNrm_std"] = cs["mNrm"]["std"]
+        cs["mNrm_ratio_StE_mean"] = cs["mNrm_ratio_StE"]["mean"]
+        cs["mNrm_ratio_StE_std"] = cs["mNrm_ratio_StE"]["std"]
 
         if store:
             self.stored_class_stats = class_stats
 
         return class_stats
 
-    def create_distributed_agents(self, agent_parameters, dist_params, n_per_class):
-        """
-        Creates agents of the given classes with stable parameters.
-        Will overwrite the DiscFac with a distribution from CSTW_MPC.
+    def create_distributed_agents(self):
 
-        Parameters
-        ----------
-        agent_parameters: dict
-            Parameters shared by all agents (unless overwritten).
-
-        dist_params: dict of dicts
-            Parameters to distribute agents over, with discrete Uniform arguments
-
-        n_per_class: int
-            number of agents to instantiate per class
-        """
-        num_classes = math.prod([dist_params[dp]['n'] for dp in dist_params])
-        agent_batches = [{'AgentCount': num_classes}] * n_per_class
-
-        agents = [
-            cpm.PortfolioConsumerType(
-                seed=random.randint(0, 2**31 - 1),
-                **update_return(agent_parameters, ac),
-            )
-            for ac in agent_batches
+        self.agents = [
+            self.agent_class.__class__(**agent_dict) for agent_dict in self.agent_dicts
         ]
 
-        agents = AgentList(agents, dist_params)
+    def solve_distributed_agents(self):
+        # see Market class for an example of how to solve distributed agents in parallel
 
-        return agents
+        for agent in self.agents:
+            agent.solve()
 
-    def init_simulation(self):
+    def unpack_solutions(self):
+
+        self.solution = [agent.solution for agent in self.agents]
+
+    def init_simulation(self, T_sim=1000):
         """
         Sets up the agents with their state for the state of the simulation
         """
         for agent in self.agents:
-            agent.track_vars += ['pLvl', 'mNrm', 'cNrm', 'Share', 'Risky']
-
-            agent.assign_parameters(AdjustPrb=1.0)
-            agent.T_sim = 1000  # arbitrary!
-            agent.solve()
-
+            agent.track_vars += ["pLvl", "mNrm", "cNrm", "Share", "Risky"]
+            agent.T_sim = T_sim
             agent.initialize_sim()
-
-            if self.stored_class_stats is None:
-
-                ## build an IndShockConsumerType "double" of this agent, with the same parameters
-                ind_shock_double = cism.IndShockConsumerType(**agent.parameters)
-
-                ## solve to get the mNrmStE value
-                ## that is, the Steady-state Equilibrium value of mNrm, for the IndShockModel
-                ind_shock_double.solve()
-                mNrmStE = ind_shock_double.solution[0].mNrmStE
-
-                agent.state_now['mNrm'][:] = mNrmStE
-                agent.mNrmStE = (
-                    mNrmStE  # saving this for later, in case we do the analysis.
-                )
-            else:
-                idx = [agent.parameters[dp] for dp in self.dist_params]
-                mNrm = (
-                    self.stored_class_stats.copy()
-                    .set_index([dp for dp in self.dist_params])
-                    .xs((idx))['mNrm']['mean']
-                )
-                agent.state_now['mNrm'][:] = mNrm
-
-            agent.state_now['aNrm'] = agent.state_now['mNrm'] - agent.solution[
-                0
-            ].cFuncAdj(agent.state_now['mNrm'])
-            agent.state_now['aLvl'] = agent.state_now['aNrm'] * agent.state_now['pLvl']
