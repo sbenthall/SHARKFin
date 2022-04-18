@@ -116,9 +116,7 @@ if __name__ == '__main__':
 
     market = ClientRPCMarket(host=host, queue_name=queue)
 
-    
-
-    data, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=4, r=4, market=market, dphm=1500)
+    data, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=4, r=4, market=market, dphm=1500, buy=buy, sell=sell)
 
     history_df = pd.DataFrame(dict([(k,pd.Series(v)) for k,v in history.items()]))
     history_df.to_csv(f'{args.save_as}_history.csv')
