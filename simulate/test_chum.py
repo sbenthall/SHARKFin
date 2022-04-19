@@ -94,7 +94,7 @@ def run_simulation(
 
     sim = CalibrationSimulation(pop, fm, a = a, q = q, r = r, market = market)
     
-    sim.simulate(30, buy_sell_shock=(buy, sell))
+    sim.simulate(1, buy_sell_shock=(buy, sell))
 
     return sim.data(), sim.history
 
@@ -111,8 +111,8 @@ if __name__ == '__main__':
     # queue = env_param('RPCQUEUE', 'rpc_queue')
     host = args.rhost
     queue = args.queue
-    buy = args.buysize
-    sell = args.sellsize
+    buy = int(args.buysize)
+    sell = int(args.sellsize)
 
     market = ClientRPCMarket(host=host, queue_name=queue)
 
