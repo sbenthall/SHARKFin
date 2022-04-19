@@ -37,7 +37,7 @@ parser.add_argument('-q', '--queue', help='name of rabbitmq queue', default='rpc
 parser.add_argument('-r', '--rhost', help='rabbitmq server location', default='localhost')
 parser.add_argument('-b', '--buysize', help='buy size to shock', default=0)
 parser.add_argument('-s', '--sellsize', help='sell size to shock', default=0)
-parser.add_argument('-p', '--pad', help='number of days to pad market', default=30)
+parser.add_argument('-p', '--pad', help='number of days to pad market', default=31)
 
 timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
