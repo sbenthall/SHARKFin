@@ -94,7 +94,7 @@ def run_simulation(
 
     sim = CalibrationSimulation(pop, fm, a = a, q = q, r = r, market = market)
     
-    sim.simulate(1, buy_sell_shock=(buy, sell))
+    sim.simulate(30, buy_sell_shock=(buy, sell))
 
     return sim.data(), sim.history
 
