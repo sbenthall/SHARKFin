@@ -37,6 +37,7 @@ parser.add_argument('-q', '--queue', help='name of rabbitmq queue', default='rpc
 parser.add_argument('-r', '--rhost', help='rabbitmq server location', default='localhost')
 parser.add_argument('-b', '--buysize', help='buy size to shock', default=0)
 parser.add_argument('-s', '--sellsize', help='sell size to shock', default=0)
+parser.add_argument('-p', '--pad', help='number of days to pad market', default=30)
 
 timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
@@ -78,7 +79,8 @@ def run_simulation(
     market = None,
     dphm=1500,
     buy=0,
-    sell=0):
+    sell=0,
+    pad=30):
 
     # initialize population
     pop = AgentPopulation(agent_parameters, dist_params, 5)
@@ -94,7 +96,7 @@ def run_simulation(
 
     sim = CalibrationSimulation(pop, fm, a = a, q = q, r = r, market = market)
     
-    sim.simulate(30, buy_sell_shock=(buy, sell))
+    sim.simulate(3, buy_sell_shock=(buy, sell))
 
     return sim.data(), sim.history
 
@@ -113,10 +115,11 @@ if __name__ == '__main__':
     queue = args.queue
     buy = int(args.buysize)
     sell = int(args.sellsize)
+    pad = int(args.pad)
 
     market = ClientRPCMarket(host=host, queue_name=queue)
 
-    data, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=4, r=4, market=market, dphm=1500, buy=buy, sell=sell)
+    data, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=4, r=4, market=market, dphm=1500, buy=buy, sell=sell, pad=pad)
 
     history_df = pd.DataFrame(dict([(k,pd.Series(v)) for k,v in history.items()]))
     history_df.to_csv(f'{args.save_as}_history.csv')
