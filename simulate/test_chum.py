@@ -96,7 +96,7 @@ def run_simulation(
 
     sim = CalibrationSimulation(pop, fm, a = a, q = q, r = r, market = market)
     
-    sim.simulate(1, buy_sell_shock=(buy, sell))
+    sim.simulate(pad, buy_sell_shock=(buy, sell))
 
     return sim.data(), sim.history
 
@@ -113,13 +113,20 @@ if __name__ == '__main__':
     # queue = env_param('RPCQUEUE', 'rpc_queue')
     host = args.rhost
     queue = args.queue
+
     buy = int(args.buysize)
     sell = int(args.sellsize)
-    pad = int(args.pad)
+    pad = int(args.pad) - 1
 
     market = ClientRPCMarket(host=host, queue_name=queue)
 
-    data, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=4, r=4, market=market, dphm=1500, buy=buy, sell=sell, pad=pad)
+    data, history = run_simulation(agent_parameters, dist_params, 4, 
+                                   a=0.2, q=4, r=4, 
+                                   market=market, 
+                                   dphm=1500, 
+                                   buy=buy, 
+                                   sell=sell, 
+                                   pad=pad)
 
     history_df = pd.DataFrame(dict([(k,pd.Series(v)) for k,v in history.items()]))
     history_df.to_csv(f'{args.save_as}_history.csv')
