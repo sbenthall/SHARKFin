@@ -654,7 +654,7 @@ class AttentionSimulation(BasicSimulation):
                     if random.random() < self.attention_rate:
                         self.broker.transact(self.attend(agent))
 
-                buy_sell, ror = self.broker.trade()
+                buy_sell, ror, price = self.broker.trade()
                 # print("ror: " + str(ror))
 
                 new_run = True
@@ -726,7 +726,7 @@ class CalibrationSimulation(BasicSimulation):
             for agent in self.agents:
                 self.broker.transact(np.zeros(1))
 
-            buy_sell, ror = self.broker.trade()
+            buy_sell, ror, price = self.broker.trade()
                 
             self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
 
@@ -750,7 +750,7 @@ class CalibrationSimulation(BasicSimulation):
         sell = -buy_sell_shock[1]
 
         self.broker.transact(np.array((buy, sell)))
-        buy_sell, ror = self.broker.trade()
+        buy_sell, ror, price = self.broker.trade()
 
         self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
 
@@ -782,8 +782,8 @@ class CalibrationSimulation(BasicSimulation):
         data = None
         try:
             data_dict = {
-                't': range(len(self.fm.prices[1:])),
-                'prices': self.fm.prices[1:],
+                't': range(len(self.broker.market.prices[1:])),
+                'prices': self.broker.market.prices[1:],
                 'buy': [bs[0] for bs in self.broker.buy_sell_history],
                 'sell': [bs[1] for bs in self.broker.buy_sell_history],
                 'ror': self.fm.ror_list,
