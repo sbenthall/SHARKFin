@@ -1,6 +1,6 @@
 from HARK.ConsumptionSaving.ConsPortfolioModel import SequentialPortfolioConsumerType
 
-from macro.agent_population import AgentPopulation
+from sharkfin.population import AgentPopulation
 from simulate.parameters import (
     agent_population_params,
     continuous_dist_params,

@@ -236,6 +236,14 @@ class AgentPopulation:
             self.agent_class.__class__(**agent_dict) for agent_dict in self.agent_dicts
         ]
 
+    def create_database(self):
+
+        database = pd.DataFrame(self.agent_dicts)
+        database["agents"] = self.agents
+
+        self.database = database
+
+
     def solve_distributed_agents(self):
         # see Market class for an example of how to solve distributed agents in parallel
 
