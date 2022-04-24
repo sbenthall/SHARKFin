@@ -29,7 +29,9 @@ class AgentPopulation:
         param_dict = self.parameter_dict
         for key_param in param_dict:
             parameter = param_dict[key_param]
-            if isinstance(parameter, DataArray) and parameter.dims[0] == "agent":
+            if (
+                isinstance(parameter, DataArray) and parameter.dims[0] == "agent"
+            ) or isinstance(parameter, Distribution):
                 self.dist_params.append(key_param)
 
         self.infer_counts()
@@ -242,7 +244,6 @@ class AgentPopulation:
         database["agents"] = self.agents
 
         self.database = database
-
 
     def solve_distributed_agents(self):
         # see Market class for an example of how to solve distributed agents in parallel
