@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import NewType
 
+import numpy as np
 import pandas as pd
 from HARK.core import AgentType
 from HARK.distribution import (
@@ -8,6 +9,7 @@ from HARK.distribution import (
     IndexDistribution,
     combine_indep_dstns,
 )
+from HARK.interpolation import LinearInterpOnInterp1D, LinearInterpOnInterp2D
 from xarray import DataArray
 
 ParameterDict = NewType("ParameterDict", dict)
@@ -263,3 +265,65 @@ class AgentPopulation:
             agent.track_vars += ["pLvl", "mNrm", "cNrm", "Share", "Risky"]
             agent.T_sim = T_sim
             agent.initialize_sim()
+
+
+class AgentPopulationSolution:
+    def __init__(self, agent_population):
+        self.agent_population = agent_population
+
+        self.dist_params = self.agent_population.dist_params
+        self.database = self.agent_population.database
+
+    def merge_solutions(self, continuous_states):
+
+        # check that continous states are in heterogeneous parameters
+        for state in continuous_states:
+            if state not in self.dist_params:
+                raise AttributeError(
+                    "{} is not an agent-varying parameter.".format(state)
+                )
+
+        discrete_params = list(set(self.dist_params) - set(continuous_states))
+
+        grouped = self.database.groupby(discrete_params)
+        solution_database = []
+
+        for name, group in grouped:
+            group.sort_values(by=continuous_states)
+            in_grouped = group.groupby("RiskyStd")
+
+            std_vals = np.unique(group.RiskyStd)
+
+            cFunc_by_std = []
+            shareFunc_by_std = []
+            for std, in_group in in_grouped:
+                agents = list(in_group.agents)
+                avg = np.array(in_group.RiskyAvg)
+
+                cFunc_by_std.append(
+                    LinearInterpOnInterp1D(
+                        [agent.solution[0].cFuncAdj for agent in agents], avg
+                    )
+                )
+
+                shareFunc_by_std.append(
+                    (
+                        LinearInterpOnInterp1D(
+                            [agent.solution[0].ShareFuncAdj for agent in agents], avg
+                        )
+                    )
+                )
+
+            cFunc = LinearInterpOnInterp2D(cFunc_by_std, std_vals)
+            shareFunc = LinearInterpOnInterp2D(shareFunc_by_std, std_vals)
+
+            solution_database.append(
+                {
+                    continuous_states[0]: name[0],
+                    continuous_states[1]: name[1],
+                    "cFunc": cFunc,
+                    "shareFunc": shareFunc,
+                }
+            )
+
+        self.solution_database = pd.DataFrame(solution_database)
