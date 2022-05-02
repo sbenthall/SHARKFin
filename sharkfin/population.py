@@ -319,11 +319,13 @@ class AgentPopulationSolution:
 
             solution_database.append(
                 {
-                    continuous_states[0]: name[0],
-                    continuous_states[1]: name[1],
+                    discrete_params[0]: name[0],
+                    discrete_params[1]: name[1],
                     "cFunc": cFunc,
                     "shareFunc": shareFunc,
                 }
             )
 
         self.solution_database = pd.DataFrame(solution_database)
+
+        return self.solution_database
