@@ -48,7 +48,7 @@ class Broker:
         Input: (optional) random seed for the simulation
         Output: Rate of return of the asset value that day.
         """
-
+ 
         # use integral shares here.
         buy_sell = (int(self.buy_limit), int(self.sell_limit))
         self.buy_sell_history.append(buy_sell)
