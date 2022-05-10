@@ -1,43 +1,8 @@
-# SHARKFin
+# PyNetLogo Market for SHARKFin
 
-_Simulating Heterogeneous Agents Research Toolkit) with Finance_
-
-## Development Installation
-
-To check out the code, clone the repository.
-
-```
-git clone git@github.com:sbenthall/SHARKFin.git
-cd SHARKFin
-```
-
-You may wish to create and enter a virtual environment.
-
-Then, install the required packages and then the SHARKFin package in development mode:
-
-```
-pip install -r requirements.txt
-pip install -e .
-```
-
-Run the automated tests:
-
-```
-python -m pytest sharkfin
-```
-
-## Configuration
-
-TBD
-
-
-## Native Python Market Installation
-
-TBD
-
-## AMMPS Installation
-
-TBD
+The PyNetLogo (PNL) Market was the original market implementation for SHARKFin.
+Now it is one of several possible Market implementations.
+This README outlines the instalaltion of this Market, which has a number of non-Python dependencies.
 
 ## NetLogo Installation
 
@@ -81,7 +46,7 @@ NLhomedir=./netlogo-5.3.1-64/
 
 ### Execution - as Market class
 
-TBD
+See the tests in the `tests/` directory.
 
 ### Execution - Standalone
 
