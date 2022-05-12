@@ -7,12 +7,23 @@ import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 from HARK.Calibration.Income.IncomeTools import (
      sabelhaus_song_var_profile,
 )
+import os
 
 def test_pnl_market():
-    market = MarketPNL()
+     cwd = os.getcwd()
 
-    market.run_market(buy_sell=(0,0))
+     os.chdir(os.path.dirname(os.path.realpath(__file__)) + '/..')
 
-    price = market.get_simulation_price()
+     market = MarketPNL()
 
-    ror = market.daily_rate_of_return(buy_sell=(0,0))
+     market.run_market(buy_sell=(0,0))
+
+     price = market.get_simulation_price()
+
+     assert price > 0
+
+     ror = market.daily_rate_of_return(buy_sell=(0,0))
+
+     assert ror > 0
+
+     os.chdir(cwd)

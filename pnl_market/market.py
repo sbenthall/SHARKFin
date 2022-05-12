@@ -9,6 +9,7 @@ import logging
 
 import os
 
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -59,8 +60,8 @@ class MarketPNL(AbstractMarket):
     def __init__(
         self,
         sample=0,
-        config_file="./macroliquidity.ini",
-        config_local_file="./macroliquidity_local.ini",
+        config_file=os.path.dirname(os.path.realpath(__file__)) + "/macroliquidity.ini",
+        config_local_file=os.path.dirname(os.path.realpath(__file__)) + "/macroliquidity_local.ini",
         seed_limit=None,
     ):
         self.config = UTIL.read_config(
