@@ -1,3 +1,4 @@
+import io
 import numpy as np
 from sharkfin.markets import AbstractMarket
 
