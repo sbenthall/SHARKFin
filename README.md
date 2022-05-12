@@ -4,6 +4,8 @@ _Simulating Heterogeneous Agents Research Toolkit) with Finance_
 
 ## Development Installation
 
+SHARKFin depends on Python 3.9 or above.
+
 To check out the code, clone the repository.
 
 ```
