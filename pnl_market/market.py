@@ -1,3 +1,4 @@
+import numpy as np
 from sharkfin.markets import AbstractMarket
 
 import pandas as pd
