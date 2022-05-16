@@ -10,3 +10,4 @@ pika
 pyyaml
 seaborn
 xarray
+pandas
