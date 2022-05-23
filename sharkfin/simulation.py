@@ -360,13 +360,9 @@ class BasicSimulation(AbstractSimulation):
                     if new_run:
                         new_run = False
                     else:
-                        # sloppy
                         # problem is that this should really be nan, nan
                         # putting 0,0 here is a stopgap to make plotting code simpler
-                        self.broker.buy_sell_history.append((0, 0))
-                        self.broker.buy_sell_macro_history.append((0, 0))
-
-                    # print(f"Q-{quarter}:D-{day}. {updates} macro-updates.")
+                        self.broker.track((0, 0),(0, 0))
 
                     self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
 
