@@ -168,24 +168,28 @@ class AgentPopulation:
         returns agent_df from class_stats
         """
 
-        records = []
+        if self.agent_database is None:
 
-        for agent in self.agents:
-            for i, aLvl in enumerate(agent.state_now["aLvl"]):
-                record = {
-                    "aLvl": aLvl,
-                    "mNrm": agent.state_now["mNrm"][i],
-                    "cNrm": agent.controls["cNrm"][i]
-                    if "cNrm" in agent.controls
-                    else None,
-                }
+            records = []
 
-                for dp in self.dist_params:
-                    record[dp] = agent.parameters[dp]
+            for agent in self.agents:
+                for i, aLvl in enumerate(agent.state_now["aLvl"]):
+                    record = {
+                        "aLvl": aLvl,
+                        "mNrm": agent.state_now["mNrm"][i],
+                        "cNrm": agent.controls["cNrm"][i]
+                        if "cNrm" in agent.controls
+                        else None,
+                    }
 
-                records.append(record)
+                    for dp in self.dist_params:
+                        record[dp] = agent.parameters[dp]
 
-        return pd.DataFrame.from_records(records)
+                    records.append(record)
+
+            self.agent_database = pd.DataFrame.from_records(records)
+
+        return self.agent_database
 
     def class_stats(self, store=False):
         """
