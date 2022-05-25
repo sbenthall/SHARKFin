@@ -13,7 +13,7 @@ for i in range(666):
 
 	os.system(f"az container create \
 		--resource-group ammps-sims \
-		--name chum-multi-test1 \
+		--name chum-multi-test{i} \
 		--image mesalasnano/ammps_sharkfin:chum-slim-multi \
 		--restart-policy never \
 		--registry-login-server index.docker.io \
@@ -22,7 +22,7 @@ for i in range(666):
 		--vnet ammps-sims-vnet \
 		--subnet sharkfin-ammps \
 		--memory 3 \
-		-e SIMCONFIGPATH='output/chum_config{i}.yaml' \
+		-e SIMSCONFIGPATH='output/chum_config{i}.yaml' \
 		--ports 5672 \
 		--azure-file-volume-account-key AZURE_FS_ACCOUNT_KEY \
 		--azure-file-volume-account-name sbsimulationdata \
