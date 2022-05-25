@@ -33,7 +33,11 @@ parser.add_argument("save_as", help="The name of the output for sim_stats")
 parser.add_argument("-t",
                     "--tag", type=str,
                     help="a string tag to be added to the output files")
-
+parser.add_argument('-q', '--queue', help='name of rabbitmq queue', default='rpc_queue')
+parser.add_argument('-r', '--rhost', help='rabbitmq server location', default='localhost')
+parser.add_argument('-b', '--buysize', help='buy size to shock', default=0)
+parser.add_argument('-s', '--sellsize', help='sell size to shock', default=0)
+parser.add_argument('-p', '--pad', help='number of days to pad market', default=31)
 
 timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
@@ -75,7 +79,8 @@ def run_simulation(
     market = None,
     dphm=1500,
     buy=0,
-    sell=0):
+    sell=0,
+    pad=30):
 
     # initialize population
     pop = AgentPopulation(agent_parameters, dist_params, 5)
@@ -91,7 +96,7 @@ def run_simulation(
 
     sim = CalibrationSimulation(pop, fm, a = a, q = q, r = r, market = market)
     
-    sim.simulate(2, buy_sell_shock=(buy, sell))
+    sim.simulate(pad, buy_sell_shock=(buy, sell))
 
     return sim.data(), sim.history
 
@@ -100,18 +105,28 @@ def env_param(name, default):
 
 
 if __name__ == '__main__':
+    args = parser.parse_args()
+
     # requires market server to be running
-    dphm = int(env_param('BROKERSCALE', 1500))
-    host = env_param('RPCHOST', 'localhost')
-    queue = env_param('RPCQUEUE', 'rpc_queue')
-    buy = int(env_param('BUYSIZE', 0))
-    sell = int(env_param('SELLSIZE', 0))
+    # dphm = int(env_param('BROKERSCALE', 1500))
+    # host = env_param('RPCHOST', 'localhost')
+    # queue = env_param('RPCQUEUE', 'rpc_queue')
+    host = args.rhost
+    queue = args.queue
+
+    buy = int(args.buysize)
+    sell = int(args.sellsize)
+    pad = int(args.pad) - 1
 
     market = ClientRPCMarket(host=host, queue_name=queue)
 
-    args = parser.parse_args()
-
-    data, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=4, r=4, market=market, dphm=1500)
+    data, history = run_simulation(agent_parameters, dist_params, 4, 
+                                   a=0.2, q=4, r=4, 
+                                   market=market, 
+                                   dphm=1500, 
+                                   buy=buy, 
+                                   sell=sell, 
+                                   pad=pad)
 
     history_df = pd.DataFrame(dict([(k,pd.Series(v)) for k,v in history.items()]))
     history_df.to_csv(f'{args.save_as}_history.csv')

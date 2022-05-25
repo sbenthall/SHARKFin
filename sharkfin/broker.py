@@ -40,6 +40,20 @@ class Broker:
             self.buy_orders_macro += delta_shares[delta_shares > 0].sum()
             self.sell_orders_macro += -delta_shares[delta_shares < 0].sum()
 
+    def track(self, buy_sell, buy_sell_macro):
+        """
+        Adds buy/sell records to the history.
+
+        Input:
+          - buy_sell : tuple
+            Two numbers, total bought or sold this period
+          - buy_sell_macro : tuple
+            Two numbers, total bought or sold due to macro updates this period
+        """
+        self.buy_sell_history.append(buy_sell)
+        self.buy_sell_macro_history.append(buy_sell_macro)
+
+
     def trade(self, seed=None):
         """
         Broker executes the trade on the financial market and then updates
@@ -48,13 +62,13 @@ class Broker:
         Input: (optional) random seed for the simulation
         Output: Rate of return of the asset value that day.
         """
-
+ 
         # use integral shares here.
         buy_sell = (int(self.buy_limit), int(self.sell_limit))
-        self.buy_sell_history.append(buy_sell)
-
         buy_sell_macro = (int(self.buy_orders_macro), int(self.sell_orders_macro))
-        self.buy_sell_macro_history.append(buy_sell_macro)
+
+        self.track(buy_sell, buy_sell_macro)
+
         # print("Buy/Sell Limit: " + str(buy_sell))
 
         self.market.run_market(buy_sell=buy_sell, seed=seed)

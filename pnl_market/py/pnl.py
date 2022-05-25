@@ -145,6 +145,7 @@ def run_NLsims(
     # Locate the NetLogo executable and create a pyNetLogo link to it
     LOG.warning('NetLogoLink: '+CFG['pnl']['NLhomedir'])
     LOG.warning('NetLogoLink version: '+str(CFG['pnl']['NLver']))
+
     LM = pnl.NetLogoLink(gui=False,
                          netlogo_home=CFG['pnl']['NLhomedir'],
                          netlogo_version=str(CFG['pnl']['NLver']))

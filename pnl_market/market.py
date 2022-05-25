@@ -1,9 +1,16 @@
+import io
+import numpy as np
 from sharkfin.markets import AbstractMarket
 
-import sharkfin.pnl_utils.py.pnl as pnl
-import sharkfin.pnl_utils.py.util as UTIL
+import pandas as pd
+
+import pnl_market.py.pnl as pnl
+import pnl_market.py.util as UTIL
 
 import logging
+
+import os
+
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -55,8 +62,8 @@ class MarketPNL(AbstractMarket):
     def __init__(
         self,
         sample=0,
-        config_file="../PNL/macroliquidity.ini",
-        config_local_file="../PNL/macroliquidity_local.ini",
+        config_file=os.path.dirname(os.path.realpath(__file__)) + "/macroliquidity.ini",
+        config_local_file=os.path.dirname(os.path.realpath(__file__)) + "/macroliquidity_local.ini",
         seed_limit=None,
     ):
         self.config = UTIL.read_config(

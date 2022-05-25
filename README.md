@@ -4,6 +4,8 @@ _Simulating Heterogeneous Agents Research Toolkit) with Finance_
 
 ## Development Installation
 
+SHARKFin depends on Python 3.9 or above.
+
 To check out the code, clone the repository.
 
 ```
@@ -39,6 +41,7 @@ TBD
 
 AMMPS is currently closed-source so an ammps binary needs to be acquired.
 
+<<<<<<< HEAD
 ## NetLogo Installation
 
 The original SHARKFin installation path uses NetLogo for its market simulation engine.
