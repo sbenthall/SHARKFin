@@ -11,7 +11,7 @@ import time
 class ClientRPCMarket(AbstractMarket):
     def __init__(self, seed_limit=None, queue_name='', host='localhost'):
         self.simulation_price_scale = 1
-        self.default_sim_price = 400
+        self.default_sim_price = 100
 
         # stuff from MarketPNL that we may or may not need
 
@@ -42,6 +42,7 @@ class ClientRPCMarket(AbstractMarket):
         self.seed_limit = seed_limit
 
         self.latest_price = None
+        self.prices = [self.default_sim_price]
 
         self.rpc_queue_name = queue_name
         self.rpc_host_name = host
@@ -112,6 +113,9 @@ class ClientRPCMarket(AbstractMarket):
         print('response received')
 
         self.latest_price = float(self.response)
+        self.prices.append(float(self.response))
+
+        return self.latest_price
 
     def get_simulation_price(self, seed=0, buy_sell=(0, 0)):
         return self.latest_price
@@ -132,7 +136,8 @@ class ClientRPCMarket(AbstractMarket):
         if last_sim_price is None:
             last_sim_price = self.default_sim_price
 
-        ror = (last_sim_price * self.simulation_price_scale - 100) / 100
+        # ror = (last_sim_price * self.simulation_price_scale - 100) / 100
+        ror = (self.latest_price - self.prices[-2])/self.prices[-2]
 
         # adjust to calibrated NetLogo to S&P500
         # do we need to calibrate AMMPS to S&P as well?
