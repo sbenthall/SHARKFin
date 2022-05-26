@@ -15,7 +15,7 @@ def test_broker():
     assert broker.buy_limit == 4
     assert broker.buy_orders_macro == 2
 
-    buy_sell, ror = broker.trade()
+    buy_sell, ror, price = broker.trade()
 
     assert buy_sell[1] == 4
 
