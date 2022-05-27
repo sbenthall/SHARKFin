@@ -59,6 +59,8 @@ class MarketPNL(AbstractMarket):
     # sample - modifier for the seed
     sample = 0
 
+    prices = None
+
     def __init__(
         self,
         sample=0,
@@ -71,10 +73,12 @@ class MarketPNL(AbstractMarket):
         )
 
         self.sample = 0
-        self.seeds = []
+        self.seeds = [self.default_sim_price]
 
         if seed_limit is not None:
             self.seed_limit = seed_limit
+
+        self.prices = []
 
     def run_market(self, seed=0, buy_sell=0):
         """

@@ -71,7 +71,7 @@ class Broker:
 
         # print("Buy/Sell Limit: " + str(buy_sell))
 
-        self.market.run_market(buy_sell=buy_sell, seed=seed)
+        price = self.market.run_market(buy_sell=buy_sell, seed=seed)
 
         # clear the local limits
         self.buy_limit = 0
@@ -80,7 +80,7 @@ class Broker:
         self.buy_orders_macro = 0
         self.sell_orders_macro = 0
 
-        return buy_sell, self.market.daily_rate_of_return()
+        return buy_sell, self.market.daily_rate_of_return(), price
 
     def close(self):
         self.market.close_market()
