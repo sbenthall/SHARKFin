@@ -5,7 +5,7 @@ import os
 import json
 import pandas as pd
 
-conn_str = 'DefaultEndpointsProtocol=https;AccountName=sbsimulationdata;AccountKey=JD7dU19DXZ1TBAGRZYhCEod344kS2sSnFP2IL7ReFqZAhEwnvEn9LHdjq32Q0yj2eAcMQwNBSc4N+AStQHZQNQ==;EndpointSuffix=core.windows.net'
+conn_str = 'CONNECTION_STRING'
 
 def download(fname, dirname='chum_results', share_name='sharkfin-ammps-fs'):
 	file_client = fs.ShareFileClient.from_connection_string(
@@ -21,7 +21,7 @@ def download(fname, dirname='chum_results', share_name='sharkfin-ammps-fs'):
 		data.readinto(file_handle)
 
 def list_files(share_name='sharkfin-ammps-fs'):
-	file_list_json = os.popen("az storage file list --share-name sharkfin-ammps-fs --connection-string 'DefaultEndpointsProtocol=https;AccountName=sbsimulationdata;AccountKey=JD7dU19DXZ1TBAGRZYhCEod344kS2sSnFP2IL7ReFqZAhEwnvEn9LHdjq32Q0yj2eAcMQwNBSc4N+AStQHZQNQ==;EndpointSuffix=core.windows.net'").read()
+	file_list_json = os.popen("az storage file list --share-name sharkfin-ammps-fs --connection-string 'CONNECTION_STRING'").read()
 	file_info = json.loads(file_list_json)
 	names = [item['name'] for item in file_info]
 
@@ -40,7 +40,7 @@ if __name__ == '__main__':
 
 	for fname in os.listdir('chum_results'):
 		df = pd.read_csv(f'chum_results/{fname}')
-		final_df = final_df.append(df.iloc[-1], ignore_index=True)
+		final_df = final_df.append(df.iloc[-1])
 
 	final_df.to_csv('chum_results_run_1.csv')
 
