@@ -1,9 +1,28 @@
-import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
-import HARK.ConsumptionSaving.ConsIndShockModel as cism
-from sharkfin.utilities import *
 import math
-import pandas as pd
 import random
+
+import HARK.ConsumptionSaving.ConsIndShockModel as cism
+import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
+import pandas as pd
+
+from sharkfin.utilities import *
+
+
+class PortfolioSharkFinAgentType(cpm.SequentialPortfolioConsumerType):
+    """
+    SHARKFin agent class extends HARK's SequentialPortfolioConsumerType class
+    with SHARK features. In particular, it takes an external solution in the
+    simulation step. This external solution can come from interpolated
+    population solutions. 
+    """
+
+    def simulate(self, solution, sim_periods=None):
+        """
+        Provide solution to SHARKFin Agent before internal HARK simulation step.
+        """
+        self.solution = solution
+        super().simulate(sim_periods)
+
 
 class AgentPopulation:
     """
@@ -45,21 +64,21 @@ class AgentPopulation:
         )
 
     def agent_df(self):
-        '''
+        """
         Output a dataframe for agent attributes
 
         returns agent_df from class_stats
-        '''
+        """
 
         records = []
 
         for agent in self.agents:
-            for i, aLvl in enumerate(agent.state_now['aLvl']):
+            for i, aLvl in enumerate(agent.state_now["aLvl"]):
                 record = {
-                    'aLvl': aLvl,
-                    'mNrm': agent.state_now['mNrm'][i],
-                    'cNrm': agent.controls['cNrm'][i]
-                    if 'cNrm' in agent.controls
+                    "aLvl": aLvl,
+                    "mNrm": agent.state_now["mNrm"][i],
+                    "cNrm": agent.controls["cNrm"][i]
+                    if "cNrm" in agent.controls
                     else None,
                 }
 
@@ -80,12 +99,12 @@ class AgentPopulation:
         records = []
 
         for agent in self.agents:
-            for i, aLvl in enumerate(agent.state_now['aLvl']):
+            for i, aLvl in enumerate(agent.state_now["aLvl"]):
                 record = {
-                    'aLvl': aLvl,
-                    'mNrm': agent.state_now['mNrm'][i],
+                    "aLvl": aLvl,
+                    "mNrm": agent.state_now["mNrm"][i],
                     # difference between mNrm and the equilibrium mNrm from BST
-                    'mNrm_ratio_StE': agent.state_now['mNrm'][i] / agent.mNrmStE,
+                    "mNrm_ratio_StE": agent.state_now["mNrm"][i] / agent.mNrmStE,
                 }
 
                 for dp in self.dist_params:
@@ -97,20 +116,20 @@ class AgentPopulation:
 
         class_stats = (
             agent_df.groupby(list(self.dist_params.keys()))
-            .aggregate(['mean', 'std'])
+            .aggregate(["mean", "std"])
             .reset_index()
         )
 
         cs = class_stats
-        cs['label'] = round(cs['CRRA'], 2).apply(lambda x: f'CRRA: {x}, ') + round(
-            cs['DiscFac'], 2
+        cs["label"] = round(cs["CRRA"], 2).apply(lambda x: f"CRRA: {x}, ") + round(
+            cs["DiscFac"], 2
         ).apply(lambda x: f"DiscFac: {x}")
-        cs['aLvl_mean'] = cs['aLvl']['mean']
-        cs['aLvl_std'] = cs['aLvl']['std']
-        cs['mNrm_mean'] = cs['mNrm']['mean']
-        cs['mNrm_std'] = cs['mNrm']['std']
-        cs['mNrm_ratio_StE_mean'] = cs['mNrm_ratio_StE']['mean']
-        cs['mNrm_ratio_StE_std'] = cs['mNrm_ratio_StE']['std']
+        cs["aLvl_mean"] = cs["aLvl"]["mean"]
+        cs["aLvl_std"] = cs["aLvl"]["std"]
+        cs["mNrm_mean"] = cs["mNrm"]["mean"]
+        cs["mNrm_std"] = cs["mNrm"]["std"]
+        cs["mNrm_ratio_StE_mean"] = cs["mNrm_ratio_StE"]["mean"]
+        cs["mNrm_ratio_StE_std"] = cs["mNrm_ratio_StE"]["std"]
 
         if store:
             self.stored_class_stats = class_stats
@@ -133,8 +152,8 @@ class AgentPopulation:
         n_per_class: int
             number of agents to instantiate per class
         """
-        num_classes = math.prod([dist_params[dp]['n'] for dp in dist_params])
-        agent_batches = [{'AgentCount': num_classes}] * n_per_class
+        num_classes = math.prod([dist_params[dp]["n"] for dp in dist_params])
+        agent_batches = [{"AgentCount": num_classes}] * n_per_class
 
         agents = [
             cpm.PortfolioConsumerType(
@@ -153,7 +172,7 @@ class AgentPopulation:
         Sets up the agents with their state for the state of the simulation
         """
         for agent in self.agents:
-            agent.track_vars += ['pLvl', 'mNrm', 'cNrm', 'Share', 'Risky']
+            agent.track_vars += ["pLvl", "mNrm", "cNrm", "Share", "Risky"]
 
             agent.assign_parameters(AdjustPrb=1.0)
             agent.T_sim = 1000  # arbitrary!
@@ -171,7 +190,7 @@ class AgentPopulation:
                 ind_shock_double.solve()
                 mNrmStE = ind_shock_double.solution[0].mNrmStE
 
-                agent.state_now['mNrm'][:] = mNrmStE
+                agent.state_now["mNrm"][:] = mNrmStE
                 agent.mNrmStE = (
                     mNrmStE  # saving this for later, in case we do the analysis.
                 )
@@ -180,11 +199,11 @@ class AgentPopulation:
                 mNrm = (
                     self.stored_class_stats.copy()
                     .set_index([dp for dp in self.dist_params])
-                    .xs((idx))['mNrm']['mean']
+                    .xs((idx))["mNrm"]["mean"]
                 )
-                agent.state_now['mNrm'][:] = mNrm
+                agent.state_now["mNrm"][:] = mNrm
 
-            agent.state_now['aNrm'] = agent.state_now['mNrm'] - agent.solution[
+            agent.state_now["aNrm"] = agent.state_now["mNrm"] - agent.solution[
                 0
-            ].cFuncAdj(agent.state_now['mNrm'])
-            agent.state_now['aLvl'] = agent.state_now['aNrm'] * agent.state_now['pLvl']
+            ].cFuncAdj(agent.state_now["mNrm"])
+            agent.state_now["aLvl"] = agent.state_now["aNrm"] * agent.state_now["pLvl"]
