@@ -8,9 +8,21 @@ class AbstractMarket(ABC):
     defines common methods for all market models.
     '''
 
+    @property
+    @abstractmethod
+    def prices(self):
+        """
+        A list of prices, beginning with the default price.
+        """
+        pass
+
     @abstractmethod
     def run_market():
-        pass
+        """
+        Runs the market for one day and returns the price.
+        """
+        price = 100
+        return price
 
     @abstractmethod
     def get_simulation_price(self, seed: int, buy_sell: Tuple[int, int]):
@@ -37,13 +49,8 @@ class MockMarket(AbstractMarket):
     config_local_file
 
     """
-
-    # Properties of the PNL market model
-    netlogo_ror = 0.0
-    netlogo_std = 0.025
-
-    simulation_price_scale = 0.25
-    default_sim_price = 400
+    simulation_price_scale = 1.0
+    default_sim_price = 100
 
     # Empirical data -- redundant with FinanceModel!
     sp500_ror = 0.000628
@@ -56,26 +63,35 @@ class MockMarket(AbstractMarket):
 
     seeds = []
 
+    prices = None
+
     def __init__(self):
+        self.prices = [self.default_sim_price]
         pass
 
-    def run_market(self, seed=0, buy_sell=0):
+    def run_market(self, seed=0, buy_sell=(0,0)):
         """
         Sample from a probability distribution
         """
         self.last_seed = seed
         self.last_buy_sell = buy_sell
 
+        mean = 100 + np.log1p(buy_sell[0]) - np.log1p(buy_sell[1])
+        std = 10 + np.log1p(buy_sell[0] + buy_sell[1])
+        price = np.random.normal(mean, std)
+                
+        self.prices.append(price)
+
+        return price
+
     def get_simulation_price(self, seed=0, buy_sell=(0, 0)):
         """
         Get the price from the simulation run.
 
-        TODO: Better docstring
+        TODO: Refactor this -- the original PNL market was convoluted and this API can be streamlined.
         """
-        mean = 400 + np.log1p(buy_sell[0]) - np.log1p(buy_sell[1])
-        std = 10 + np.log1p(buy_sell[0] + buy_sell[1])
-        price = np.random.normal(mean, std)
-        return price
+
+        return self.prices[-1]
 
     def daily_rate_of_return(self, seed=None, buy_sell=None):
 
@@ -92,10 +108,8 @@ class MockMarket(AbstractMarket):
 
         ror = (last_sim_price * self.simulation_price_scale - 100) / 100
 
-        # adjust to calibrated NetLogo to S&P500
         ror = (
-            self.sp500_std * (ror - self.netlogo_ror) / self.netlogo_std
-            + self.sp500_ror
+            self.sp500_std * (ror) + self.sp500_ror
         )
 
         return ror

@@ -39,5 +39,38 @@ TBD
 
 ## AMMPS Installation
 
-TBD
+AMMPS is currently closed-source so an ammps binary needs to be acquired.
 
+### Running with AMMPS
+
+To run a local simulation:
+
+1. Start a rabbitMQ server. This is most easily accomplished using the publically available image on dockerhub.
+
+```
+docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+```
+
+2. Start AMMPS. If you have access to AMMPS source it can be built from the source directory with:
+```
+dotnet build amm.engine/amm.engine/amm.engine -o amm_binary
+```
+
+Run with:
+
+```
+dotnet ammps_bin/amm.engine.dll RunConfFromFile ../../ammps_tests/testconf.xlsx working 0 --rabbitMQ-host localhost --rabbitMQ-queue rpc_queue -t true
+```
+
+Refer to AMMPS documentation for parameters and instructions on how to generate the Excel config files.
+
+
+3. Run SHARKFin
+
+```
+python test_chum.py OUTPUT_PREFIX
+```
+
+## NetLogo Installation
+
+For instructions for running with a NetLogo based market, see `pnl_market/README.md`.

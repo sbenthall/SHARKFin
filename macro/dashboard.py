@@ -15,9 +15,9 @@
 
 # %%
 import ipywidgets as widgets
-from run_simulations import agent_parameters, agent_parameters
+from simulate.parameters import agent_parameters
 from HARK.ConsumptionSaving.ConsPortfolioModel import PortfolioConsumerType
-from hark_portfolio_agents import FinanceModel
+from sharkfin.expectations import FinanceModel
 from HARK.utilities import plot_funcs
 
 # %% pycharm={"name": "#%%\n"} jupyter={"outputs_hidden": false}
