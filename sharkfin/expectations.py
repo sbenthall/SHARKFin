@@ -146,20 +146,9 @@ class FinanceModel(AbstractExpectations):
     def asset_price_stats(self):
         """
         Get statistics on the price of the asset for final reporting.
-        MOVE TO MARKET.
+        TODO: CHANGE SIM TO GET THESE FROM MARKET AND REMOVE
         """
-        price_stats = {}
-
-        price_stats['min_asset_price'] = min(self.prices)
-        price_stats['max_asset_price'] = max(self.prices)
-
-        price_stats['idx_min_asset_price'] = np.argmin(self.prices)
-        price_stats['idx_max_asset_price'] = np.argmax(self.prices)
-
-        price_stats['mean_asset_price'] = np.mean(self.prices)
-        price_stats['std_asset_price'] = np.std(self.prices)
-
-        return price_stats
+        return self.market.asset_price_stats()
 
     def calculate_risky_expectations(self):
         """
