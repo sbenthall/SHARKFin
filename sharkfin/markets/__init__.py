@@ -53,7 +53,14 @@ class AbstractMarket(ABC):
         price_stats['std_asset_price'] = np.std(self.prices)
 
         return price_stats
-        
+
+    def ror_list(self):
+        """
+        Get a list of the rates of return....
+
+        TODO: THIS WON'T WORK WITH SOME MARKETS WITH A DIFFERENT ROR CALCULATION?
+        """
+        return [(self.prices[i+1] / self.prices[i]) - 1 for i in range(len(self.prices) - 1)]
 
 class MockMarket(AbstractMarket):
     """
@@ -97,7 +104,7 @@ class MockMarket(AbstractMarket):
         std = 10 + np.log1p(buy_sell[0] + buy_sell[1])
         price = np.random.normal(mean, std)
                 
-        self.prices.append(price)
+        self.prices.append(price) ## TODO: Should this be when the new rate of return is computed?
 
         return price
 

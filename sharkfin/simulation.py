@@ -102,12 +102,12 @@ class BasicSimulation(AbstractSimulation):
         self.days_per_run = self.days_per_quarter / self.runs_per_quarter
 
         # Create the Market wrapper
-        market = MockMarket() if market is None else market
+        self.market = MockMarket() if market is None else market
 
-        self.fm = Fm(market)
+        self.fm = Fm(self.market)
         self.fm.calculate_risky_expectations()
 
-        self.broker = Broker(market)
+        self.broker = Broker(self.market)
 
         self.history = {}
         self.history['buy_sell'] = []
@@ -200,7 +200,7 @@ class BasicSimulation(AbstractSimulation):
                 'mean_income': self.history['mean_income_level'],
                 'total_consumption': self.history['total_consumption_level'],
                 'permshock_std': self.history['permshock_std'],
-                'ror': self.fm.ror_list,
+                'ror': self.market.ror_list(),
                 'expected_ror': self.fm.expected_ror_list[1:],
                 'expected_std': self.fm.expected_std_list[1:],
             }
@@ -223,7 +223,7 @@ class BasicSimulation(AbstractSimulation):
                         ),
                         'owned': len(self.history['owned_shares']),
                         'total_assets': len(self.history['total_assets']),
-                        'ror': len([None] + self.fm.ror_list),
+                        'ror': len([None] + self.market.ror_list()),
                         'expected_ror': len(self.fm.expected_ror_list),
                         'expected_std': len(self.fm.expected_std_list),
                     }
@@ -379,7 +379,7 @@ class BasicSimulation(AbstractSimulation):
 
                     # combine these steps?
                     # add_ror appends to internal history list
-                    self.fm.add_ror(ror) 
+                    #self.fm.add_ror(ror) 
                     self.fm.calculate_risky_expectations()
 
                     day = day + 1
@@ -688,7 +688,7 @@ class AttentionSimulation(BasicSimulation):
 
                     # combine these steps?
                     # add_ror appends to internal history list
-                    self.fm.add_ror(ror) 
+                    #self.fm.add_ror(ror) 
                     self.fm.calculate_risky_expectations()
 
                     day = day + 1
@@ -706,6 +706,8 @@ class AttentionSimulation(BasicSimulation):
         return sim_stats
 
 class CalibrationSimulation(BasicSimulation):
+    market = None
+
     def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500):
 
         super().__init__(pop, fm, q=q, r=r, market=market, dphm=dphm)
@@ -737,7 +739,7 @@ class CalibrationSimulation(BasicSimulation):
 
             # combine these steps?
             # add_ror appends to internal history list
-            self.fm.add_ror(ror) 
+            #self.fm.add_ror(ror) 
             self.fm.calculate_risky_expectations()
 
             end_time = datetime.now()
@@ -759,7 +761,7 @@ class CalibrationSimulation(BasicSimulation):
 
         self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
 
-        self.fm.add_ror(ror)
+        # self.fm.add_ror(ror)
         self.fm.calculate_risky_expectations()
 
         end_time = datetime.now()
@@ -791,7 +793,7 @@ class CalibrationSimulation(BasicSimulation):
                 'prices': self.broker.market.prices[1:],
                 'buy': [bs[0] for bs in self.broker.buy_sell_history],
                 'sell': [bs[1] for bs in self.broker.buy_sell_history],
-                'ror': self.fm.ror_list,
+                'ror': self.market.ror_list(),
                 'expected_ror': self.fm.expected_ror_list[1:],
                 'expected_std': self.fm.expected_std_list[1:],
                 'market_times': self.history['run_times']
@@ -814,7 +816,7 @@ class CalibrationSimulation(BasicSimulation):
                         'sell': len(
                             [None] + [bs[1] for bs in self.broker.buy_sell_history]
                         ),
-                        'ror': len([None] + self.fm.ror_list),
+                        'ror': len([None] + self.market.ror_list()),
                         'expected_ror': len(self.fm.expected_ror_list),
                         'expected_std': len(self.fm.expected_std_list),
                         'market_times': len(self.history['time_delta'])

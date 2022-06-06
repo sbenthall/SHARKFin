@@ -89,23 +89,23 @@ class FinanceModel(AbstractExpectations):
     dividend_std = 0.01
 
     # Data structures. These will change over time.
-    starting_price = 100
-    prices = None
-    ror_list = None
+    starting_price = 100 # USE FROM MARKET
+    #prices = None
+    #ror_list = None
 
     expected_ror_list = None
     expected_std_list = None
 
     market = None
 
-    def add_ror(self, ror):
-        """
-        Appends ROR to the list and returns the most recent asset price. MOVE TO MARKET
-        """
-        self.ror_list.append(ror)
-        asset_price = self.prices[-1] * (1 + ror)
-        self.prices.append(asset_price)
-        return asset_price
+    #def add_ror(self, ror):
+    #    """
+    #    Appends ROR to the list and returns the most recent asset price. MOVE TO MARKET
+    #    """
+    #    self.ror_list.append(ror)
+    #    asset_price = self.prices[-1] * (1 + ror)
+    #    self.prices.append(asset_price)
+    #    return asset_price
 
     def __init__(
         self,
@@ -139,7 +139,7 @@ class FinanceModel(AbstractExpectations):
             self.delta_t2 = delta_t2
 
         self.prices = [self.starting_price]
-        self.ror_list = []
+        # self.ror_list = []
         self.expected_ror_list = []
         self.expected_std_list = []
 
@@ -163,8 +163,11 @@ class FinanceModel(AbstractExpectations):
         NOTE: This MUTATES the 'expected_ror_list' and so in current design
         has to be called on a schedule... this should be fixed.
         """
+
+        ror_list = self.market.ror_list()
+
         # note use of data store lists for time tracking here -- not ideal
-        D_t = sum([math.exp(self.a * (l + 1)) for l in range(len(self.ror_list))])
+        D_t = sum([math.exp(self.a * (l + 1)) for l in range(len(ror_list))])
         S_t = math.exp(
             self.b * (len(self.prices) - 1)
         )  # because p_0 is included in this list.
@@ -172,11 +175,11 @@ class FinanceModel(AbstractExpectations):
         w_0 = S_t
         w_t = [
             (1 - S_t) * math.exp(self.a * (t + 1)) / D_t
-            for t in range(len(self.ror_list))
+            for t in range(len(ror_list))
         ]
 
         expected_ror = w_0 * self.sp500_ror + sum(
-            [w_ror[0] * w_ror[1] for w_ror in zip(w_t, self.ror_list)]
+            [w_ror[0] * w_ror[1] for w_ror in zip(w_t, ror_list)]
         )
         self.expected_ror_list.append(expected_ror)
 
@@ -185,7 +188,7 @@ class FinanceModel(AbstractExpectations):
             + sum(
                 [
                     w_ror_er[0] * pow(w_ror_er[1] - expected_ror, 2)
-                    for w_ror_er in zip(w_t, self.ror_list)
+                    for w_ror_er in zip(w_t, ror_list)
                 ]
             )
         )
@@ -195,7 +198,7 @@ class FinanceModel(AbstractExpectations):
         """
         Returns the current risky asset price. MOVE TO MARKET
         """
-        return self.prices[-1]
+        return self.market.prices[-1]
 
     def risky_expectations(self):
         """
@@ -221,7 +224,8 @@ class FinanceModel(AbstractExpectations):
         Reset the data stores back to original value.
         """
         self.prices = [100]
-        self.ror_list = []
+        #self.ror_list = []
+        ## TODO: Reset the market?!
 
         self.expected_ror_list = []
         self.expected_std_list = []
