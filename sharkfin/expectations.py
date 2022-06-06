@@ -2,7 +2,59 @@ from sharkfin.utilities import *
 import math
 import numpy as np
 
-class FinanceModel:
+from abc import ABC, abstractmethod
+import numpy as np
+from typing import Tuple
+
+class AbstractExpectations(ABC):
+    '''
+    Abstract class from which Expectations should inherit
+
+    defines common methods for all market models.
+    '''
+
+    @property
+    @abstractmethod
+    def market(self):
+        """
+        The Market object that this class models.
+        """
+        pass
+
+
+    @abstractmethod
+    def calculate_risky_expectations(self):
+        """
+        Compute the quarterly expectations for the risky asset based on historical return rates.
+
+        In this implementation there are a number of references to:
+          - paramters that are out of scope
+          - data structures that are out of scope
+
+        These should be bundled together somehow.
+
+        NOTE: This MUTATES the 'expected_ror_list' and so in current design
+        has to be called on a schedule... this should be fixed.
+        """
+        pass
+
+    @abstractmethod
+    def risky_expectations(self):
+        """
+        Return quarterly expectations for the risky asset.
+        These are the average and standard deviation for the asset
+        including both capital gains and dividends.
+        """
+        pass
+
+    @abstractmethod
+    def reset(self):
+        """
+        Reset the data stores back to original value.
+        """
+        pass
+
+class FinanceModel(AbstractExpectations):
     """
     A class representing the financial system in the simulation.
 
@@ -44,7 +96,12 @@ class FinanceModel:
     expected_ror_list = None
     expected_std_list = None
 
+    market = None
+
     def add_ror(self, ror):
+        """
+        Appends ROR to the list and returns the most recent asset price. MOVE TO MARKET
+        """
         self.ror_list.append(ror)
         asset_price = self.prices[-1] * (1 + ror)
         self.prices.append(asset_price)
@@ -52,6 +109,7 @@ class FinanceModel:
 
     def __init__(
         self,
+        market,
         dividend_ror=None,
         dividend_std=None,
         p1=None,
@@ -59,6 +117,8 @@ class FinanceModel:
         delta_t1=None,
         delta_t2=None,
     ):
+
+        self.market = market
 
         if dividend_ror:
             self.dividend_ror = dividend_ror
@@ -84,6 +144,10 @@ class FinanceModel:
         self.expected_std_list = []
 
     def asset_price_stats(self):
+        """
+        Get statistics on the price of the asset for final reporting.
+        MOVE TO MARKET.
+        """
         price_stats = {}
 
         price_stats['min_asset_price'] = min(self.prices)
@@ -140,7 +204,7 @@ class FinanceModel:
 
     def rap(self):
         """
-        Returns the current risky asset price.
+        Returns the current risky asset price. MOVE TO MARKET
         """
         return self.prices[-1]
 

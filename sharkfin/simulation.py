@@ -81,9 +81,14 @@ class BasicSimulation(AbstractSimulation):
     start_time = None
     end_time = None
 
-    def __init__(self, pop, fm, q=1, r=None, market=None, dphm=1500):
+    def __init__(self, pop, Fm, q=1, r=None, market=None, dphm=1500):
+        """
+        pop - agent population
+        fm - expectation class
+
+        """
         self.agents = pop.agents
-        self.fm = fm
+
         self.pop = pop
 
         self.dollars_per_hark_money_unit = dphm
@@ -98,6 +103,10 @@ class BasicSimulation(AbstractSimulation):
 
         # Create the Market wrapper
         market = MockMarket() if market is None else market
+
+        self.fm = Fm(market)
+        self.fm.calculate_risky_expectations()
+
         self.broker = Broker(market)
 
         self.history = {}
