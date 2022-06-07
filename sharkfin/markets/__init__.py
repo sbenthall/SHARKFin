@@ -54,6 +54,15 @@ class AbstractMarket(ABC):
 
         return price_stats
 
+    def dummy_run(self):
+        """
+        This acts as if the market 'ran' for one day, but uses the most recent rate of return
+        to compute the next price without any stochasticity.
+        """
+        price = self.prices[-1] / self.prices[-2] * self.prices[-1]
+        self.prices.append(price)
+        return price
+
     def ror_list(self):
         """
         Get a list of the rates of return....

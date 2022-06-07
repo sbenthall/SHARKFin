@@ -120,8 +120,8 @@ def test_calibration_simulation():
     sim = CalibrationSimulation(pop, FinanceModel, q=q, r=r, market=market)
     sim.simulate(n_days=2, buy_sell_shock=(200, 600))
 
-    assert(sim.history['buy_sell'][0] == (0, 0))
+    assert(sim.broker.buy_sell_history[1] == (0, 0))
     # assert(len(sim.history['buy_sell']) == 3) # need the padded day
     data = sim.data()
 
-    assert(len(data['prices']) == 3)
+    assert(len(data['prices']) == 4)
