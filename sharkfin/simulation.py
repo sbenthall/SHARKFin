@@ -81,9 +81,14 @@ class BasicSimulation(AbstractSimulation):
     start_time = None
     end_time = None
 
-    def __init__(self, pop, fm, q=1, r=None, market=None, dphm=1500):
+    def __init__(self, pop, Fm, q=1, r=None, market=None, dphm=1500):
+        """
+        pop - agent population
+        fm - expectation class
+
+        """
         self.agents = pop.agents
-        self.fm = fm
+
         self.pop = pop
 
         self.dollars_per_hark_money_unit = dphm
@@ -97,8 +102,12 @@ class BasicSimulation(AbstractSimulation):
         self.days_per_run = self.days_per_quarter / self.runs_per_quarter
 
         # Create the Market wrapper
-        market = MockMarket() if market is None else market
-        self.broker = Broker(market)
+        self.market = MockMarket() if market is None else market
+
+        self.fm = Fm(self.market)
+        self.fm.calculate_risky_expectations()
+
+        self.broker = Broker(self.market)
 
         self.history = {}
         self.history['buy_sell'] = []
@@ -178,24 +187,25 @@ class BasicSimulation(AbstractSimulation):
         """
         ## DEBUGGING
         data = None
-        try:
-            data_dict = {
-                't': range(len(self.fm.prices[1:])),
-                'prices': self.fm.prices[1:],
-                'buy': [bs[0] for bs in self.broker.buy_sell_history],
-                'sell': [bs[1] for bs in self.broker.buy_sell_history],
-                'buy_macro': [bs[0] for bs in self.broker.buy_sell_macro_history],
-                'sell_macro': [bs[1] for bs in self.broker.buy_sell_macro_history],
-                'owned': self.history['owned_shares'],
-                'total_assets': self.history['total_assets'],
-                'mean_income': self.history['mean_income_level'],
-                'total_consumption': self.history['total_consumption_level'],
-                'permshock_std': self.history['permshock_std'],
-                'ror': self.fm.ror_list,
-                'expected_ror': self.fm.expected_ror_list[1:],
-                'expected_std': self.fm.expected_std_list[1:],
-            }
+        
+        data_dict = {
+            't': range(len(self.market.prices[1:])),
+            'prices': self.market.prices[1:],
+            'buy': [bs[0] for bs in self.broker.buy_sell_history],
+            'sell': [bs[1] for bs in self.broker.buy_sell_history],
+            'buy_macro': [bs[0] for bs in self.broker.buy_sell_macro_history],
+            'sell_macro': [bs[1] for bs in self.broker.buy_sell_macro_history],
+            'owned': self.history['owned_shares'][1:],
+            'total_assets': self.history['total_assets'][1:],
+            'mean_income': self.history['mean_income_level'][1:],
+            'total_consumption': self.history['total_consumption_level'][1:],
+            'permshock_std': self.history['permshock_std'][1:],
+            'ror': self.market.ror_list(),
+            'expected_ror': self.fm.expected_ror_list[1:],
+            'expected_std': self.fm.expected_std_list[1:],
+        }
 
+        try:
             data = pd.DataFrame.from_dict(data_dict)
 
         except Exception as e:
@@ -204,19 +214,7 @@ class BasicSimulation(AbstractSimulation):
                 "Lengths:"
                 + str(
                     {
-                        't': len(self.fm.prices),
-                        'prices': len(self.fm.prices),
-                        'buy': len(
-                            [None] + [bs[0] for bs in self.broker.buy_sell_history]
-                        ),
-                        'sell': len(
-                            [None] + [bs[1] for bs in self.broker.buy_sell_history]
-                        ),
-                        'owned': len(self.history['owned_shares']),
-                        'total_assets': len(self.history['total_assets']),
-                        'ror': len([None] + self.fm.ror_list),
-                        'expected_ror': len(self.fm.expected_ror_list),
-                        'expected_std': len(self.fm.expected_std_list),
+                        key: len(value) for key,value in data_dict.items()
                     }
                 )
             )
@@ -333,6 +331,9 @@ class BasicSimulation(AbstractSimulation):
             for agent in self.agents:
                 agent.shares = self.compute_share_demand(agent)
 
+        ## ?
+        self.track(-1)
+
         # Main loop
         for quarter in range(quarters):
             print(f"Q-{quarter}")
@@ -370,7 +371,7 @@ class BasicSimulation(AbstractSimulation):
 
                     # combine these steps?
                     # add_ror appends to internal history list
-                    self.fm.add_ror(ror) 
+                    #self.fm.add_ror(ror) 
                     self.fm.calculate_risky_expectations()
 
                     day = day + 1
@@ -420,7 +421,7 @@ class BasicSimulation(AbstractSimulation):
         self.history['permshock_std'].append(permshock_std)
         self.history['class_stats'].append(self.pop.class_stats(store=False))
         self.history['total_pop_stats'].append(self.pop.agent_df())
-        self.history['buy_sell'].append(self.broker.buy_sell_history[-1])
+        # self.history['buy_sell'].append(self.broker.buy_sell_history[-1])
 
     def update_agent_wealth_capital_gains(self, old_share_price, ror):
         """
@@ -636,6 +637,9 @@ class AttentionSimulation(BasicSimulation):
             for agent in self.agents:
                 agent.shares = self.compute_share_demand(agent)
 
+        
+        self.track(-1)
+
         # Main loop
         for quarter in range(quarters):
             print(f"Q-{quarter}")
@@ -670,6 +674,7 @@ class AttentionSimulation(BasicSimulation):
                         # putting 0,0 here is a stopgap to make plotting code simpler
                         self.broker.buy_sell_history.append((0, 0))
                         self.broker.buy_sell_macro_history.append((0, 0))
+                        self.market.dummy_run()
 
                     # print(f"Q-{quarter}:D-{day}. {updates} macro-updates.")
 
@@ -679,7 +684,7 @@ class AttentionSimulation(BasicSimulation):
 
                     # combine these steps?
                     # add_ror appends to internal history list
-                    self.fm.add_ror(ror) 
+                    #self.fm.add_ror(ror) 
                     self.fm.calculate_risky_expectations()
 
                     day = day + 1
@@ -696,7 +701,15 @@ class AttentionSimulation(BasicSimulation):
 
         return sim_stats
 
+
 class CalibrationSimulation(BasicSimulation):
+    """
+    A simulation in which the broker makes no activity for some number of days,
+    then executes a preset buy and sell order.
+    Used to test the price impact on the market.
+    """
+    market = None
+
     def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500):
 
         super().__init__(pop, fm, q=q, r=r, market=market, dphm=dphm)
@@ -715,6 +728,8 @@ class CalibrationSimulation(BasicSimulation):
                 agent.shares = self.compute_share_demand(agent)
                 #self.macro_update(agent)
 
+        self.track(-1, 0)
+
         for day in range(n_days):
             start_time = datetime.now()
 
@@ -728,7 +743,7 @@ class CalibrationSimulation(BasicSimulation):
 
             # combine these steps?
             # add_ror appends to internal history list
-            self.fm.add_ror(ror) 
+            #self.fm.add_ror(ror) 
             self.fm.calculate_risky_expectations()
 
             end_time = datetime.now()
@@ -750,7 +765,7 @@ class CalibrationSimulation(BasicSimulation):
 
         self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
 
-        self.fm.add_ror(ror)
+        # self.fm.add_ror(ror)
         self.fm.calculate_risky_expectations()
 
         end_time = datetime.now()
@@ -767,7 +782,7 @@ class CalibrationSimulation(BasicSimulation):
         Tracks the current state of agent's total assets and owned shares
         """
 
-        self.history['buy_sell'].append(self.broker.buy_sell_history[-1])
+        #self.history['buy_sell'].append(self.broker.buy_sell_history[-1])
         self.history['run_times'].append(time_delta)
 
     def data(self):
@@ -776,19 +791,19 @@ class CalibrationSimulation(BasicSimulation):
         """
         ## DEBUGGING
         data = None
+
+        data_dict = {
+            't': range(len(self.market.prices)),
+            'prices': self.market.prices,
+            'buy': [None] + [bs[0] for bs in self.broker.buy_sell_history],
+            'sell': [None] +  [bs[1] for bs in self.broker.buy_sell_history],
+            'ror': [None] + self.market.ror_list(),
+            'expected_ror': self.fm.expected_ror_list,
+            'expected_std': self.fm.expected_std_list,
+            'market_times': self.history['run_times']
+        }
+
         try:
-            data_dict = {
-                't': range(len(self.broker.market.prices[1:])),
-                'prices': self.broker.market.prices[1:],
-                'buy': [bs[0] for bs in self.broker.buy_sell_history],
-                'sell': [bs[1] for bs in self.broker.buy_sell_history],
-                'ror': self.fm.ror_list,
-                'expected_ror': self.fm.expected_ror_list[1:],
-                'expected_std': self.fm.expected_std_list[1:],
-                'market_times': self.history['run_times']
-            }
-
-
             data = pd.DataFrame.from_dict(data_dict)
 
         except Exception as e:
@@ -797,18 +812,7 @@ class CalibrationSimulation(BasicSimulation):
                 "Lengths:"
                 + str(
                     {
-                        't': len(self.fm.prices),
-                        'prices': len(self.fm.prices),
-                        'buy': len(
-                            [None] + [bs[0] for bs in self.broker.buy_sell_history]
-                        ),
-                        'sell': len(
-                            [None] + [bs[1] for bs in self.broker.buy_sell_history]
-                        ),
-                        'ror': len([None] + self.fm.ror_list),
-                        'expected_ror': len(self.fm.expected_ror_list),
-                        'expected_std': len(self.fm.expected_std_list),
-                        'market_times': len(self.history['time_delta'])
+                        key : len(value) for key, value in data_dict.items()
                     }
                 )
             )

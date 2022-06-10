@@ -36,7 +36,40 @@ class AbstractMarket(ABC):
     @abstractmethod
     def close_market():
         pass
-        
+
+    def asset_price_stats(self):
+        """
+        Get statistics on the price of the asset for final reporting.
+        """
+        price_stats = {}
+
+        price_stats['min_asset_price'] = min(self.prices)
+        price_stats['max_asset_price'] = max(self.prices)
+
+        price_stats['idx_min_asset_price'] = np.argmin(self.prices)
+        price_stats['idx_max_asset_price'] = np.argmax(self.prices)
+
+        price_stats['mean_asset_price'] = np.mean(self.prices)
+        price_stats['std_asset_price'] = np.std(self.prices)
+
+        return price_stats
+
+    def dummy_run(self):
+        """
+        This acts as if the market 'ran' for one day, but uses the most recent rate of return
+        to compute the next price without any stochasticity.
+        """
+        price = self.prices[-1] / self.prices[-2] * self.prices[-1]
+        self.prices.append(price)
+        return price
+
+    def ror_list(self):
+        """
+        Get a list of the rates of return....
+
+        TODO: THIS WON'T WORK WITH SOME MARKETS WITH A DIFFERENT ROR CALCULATION?
+        """
+        return [(self.prices[i+1] / self.prices[i]) - 1 for i in range(len(self.prices) - 1)]
 
 class MockMarket(AbstractMarket):
     """
@@ -80,7 +113,7 @@ class MockMarket(AbstractMarket):
         std = 10 + np.log1p(buy_sell[0] + buy_sell[1])
         price = np.random.normal(mean, std)
                 
-        self.prices.append(price)
+        self.prices.append(price) ## TODO: Should this be when the new rate of return is computed?
 
         return price
 

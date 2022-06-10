@@ -58,13 +58,7 @@ def test_attention_simulation():
     n_per_class = 1
 
     pop = AgentPopulation(agent_parameters, dist_params, n_per_class)
-    
-    #initialize the financial model
-    fm = FinanceModel()
-    
-    fm.calculate_risky_expectations()
-    agent_parameters.update(fm.risky_expectations())
-    
+
     #initialize population model
     pop.init_simulation()
 
@@ -75,7 +69,7 @@ def test_attention_simulation():
     r = 1
     market = None
     
-    attsim = AttentionSimulation(pop, fm, a=a, q=q, r=r, market=market)
+    attsim = AttentionSimulation(pop, FinanceModel, a=a, q=q, r=r, market=market)
     attsim.simulate()
 
     ## testing for existence of this class stat
@@ -114,12 +108,6 @@ def test_calibration_simulation():
 
     pop = AgentPopulation(agent_parameters, dist_params, n_per_class)
     
-    #initialize the financial model
-    fm = FinanceModel()
-    
-    fm.calculate_risky_expectations()
-    agent_parameters.update(fm.risky_expectations())
-    
     #initialize population model
     pop.init_simulation()
 
@@ -129,11 +117,11 @@ def test_calibration_simulation():
     r = 1
     market = None
     
-    sim = CalibrationSimulation(pop, fm, q=q, r=r, market=market)
+    sim = CalibrationSimulation(pop, FinanceModel, q=q, r=r, market=market)
     sim.simulate(n_days=2, buy_sell_shock=(200, 600))
 
-    assert(sim.history['buy_sell'][0] == (0, 0))
+    assert(sim.broker.buy_sell_history[1] == (0, 0))
     # assert(len(sim.history['buy_sell']) == 3) # need the padded day
     data = sim.data()
 
-    assert(len(data['prices']) == 3)
+    assert(len(data['prices']) == 4)
