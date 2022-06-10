@@ -98,15 +98,6 @@ class FinanceModel(AbstractExpectations):
 
     market = None
 
-    #def add_ror(self, ror):
-    #    """
-    #    Appends ROR to the list and returns the most recent asset price. MOVE TO MARKET
-    #    """
-    #    self.ror_list.append(ror)
-    #    asset_price = self.prices[-1] * (1 + ror)
-    #    self.prices.append(asset_price)
-    #    return asset_price
-
     def __init__(
         self,
         market,
@@ -155,7 +146,7 @@ class FinanceModel(AbstractExpectations):
         Compute the quarterly expectations for the risky asset based on historical return rates.
 
         In this implementation there are a number of references to:
-          - paramters that are out of scope
+          - parameters that are out of scope
           - data structures that are out of scope
 
         These should be bundled together somehow.
@@ -169,7 +160,7 @@ class FinanceModel(AbstractExpectations):
         # note use of data store lists for time tracking here -- not ideal
         D_t = sum([math.exp(self.a * (l + 1)) for l in range(len(ror_list))])
         S_t = math.exp(
-            self.b * (len(self.prices) - 1)
+            self.b * (len(self.market.prices) - 1)
         )  # because p_0 is included in this list.
 
         w_0 = S_t
