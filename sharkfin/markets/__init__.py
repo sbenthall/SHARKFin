@@ -109,12 +109,27 @@ class MockMarket(AbstractMarket):
         self.last_seed = seed
         self.last_buy_sell = buy_sell
 
-        mean = 100 + np.log1p(buy_sell[0]) - np.log1p(buy_sell[1])
-        std = 10 + np.log1p(buy_sell[0] + buy_sell[1])
-        price = np.random.normal(mean, std)
-                
+        print("run_market, buy_sell: " + str(buy_sell))
+
+        # target ror of the price distribution with no broker impact
+        price_ror = self.prices[-1] * (1 + self.sp500_ror)
+        # target variance of the price distribution with no broker impact
+        price_std = self.prices[-1] * self.sp500_std
+
+        # mean of underlying normal distribution
+        exp_ror = np.log((price_ror ** 2) / np.sqrt(price_ror ** 2 + price_std ** 2))
+        # standard deviation of underlying distribution
+        exp_std = np.sqrt(np.log( 1 + price_std ** 2 / price_ror ** 2))
+
+        # broken code reflecting price impact
+        # mean = 0.000628 + np.log1p(np.float64(buy_sell[0])) - np.log1p(np.float64(buy_sell[1]))
+        # std = 1 + np.log1p(np.float64(buy_sell[0] + buy_sell[1]))
+        
+        price = np.random.lognormal(exp_ror, exp_std)
+
         self.prices.append(price) ## TODO: Should this be when the new rate of return is computed?
 
+        print('price: ' + str(price))
         return price
 
     def get_simulation_price(self, seed=0, buy_sell=(0, 0)):
@@ -136,14 +151,11 @@ class MockMarket(AbstractMarket):
 
         last_sim_price = self.get_simulation_price(seed=seed, buy_sell=buy_sell)
 
-        if last_sim_price is None:
-            last_sim_price = self.default_sim_price
+        #if last_sim_price is None:
+        #   last_sim_price = self.default_sim_price
 
-        ror = (last_sim_price * self.simulation_price_scale - 100) / 100
-
-        ror = (
-            self.sp500_std * (ror) + self.sp500_ror
-        )
+        # ror = (last_sim_price * self.simulation_price_scale - 100) / 100
+        ror = (self.prices[-1] - self.prices[-2])/self.prices[-2]
 
         return ror
 

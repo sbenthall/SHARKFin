@@ -695,7 +695,7 @@ class AttentionSimulation(BasicSimulation):
 
     def sim_stats(self):
 
-        sim_stats = self.super().sim_stats()
+        sim_stats = super().sim_stats()
 
         sim_stats['attention'] = self.attention_rate
 

@@ -8,15 +8,6 @@ from HARK.Calibration.Income.IncomeTools import (
      sabelhaus_song_var_profile,
 )
 
-def test_mock_market():
-  mock = MockMarket()
-
-  mock.run_market()
-
-  price = mock.get_simulation_price()
-
-  ror = mock.daily_rate_of_return(buy_sell=(0,0))
-
 # See #72 #74 - either make this conditional on proper PNL installation
 # or remove if we are deprecating that feature
 #
@@ -76,6 +67,8 @@ def test_attention_simulation():
     attsim.pop.class_stats()['mNrm_ratio_StE_mean']
 
     attsim.data()['sell_macro']
+
+    attsim.simstats()
 
 
 def test_calibration_simulation():
