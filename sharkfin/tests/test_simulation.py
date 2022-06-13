@@ -68,7 +68,7 @@ def test_attention_simulation():
 
     attsim.data()['sell_macro']
 
-    attsim.simstats()
+    attsim.sim_stats()
 
 
 def test_calibration_simulation():

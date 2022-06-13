@@ -1,21 +1,25 @@
 from sharkfin.markets import MockMarket
+import unittest
 
 
 import numpy as np
 
-def test_MockMarket():
-    market = MockMarket()
+class TestMockMarket(unittest.TestCase):
 
-    market.run_market()
-    market.run_market(buy_sell=(10,10))
-    market.run_market(buy_sell=(50,0))
+    def test_mock(self):
+        market = MockMarket()
 
-    ## test dummy_run
-    market.dummy_run()
-    assert market.prices[-1] / market.prices[-2] == market.prices[-2] / market.prices[-3]
+        market.run_market()
+        market.run_market(buy_sell=(10,10))
+        market.run_market(buy_sell=(50,0))
 
-    assert all([p > 0 for p in market.prices])
+        ## test dummy_run
+        market.dummy_run()
+        self.assertAlmostEqual(market.prices[-1] / market.prices[-2], market.prices[-2] / market.prices[-3])
 
-    price = mock.get_simulation_price()
+        # all prices should be positive
+        assert all([p > 0 for p in market.prices])
 
-    ror = mock.daily_rate_of_return(buy_sell=(0,0))
+        price = market.get_simulation_price()
+
+        ror = market.daily_rate_of_return(buy_sell=(0,0))
