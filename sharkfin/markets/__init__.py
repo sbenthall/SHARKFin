@@ -40,6 +40,9 @@ class AbstractMarket(ABC):
 
     @abstractmethod
     def daily_rate_of_return(self, seed: int, buy_sell: Tuple[int, int]):
+        """
+        Just the ROR of the price, not including the dividend.
+        """
         pass
 
     @abstractmethod
@@ -79,7 +82,9 @@ class AbstractMarket(ABC):
 
     def ror_list(self):
         """
-        Get a list of the rates of return....
+        Get a list of the rates of return, INCLUDING the dividend.
+        Note the difference with daily_rate_of_return.
+        This should be refactored for clarity.
 
         TODO: THIS WON'T WORK WITH SOME MARKETS WITH A DIFFERENT ROR CALCULATION?
         """

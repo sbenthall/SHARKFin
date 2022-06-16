@@ -323,6 +323,8 @@ class BasicSimulation(AbstractSimulation):
 
     def simulate(self, quarters=None, start=True):
         """
+        DUMMY METHOD -- need to functionalize/parameterize out.
+        See #88
         Workhorse method that runs the simulation.
         """
         self.start_time = datetime.now()
@@ -350,7 +352,7 @@ class BasicSimulation(AbstractSimulation):
                 # Basic simulation has an attention rate of 1
                 self.broker.transact(self.attend(agent))
 
-                buy_sell, ror = self.broker.trade()
+                buy_sell, ror, price, dividend = self.broker.trade()
                 # print("ror: " + str(ror))
 
                 new_run = True
@@ -369,7 +371,7 @@ class BasicSimulation(AbstractSimulation):
                         # putting 0,0 here is a stopgap to make plotting code simpler
                         self.broker.track((0, 0),(0, 0))
 
-                    self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
+                    self.update_agent_wealth_capital_gains(price, ror)
 
                     self.track(day)
 
@@ -427,7 +429,7 @@ class BasicSimulation(AbstractSimulation):
         self.history['total_pop_stats'].append(self.pop.agent_df())
         # self.history['buy_sell'].append(self.broker.buy_sell_history[-1])
 
-    def update_agent_wealth_capital_gains(self, old_share_price, ror):
+    def update_agent_wealth_capital_gains(self, new_share_price, ror, dividend):
         """
         For all agents,
         given the old share price
@@ -437,13 +439,14 @@ class BasicSimulation(AbstractSimulation):
         for the most recent round of capital gains.
         """
 
-        new_share_price = old_share_price * (1 + ror)
+        old_share_price = new_share_price / (1 + ror)
 
         for agent in self.agents:
             old_raw = agent.shares * old_share_price
             new_raw = agent.shares * new_share_price
+            dividends = agent.shares * dividend
 
-            delta_aNrm = (new_raw - old_raw) / (
+            delta_aNrm = (new_raw - old_raw + dividends) / (
                 self.dollars_per_hark_money_unit * agent.state_now['pLvl']
             )
 
@@ -656,7 +659,7 @@ class AttentionSimulation(BasicSimulation):
                     if random.random() < self.attention_rate:
                         self.broker.transact(self.attend(agent))
 
-                buy_sell, ror, price = self.broker.trade()
+                buy_sell, ror, price, dividend = self.broker.trade()
                 # print("ror: " + str(ror))
 
                 new_run = True
@@ -680,7 +683,7 @@ class AttentionSimulation(BasicSimulation):
 
                     # print(f"Q-{quarter}:D-{day}. {updates} macro-updates.")
 
-                    self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
+                    self.update_agent_wealth_capital_gains(price, ror, dividend)
 
                     self.track(day)
 
@@ -739,9 +742,9 @@ class CalibrationSimulation(BasicSimulation):
             for agent in self.agents:
                 self.broker.transact(np.zeros(1))
 
-            buy_sell, ror, price = self.broker.trade()
+            buy_sell, ror, price, dividend = self.broker.trade()
                 
-            self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
+            self.update_agent_wealth_capital_gains(price, ror, dividend)
 
             # combine these steps?
             # add_ror appends to internal history list
@@ -763,9 +766,9 @@ class CalibrationSimulation(BasicSimulation):
         sell = -buy_sell_shock[1]
 
         self.broker.transact(np.array((buy, sell)))
-        buy_sell, ror, price = self.broker.trade()
+        buy_sell, ror, price, dividend = self.broker.trade()
 
-        self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
+        self.update_agent_wealth_capital_gains(price, ror, dividend)
 
         # self.fm.add_ror(ror)
         self.fm.calculate_risky_expectations()
