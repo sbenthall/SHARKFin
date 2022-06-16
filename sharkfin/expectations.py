@@ -107,6 +107,7 @@ class FinanceModel(AbstractExpectations):
         p2=None,
         delta_t1=None,
         delta_t2=None,
+        days_per_quarter = None
     ):
 
         self.market = market
@@ -128,6 +129,9 @@ class FinanceModel(AbstractExpectations):
 
         if delta_t2:
             self.delta_t2 = delta_t2
+
+        if days_per_quarter:
+            self.days_per_quarter = days_per_quarter
 
         self.prices = [self.starting_price]
         # self.ror_list = []

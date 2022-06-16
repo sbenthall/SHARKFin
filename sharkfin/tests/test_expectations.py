@@ -5,7 +5,7 @@ from sharkfin.markets import MockMarket
 import numpy as np
 
 def test_FinanceModel():
-    fm = FinanceModel(MockMarket())
+    fm = FinanceModel(MockMarket(), days_per_quarter = 30)
 
     fm.market.run_market()
     fm.calculate_risky_expectations()

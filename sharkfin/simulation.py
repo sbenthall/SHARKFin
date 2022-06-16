@@ -81,7 +81,7 @@ class BasicSimulation(AbstractSimulation):
     start_time = None
     end_time = None
 
-    def __init__(self, pop, Fm, q=1, r=None, market=None, dphm=1500):
+    def __init__(self, pop, Fm, q=1, r=None, market=None, dphm=1500, days_per_quarter = 60):
         """
         pop - agent population
         fm - expectation class
@@ -95,6 +95,8 @@ class BasicSimulation(AbstractSimulation):
 
         self.quarters_per_simulation = q
 
+        self.days_per_quarter = days_per_quarter
+
         if r is not None:
             self.runs_per_quarter = r
         else:
@@ -104,7 +106,7 @@ class BasicSimulation(AbstractSimulation):
         # Create the Market wrapper
         self.market = MockMarket() if market is None else market
 
-        self.fm = Fm(self.market)
+        self.fm = Fm(self.market, days_per_quarter = self.days_per_quarter)
         self.fm.calculate_risky_expectations()
 
         self.broker = Broker(self.market)
@@ -605,7 +607,7 @@ class AttentionSimulation(BasicSimulation):
     ## upping this to make more agents engaged in trade
     attention_rate = None
 
-    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500):
+    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500, days_per_quarter = 60):
 
         super().__init__(pop, fm, q=q, r=r, market=None, dphm=dphm)
 
