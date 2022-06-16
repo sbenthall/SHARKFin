@@ -16,13 +16,22 @@ class AbstractMarket(ABC):
         """
         pass
 
+    @property
     @abstractmethod
-    def run_market():
+    def dividends(self):
+        """
+        A list of prices, beginning with the default price.
+        """
+        pass
+
+    @abstractmethod
+    def run_market(self) -> tuple([float, float]):
         """
         Runs the market for one day and returns the price.
         """
         price = 100
-        return price
+        dividend = 5.0 / 60
+        return price, dividend
 
     @abstractmethod
     def get_simulation_price(self, seed: int, buy_sell: Tuple[int, int]):
@@ -61,7 +70,12 @@ class AbstractMarket(ABC):
         """
         price = self.prices[-1] / self.prices[-2] * self.prices[-1]
         self.prices.append(price)
-        return price
+
+        price_to_dividend_ratio = 60 / 0.05
+        dividend = price / price_to_dividend_ratio
+        self.dividends.append(dividend)
+        
+        return price, dividend
 
     def ror_list(self):
         """
@@ -69,7 +83,7 @@ class AbstractMarket(ABC):
 
         TODO: THIS WON'T WORK WITH SOME MARKETS WITH A DIFFERENT ROR CALCULATION?
         """
-        return [(self.prices[i+1] / self.prices[i]) - 1 for i in range(len(self.prices) - 1)]
+        return [((self.prices[i+1] + self.dividends[i + 1])/ self.prices[i]) - 1 for i in range(len(self.prices) - 1)]
 
 class MockMarket(AbstractMarket):
     """
@@ -97,9 +111,11 @@ class MockMarket(AbstractMarket):
     seeds = []
 
     prices = None
+    dividends = None
 
     def __init__(self):
         self.prices = [self.default_sim_price]
+        self.dividends = [0]
         pass
 
     def run_market(self, seed=0, buy_sell=(0,0)):
@@ -130,7 +146,13 @@ class MockMarket(AbstractMarket):
         self.prices.append(price) ## TODO: Should this be when the new rate of return is computed?
 
         print('price: ' + str(price))
-        return price
+
+        # discounted future value, divided by days per quarter
+        price_to_dividend_ratio = 60 / 0.05
+        dividend = price / price_to_dividend_ratio
+        self.dividends.append(dividend)
+
+        return price, dividend
 
     def get_simulation_price(self, seed=0, buy_sell=(0, 0)):
         """

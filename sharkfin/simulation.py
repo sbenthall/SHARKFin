@@ -242,12 +242,14 @@ class BasicSimulation(AbstractSimulation):
             "RiskyStd": agent.parameters['RiskyStd'],
         }
 
-        dividend_risky_params = {
-            "RiskyAvg": 1 + self.fm.dividend_ror,
-            "RiskyStd": self.fm.dividend_std,
+
+        # No change -- both capital gains and dividends awarded daily. See #100
+        macro_risky_params = {
+            "RiskyAvg": 1,
+            "RiskyStd": 0,
         }
 
-        agent.assign_parameters(**dividend_risky_params)
+        agent.assign_parameters(**macro_risky_params)
 
         agent.simulate(sim_periods=1)
 
@@ -567,8 +569,6 @@ class BasicSimulation(AbstractSimulation):
         sim_stats['total_population_aLvl_mean'] = total_pop_aLvl_mean
         sim_stats['total_population_aLvl_std'] = total_pop_aLvl_std
 
-        sim_stats['dividend_ror'] = self.fm.dividend_ror
-        sim_stats['dividend_std'] = self.fm.dividend_std
         sim_stats['p1'] = self.fm.p1
         sim_stats['p2'] = self.fm.p2
         sim_stats['delta_t1'] = self.fm.delta_t1
