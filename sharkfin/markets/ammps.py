@@ -9,7 +9,30 @@ import time
 
 
 class ClientRPCMarket(AbstractMarket):
-    def __init__(self, seed_limit=None, queue_name='', host='localhost'):
+
+    dividend_growth_rate = None
+    
+    dividend_std = None
+    
+    dividends = None
+    
+    prices = None
+
+    def __init__(self,
+        seed_limit=None,
+        queue_name='',
+        host='localhost',
+        dividend_growth_rate = 1.000628,
+        dividend_std = 0.011988,
+        price_to_dividend_ratio = 60 / 0.05
+        ):
+
+        # discounted future value, divided by days per quarter
+        self.price_to_dividend_ratio = price_to_dividend_ratio
+
+        self.dividend_growth_rate = dividend_growth_rate
+        self.dividend_std = dividend_std
+
         self.simulation_price_scale = 1
         self.default_sim_price = 100
 
@@ -22,16 +45,6 @@ class ClientRPCMarket(AbstractMarket):
 
         # Storing the last market arguments used for easy access to most
         # recent data
-
-
-        # config object for PNL - do we need for AMMPS?
-
-        # sample - modifier for the seed
-
-        # self.config = UTIL.read_config(
-        #     config_file = config_file,
-        #     config_local_file = config_local_file
-        # )
 
         self.sample = 0
         self.seeds = []

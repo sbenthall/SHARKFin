@@ -1,4 +1,5 @@
 from sharkfin.markets import MockMarket
+from sharkfin.markets.ammps import ClientRPCMarket
 import unittest
 
 
@@ -28,3 +29,13 @@ class TestMockMarket(unittest.TestCase):
         assert len(market.prices) == len(market.dividends)
 
         assert market.ror_list()[2] == (market.prices[3] + market.dividends[3]) / market.prices[2] - 1
+
+class TestRPCMarket(unittest.TestCase):
+
+    def test_rpc_market(self):
+        ## mainly testing abstract class instantiation and syntax at this point
+        try:
+            ClientRPCMarket()
+
+        except Exception as e:
+            print(e)
