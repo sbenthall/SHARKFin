@@ -56,6 +56,7 @@ class ClientRPCMarket(AbstractMarket):
 
         self.latest_price = None
         self.prices = [self.default_sim_price]
+        self.dividends = [self.default_sim_price / self.price_to_dividend_ratio]
 
         self.rpc_queue_name = queue_name
         self.rpc_host_name = host
@@ -111,7 +112,16 @@ class ClientRPCMarket(AbstractMarket):
         self.last_buy_sell = buy_sell
         self.seeds.append(seed)
 
-        data = {'seed': seed, 'bl': buy_sell[0], 'sl': buy_sell[1], 'end_simulation': False}
+        new_dividend = self.next_dividend()
+        self.dividends.append(new_dividend)
+
+        data = {
+            'seed': seed,
+            'bl': buy_sell[0],
+            'sl': buy_sell[1],
+            'dividend' : new_dividend,
+            'end_simulation': False
+            }
 
         self.response = None
 
@@ -127,11 +137,6 @@ class ClientRPCMarket(AbstractMarket):
 
         self.latest_price = float(self.response)
         self.prices.append(float(self.response))
-
-        # discounted future value, divided by days per quarter
-        price_to_dividend_ratio = 0.05 / 60
-        dividend = self.latest_price / price_to_dividend_ratio
-        self.dividends.append(dividend)
         
         return self.latest_price, dividend
 
