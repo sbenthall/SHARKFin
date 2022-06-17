@@ -60,7 +60,9 @@ def test_attention_simulation():
     r = 1
     market = None
     
-    attsim = AttentionSimulation(pop, FinanceModel, a=a, q=q, r=r, market=market)
+    days_per_quarter = 30
+
+    attsim = AttentionSimulation(pop, FinanceModel, a=a, q=q, r=r, market=market, days_per_quarter = days_per_quarter)
     attsim.simulate()
 
     ## testing for existence of this class stat
@@ -69,6 +71,9 @@ def test_attention_simulation():
     attsim.data()['sell_macro']
 
     attsim.sim_stats()
+
+    assert attsim.days_per_quarter == days_per_quarter
+    assert attsim.fm.days_per_quarter == days_per_quarter
 
 
 def test_calibration_simulation():
