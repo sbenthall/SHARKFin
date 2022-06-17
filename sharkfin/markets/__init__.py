@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import numpy as np
 from typing import Tuple
+
 class AbstractMarket(ABC):
     '''
     Abstract class from which market models should inherit
@@ -166,7 +167,6 @@ class MockMarket(AbstractMarket):
 
         self.prices = [self.default_sim_price]
         self.dividends = [self.default_sim_price / self.price_to_dividend_ratio]
-        pass
 
     def run_market(self, seed=0, buy_sell=(0,0)):
         """
