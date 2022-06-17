@@ -92,14 +92,8 @@ class AbstractMarket(ABC):
 
 class MockMarket(AbstractMarket):
     """
-    A wrapper around the Market PNL model with methods for getting
-    data from recent runs.
-
-    Parameters
-    ----------
-    config_file
-    config_local_file
-
+    A simple market that produces prices and dividends according to a lognormal
+    random walk.
     """
     simulation_price_scale = 1.0
     default_sim_price = 100
@@ -118,7 +112,20 @@ class MockMarket(AbstractMarket):
     prices = None
     dividends = None
 
-    def __init__(self):
+    def __init__(
+        self,
+        dividend_growth_rate = 1.000628,
+        dividend_std = 0.011988,
+        price_to_dividend_ratio = 60 / 0.05
+        ):
+        """
+        """
+        # discounted future value, divided by days per quarter
+        self.price_to_dividend_ratio = price_to_dividend_ratio
+
+        self.dividend_growth_rate = dividend_growth_rate
+        self.dividend_std = dividend_std
+
         self.prices = [self.default_sim_price]
         self.dividends = [0]
         pass
@@ -133,9 +140,9 @@ class MockMarket(AbstractMarket):
         print("run_market, buy_sell: " + str(buy_sell))
 
         # target ror of the price distribution with no broker impact
-        price_ror = self.prices[-1] * (1 + self.sp500_ror)
+        price_ror = 1
         # target variance of the price distribution with no broker impact
-        price_std = self.prices[-1] * self.sp500_std
+        price_std = self.dividend_std
 
         # mean of underlying normal distribution
         exp_ror = np.log((price_ror ** 2) / np.sqrt(price_ror ** 2 + price_std ** 2))
@@ -146,15 +153,13 @@ class MockMarket(AbstractMarket):
         # mean = 0.000628 + np.log1p(np.float64(buy_sell[0])) - np.log1p(np.float64(buy_sell[1]))
         # std = 1 + np.log1p(np.float64(buy_sell[0] + buy_sell[1]))
         
-        price = np.random.lognormal(exp_ror, exp_std)
+        price = self.prices[-1] * np.random.lognormal(exp_ror, exp_std) * self.dividend_growth_rate
 
         self.prices.append(price) ## TODO: Should this be when the new rate of return is computed?
 
         print('price: ' + str(price))
 
-        # discounted future value, divided by days per quarter
-        price_to_dividend_ratio = 60 / 0.05
-        dividend = price / price_to_dividend_ratio
+        dividend = price / self.price_to_dividend_ratio
         self.dividends.append(dividend)
 
         return price, dividend
