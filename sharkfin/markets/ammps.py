@@ -138,7 +138,7 @@ class ClientRPCMarket(AbstractMarket):
         self.latest_price = float(self.response)
         self.prices.append(float(self.response))
         
-        return self.latest_price, dividend
+        return self.latest_price, new_dividend
 
     def get_simulation_price(self, seed=0, buy_sell=(0, 0)):
         return self.latest_price
