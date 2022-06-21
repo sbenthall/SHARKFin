@@ -9,6 +9,9 @@ import time
 
 
 class ClientRPCMarket(AbstractMarket):
+
+    prices = None
+
     def __init__(self, seed_limit=None, queue_name='', host='localhost'):
         self.simulation_price_scale = 1
         self.default_sim_price = 100

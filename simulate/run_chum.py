@@ -85,16 +85,10 @@ def run_simulation(
     # initialize population
     pop = AgentPopulation(agent_parameters, dist_params, 5)
 
-    # Initialize the financial model
-    fm = FinanceModel() if fm is None else fm
-
-    fm.calculate_risky_expectations()
-    agent_parameters.update(fm.risky_expectations())
-
     # Initialize the population model
     pop.init_simulation()
 
-    sim = CalibrationSimulation(pop, fm, a = a, q = q, r = r, market = market)
+    sim = CalibrationSimulation(pop, FinanceModel, a = a, q = q, r = r, market = market)
     
     sim.simulate(pad, buy_sell_shock=(buy, sell))
 
