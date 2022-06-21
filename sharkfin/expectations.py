@@ -84,10 +84,6 @@ class FinanceModel(AbstractExpectations):
 
     b = math.log(p2) / delta_t2
 
-    # Quarterly dividend rate and standard deviation.
-    dividend_ror = 0.03
-    dividend_std = 0.01
-
     # Data structures. These will change over time.
     starting_price = 100 # USE FROM MARKET
     #prices = None
@@ -101,8 +97,6 @@ class FinanceModel(AbstractExpectations):
     def __init__(
         self,
         market,
-        dividend_ror=None,
-        dividend_std=None,
         p1=None,
         p2=None,
         delta_t1=None,
@@ -111,12 +105,6 @@ class FinanceModel(AbstractExpectations):
     ):
 
         self.market = market
-
-        if dividend_ror:
-            self.dividend_ror = dividend_ror
-
-        if dividend_std:
-            self.dividend_std = dividend_std
 
         if p1:
             self.p1 = p1
@@ -205,12 +193,7 @@ class FinanceModel(AbstractExpectations):
         ex_cg_q_ror = ror_quarterly(self.expected_ror_list[-1], self.days_per_quarter)
         ex_cg_q_std = sig_quarterly(self.expected_std_list[-1], self.days_per_quarter)
 
-        # factor in dividend:
-        cg_w_div_ror, cg_w_div_std = combine_lognormal_rates(
-            ex_cg_q_ror, ex_cg_q_std, self.dividend_ror, self.dividend_std
-        )
-
-        market_risky_params = {'RiskyAvg': 1 + cg_w_div_ror, 'RiskyStd': cg_w_div_std}
+        market_risky_params = {'RiskyAvg': 1 + ex_cg_q_ror, 'RiskyStd': ex_cg_q_std}
 
         return market_risky_params
 

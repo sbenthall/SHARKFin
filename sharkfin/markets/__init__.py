@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import numpy as np
 from typing import Tuple
+
 class AbstractMarket(ABC):
     '''
     Abstract class from which market models should inherit
@@ -16,13 +17,38 @@ class AbstractMarket(ABC):
         """
         pass
 
+    @property
     @abstractmethod
-    def run_market():
+    def dividends(self):
+        """
+        A list of prices, beginning with the default price.
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def dividend_growth_rate(self):
+        """
+        A list of prices, beginning with the default price.
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def dividend_std(self):
+        """
+        A list of prices, beginning with the default price.
+        """
+        pass
+
+    @abstractmethod
+    def run_market(self) -> tuple([float, float]):
         """
         Runs the market for one day and returns the price.
         """
         price = 100
-        return price
+        dividend = 5.0 / 60
+        return price, dividend
 
     @abstractmethod
     def get_simulation_price(self, seed: int, buy_sell: Tuple[int, int]):
@@ -31,6 +57,9 @@ class AbstractMarket(ABC):
 
     @abstractmethod
     def daily_rate_of_return(self, seed: int, buy_sell: Tuple[int, int]):
+        """
+        Just the ROR of the price, not including the dividend.
+        """
         pass
 
     @abstractmethod
@@ -61,26 +90,46 @@ class AbstractMarket(ABC):
         """
         price = self.prices[-1] / self.prices[-2] * self.prices[-1]
         self.prices.append(price)
-        return price
+
+        price_to_dividend_ratio = 60 / 0.05
+        dividend = price / price_to_dividend_ratio
+        self.dividends.append(dividend)
+        
+        return price, dividend
 
     def ror_list(self):
         """
-        Get a list of the rates of return....
+        Get a list of the rates of return, INCLUDING the dividend.
+        Note the difference with daily_rate_of_return.
+        This should be refactored for clarity.
 
         TODO: THIS WON'T WORK WITH SOME MARKETS WITH A DIFFERENT ROR CALCULATION?
         """
-        return [(self.prices[i+1] / self.prices[i]) - 1 for i in range(len(self.prices) - 1)]
+        return [((self.prices[i+1] + self.dividends[i + 1])/ self.prices[i]) - 1 for i in range(len(self.prices) - 1)]
+
+    def next_dividend(self):
+        """
+        Gets a new dividend value from the old dividend value.
+        Uses the dividend growth rate and std.
+        A lognormal walk by default, can be overridden.
+        """
+
+        div_psi_ror = 1
+        # target variance of the price distribution with no broker impact
+        div_psi_std = self.dividend_std
+
+        # mean of underlying normal distribution
+        exp_ror = np.log((div_psi_ror ** 2) / np.sqrt(div_psi_ror ** 2 + div_psi_std ** 2))
+        # standard deviation of underlying distribution
+        exp_std = np.sqrt(np.log(1 + div_psi_std ** 2 / div_psi_ror ** 2))
+
+        return self.dividends[-1] * np.random.lognormal(exp_ror, exp_std) * self.dividend_growth_rate
+
 
 class MockMarket(AbstractMarket):
     """
-    A wrapper around the Market PNL model with methods for getting
-    data from recent runs.
-
-    Parameters
-    ----------
-    config_file
-    config_local_file
-
+    A simple market that produces prices and dividends according to a lognormal
+    random walk.
     """
     simulation_price_scale = 1.0
     default_sim_price = 100
@@ -97,10 +146,27 @@ class MockMarket(AbstractMarket):
     seeds = []
 
     prices = None
+    dividends = None
 
-    def __init__(self):
+    dividend_growth_rate = None
+    dividend_std = None
+
+    def __init__(
+        self,
+        dividend_growth_rate = 1.000628,
+        dividend_std = 0.011988,
+        price_to_dividend_ratio = 60 / 0.05
+        ):
+        """
+        """
+        # discounted future value, divided by days per quarter
+        self.price_to_dividend_ratio = price_to_dividend_ratio
+
+        self.dividend_growth_rate = dividend_growth_rate
+        self.dividend_std = dividend_std
+
         self.prices = [self.default_sim_price]
-        pass
+        self.dividends = [self.default_sim_price / self.price_to_dividend_ratio]
 
     def run_market(self, seed=0, buy_sell=(0,0)):
         """
@@ -111,26 +177,16 @@ class MockMarket(AbstractMarket):
 
         print("run_market, buy_sell: " + str(buy_sell))
 
-        # target ror of the price distribution with no broker impact
-        price_ror = self.prices[-1] * (1 + self.sp500_ror)
-        # target variance of the price distribution with no broker impact
-        price_std = self.prices[-1] * self.sp500_std
+        new_dividend = self.next_dividend()
+        new_price = new_dividend * self.price_to_dividend_ratio
 
-        # mean of underlying normal distribution
-        exp_ror = np.log((price_ror ** 2) / np.sqrt(price_ror ** 2 + price_std ** 2))
-        # standard deviation of underlying distribution
-        exp_std = np.sqrt(np.log( 1 + price_std ** 2 / price_ror ** 2))
+        self.prices.append(new_price) ## TODO: Should this be when the new rate of return is computed?
 
-        # broken code reflecting price impact
-        # mean = 0.000628 + np.log1p(np.float64(buy_sell[0])) - np.log1p(np.float64(buy_sell[1]))
-        # std = 1 + np.log1p(np.float64(buy_sell[0] + buy_sell[1]))
-        
-        price = np.random.lognormal(exp_ror, exp_std)
+        print('price: ' + str(new_price))
 
-        self.prices.append(price) ## TODO: Should this be when the new rate of return is computed?
+        self.dividends.append(new_dividend)
 
-        print('price: ' + str(price))
-        return price
+        return new_price, new_dividend
 
     def get_simulation_price(self, seed=0, buy_sell=(0, 0)):
         """
