@@ -13,11 +13,11 @@ from sharkfin.broker import Broker
 
 
 class AbstractSimulation(ABC):
-    '''
+    """
     Abstract class from which simulation classews should inherit
 
     Defines common methods for all SHARK simulations.
-    '''
+    """
 
     @abstractmethod
     def data(self):
@@ -82,14 +82,23 @@ class BasicSimulation(AbstractSimulation):
     start_time = None
     end_time = None
 
-    def __init__(self, pop, fm, q=1, r=None, market=None, dphm=1500):
+    def __init__(
+        self, pop, Fm, q=1, r=None, market=None, dphm=1500, days_per_quarter=60
+    ):
+        """
+        pop - agent population
+        fm - expectation class
+
+        """
         self.agents = pop.agents
-        self.fm = fm
+
         self.pop = pop
 
         self.dollars_per_hark_money_unit = dphm
 
         self.quarters_per_simulation = q
+
+        self.days_per_quarter = days_per_quarter
 
         if r is not None:
             self.runs_per_quarter = r
@@ -98,18 +107,22 @@ class BasicSimulation(AbstractSimulation):
         self.days_per_run = self.days_per_quarter / self.runs_per_quarter
 
         # Create the Market wrapper
-        market = MockMarket() if market is None else market
-        self.broker = Broker(market)
+        self.market = MockMarket() if market is None else market
+
+        self.fm = Fm(self.market, days_per_quarter=self.days_per_quarter)
+        self.fm.calculate_risky_expectations()
+
+        self.broker = Broker(self.market)
 
         self.history = {}
-        self.history['buy_sell'] = []
-        self.history['owned_shares'] = []
-        self.history['total_assets'] = []
-        self.history['mean_income_level'] = []
-        self.history['total_consumption_level'] = []
-        self.history['permshock_std'] = []
-        self.history['class_stats'] = []
-        self.history['total_pop_stats'] = []
+        self.history["buy_sell"] = []
+        self.history["owned_shares"] = []
+        self.history["total_assets"] = []
+        self.history["mean_income_level"] = []
+        self.history["total_consumption_level"] = []
+        self.history["permshock_std"] = []
+        self.history["class_stats"] = []
+        self.history["total_pop_stats"] = []
 
         # assign macro-days to each agent
         # This is a somewhat frustrating artifact to be cleaned up...
@@ -161,10 +174,12 @@ class BasicSimulation(AbstractSimulation):
 
         # Using their expectations, construct function depending on
         # perceptions/beliefs about the stock market
-        ShareFuncAdj = lambda m: functions["ShareFuncAdj"](m, agent.RiskyAvg, agent.RiskyStd)
+        ShareFuncAdj = lambda m: functions["ShareFuncAdj"](
+            m, agent.RiskyAvg, agent.RiskyStd
+        )
 
-        cNrm = agent.controls['cNrm'] if 'cNrm' in agent.controls else 0
-        asset_normalized = agent.state_now['aNrm'] + cNrm
+        cNrm = agent.controls["cNrm"] if "cNrm" in agent.controls else 0
+        asset_normalized = agent.state_now["aNrm"] + cNrm
         # breakpoint()
 
         # ShareFunc takes normalized market assets as argument
@@ -172,10 +187,10 @@ class BasicSimulation(AbstractSimulation):
 
         # denormalize the risky share. See https://github.com/econ-ark/HARK/issues/986
         risky_asset_wealth = (
-                risky_share
-                * asset_normalized
-                * agent.state_now['pLvl']
-                * self.dollars_per_hark_money_unit
+            risky_share
+            * asset_normalized
+            * agent.state_now["pLvl"]
+            * self.dollars_per_hark_money_unit
         )
 
         shares = risky_asset_wealth / self.fm.rap()
@@ -191,47 +206,31 @@ class BasicSimulation(AbstractSimulation):
         """
         ## DEBUGGING
         data = None
-        try:
-            data_dict = {
-                't': range(len(self.fm.prices[1:])),
-                'prices': self.fm.prices[1:],
-                'buy': [bs[0] for bs in self.broker.buy_sell_history],
-                'sell': [bs[1] for bs in self.broker.buy_sell_history],
-                'buy_macro': [bs[0] for bs in self.broker.buy_sell_macro_history],
-                'sell_macro': [bs[1] for bs in self.broker.buy_sell_macro_history],
-                'owned': self.history['owned_shares'],
-                'total_assets': self.history['total_assets'],
-                'mean_income': self.history['mean_income_level'],
-                'total_consumption': self.history['total_consumption_level'],
-                'permshock_std': self.history['permshock_std'],
-                'ror': self.fm.ror_list,
-                'expected_ror': self.fm.expected_ror_list[1:],
-                'expected_std': self.fm.expected_std_list[1:],
-            }
 
+        data_dict = {
+            "t": range(len(self.market.prices[1:])),
+            "prices": self.market.prices[1:],
+            "buy": [bs[0] for bs in self.broker.buy_sell_history],
+            "sell": [bs[1] for bs in self.broker.buy_sell_history],
+            "buy_macro": [bs[0] for bs in self.broker.buy_sell_macro_history],
+            "sell_macro": [bs[1] for bs in self.broker.buy_sell_macro_history],
+            "owned": self.history["owned_shares"][1:],
+            "total_assets": self.history["total_assets"][1:],
+            "mean_income": self.history["mean_income_level"][1:],
+            "total_consumption": self.history["total_consumption_level"][1:],
+            "permshock_std": self.history["permshock_std"][1:],
+            "ror": self.market.ror_list(),
+            "expected_ror": self.fm.expected_ror_list[1:],
+            "expected_std": self.fm.expected_std_list[1:],
+        }
+
+        try:
             data = pd.DataFrame.from_dict(data_dict)
 
         except Exception as e:
             print(e)
             print(
-                "Lengths:"
-                + str(
-                    {
-                        't': len(self.fm.prices),
-                        'prices': len(self.fm.prices),
-                        'buy': len(
-                            [None] + [bs[0] for bs in self.broker.buy_sell_history]
-                        ),
-                        'sell': len(
-                            [None] + [bs[1] for bs in self.broker.buy_sell_history]
-                        ),
-                        'owned': len(self.history['owned_shares']),
-                        'total_assets': len(self.history['total_assets']),
-                        'ror': len([None] + self.fm.ror_list),
-                        'expected_ror': len(self.fm.expected_ror_list),
-                        'expected_std': len(self.fm.expected_std_list),
-                    }
-                )
+                "Lengths:" + str({key: len(value) for key, value in data_dict.items()})
             )
 
         return data
@@ -251,16 +250,17 @@ class BasicSimulation(AbstractSimulation):
         ## For risky asset gains in the simulated quarter,
         ## use only the dividend.
         true_risky_expectations = {
-            "RiskyAvg": agent.parameters['RiskyAvg'],
-            "RiskyStd": agent.parameters['RiskyStd'],
+            "RiskyAvg": agent.parameters["RiskyAvg"],
+            "RiskyStd": agent.parameters["RiskyStd"],
         }
 
-        dividend_risky_params = {
-            "RiskyAvg": 1 + self.fm.dividend_ror,
-            "RiskyStd": self.fm.dividend_std,
+        # No change -- both capital gains and dividends awarded daily. See #100
+        macro_risky_params = {
+            "RiskyAvg": 1,
+            "RiskyStd": 0,
         }
 
-        agent.assign_parameters(**dividend_risky_params)
+        agent.assign_parameters(**macro_risky_params)
 
         # assign solution before simulating
         # get master solution
@@ -271,7 +271,9 @@ class BasicSimulation(AbstractSimulation):
 
         # Using their expectations, construct function depending on
         # perceptions/beliefs about the stock market
-        ShareFuncAdj = lambda m: functions["shareFunc"](m, agent.RiskyAvg, agent.RiskyStd)
+        ShareFuncAdj = lambda m: functions["shareFunc"](
+            m, agent.RiskyAvg, agent.RiskyStd
+        )
         cFuncAdj = lambda m: functions["cFunc"](m, agent.RiskyAvg, agent.RiskyStd)
 
         agent.solution[0].ShareFuncAdj = ShareFuncAdj
@@ -285,7 +287,7 @@ class BasicSimulation(AbstractSimulation):
         # Selling off shares if necessary to
         # finance this period's consumption
         asset_level_in_shares = (
-                agent.state_now['aLvl'] * self.dollars_per_hark_money_unit / self.fm.rap()
+            agent.state_now["aLvl"] * self.dollars_per_hark_money_unit / self.fm.rap()
         )
 
         delta = asset_level_in_shares - agent.shares
@@ -300,33 +302,33 @@ class BasicSimulation(AbstractSimulation):
         fig, ax = plt.subplots(
             4,
             1,
-            sharex='col',
+            sharex="col",
             # sharey='col',
             figsize=(12, 16),
         )
 
-        ax[0].plot(data['total_assets'], alpha=0.5, label='total assets')
+        ax[0].plot(data["total_assets"], alpha=0.5, label="total assets")
         ax[0].plot(
-            [p * o for (p, o) in zip(data['prices'], data['owned'])],
+            [p * o for (p, o) in zip(data["prices"], data["owned"])],
             alpha=0.5,
-            label='owned share value',
+            label="owned share value",
         )
         ax[0].plot(
-            [100 * o for (p, o) in zip(data['prices'], data['owned'])],
+            [100 * o for (p, o) in zip(data["prices"], data["owned"])],
             alpha=0.5,
-            label='owned share quantity * p_0',
+            label="owned share quantity * p_0",
         )
         ax[0].legend()
 
-        ax[1].plot(data['buy'], alpha=0.5, label='buy')
-        ax[1].plot(data['sell'], alpha=0.5, label='sell')
+        ax[1].plot(data["buy"], alpha=0.5, label="buy")
+        ax[1].plot(data["sell"], alpha=0.5, label="sell")
         ax[1].legend()
 
-        ax[2].plot(data['ror'], alpha=0.5, label='ror')
-        ax[2].plot(data['expected_ror'], alpha=0.5, label='expected ror')
+        ax[2].plot(data["ror"], alpha=0.5, label="ror")
+        ax[2].plot(data["expected_ror"], alpha=0.5, label="expected ror")
         ax[2].legend()
 
-        ax[3].plot(data['prices'], alpha=0.5, label='prices')
+        ax[3].plot(data["prices"], alpha=0.5, label="prices")
         ax[3].legend()
 
         ax[0].set_title("Simulation History")
@@ -335,20 +337,22 @@ class BasicSimulation(AbstractSimulation):
 
         plt.show()
 
-    def report_class_stats(self, stat='aLvl', stat_history=None):
+    def report_class_stats(self, stat="aLvl", stat_history=None):
         if stat_history is None:
-            stat_history = self.history['class_stats']
+            stat_history = self.history["class_stats"]
 
-        for d, cs in enumerate(self.history['class_stats']):
-            cs['time'] = d
+        for d, cs in enumerate(self.history["class_stats"]):
+            cs["time"] = d
 
-        data = pd.concat(self.history['class_stats'])
+        data = pd.concat(self.history["class_stats"])
 
-        ax = sns.lineplot(data=data, x='time', y='aLvl_mean', hue='label')
+        ax = sns.lineplot(data=data, x="time", y="aLvl_mean", hue="label")
         ax.set_title("mean aLvl by class subpopulation")
 
     def simulate(self, quarters=None, start=True):
         """
+        DUMMY METHOD -- need to functionalize/parameterize out.
+        See #88
         Workhorse method that runs the simulation.
         """
         self.start_time = datetime.now()
@@ -360,6 +364,9 @@ class BasicSimulation(AbstractSimulation):
         if start:
             for agent in self.agents:
                 agent.shares = self.compute_share_demand(agent)
+
+        ## ?
+        self.track(-1)
 
         # Main loop
         for quarter in range(quarters):
@@ -373,7 +380,7 @@ class BasicSimulation(AbstractSimulation):
                 # Basic simulation has an attention rate of 1
                 self.broker.transact(self.attend(agent))
 
-                buy_sell, ror = self.broker.trade()
+                buy_sell, ror, price, dividend = self.broker.trade()
                 # print("ror: " + str(ror))
 
                 new_run = True
@@ -392,13 +399,13 @@ class BasicSimulation(AbstractSimulation):
                         # putting 0,0 here is a stopgap to make plotting code simpler
                         self.broker.track((0, 0), (0, 0))
 
-                    self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
+                    self.update_agent_wealth_capital_gains(price, ror)
 
                     self.track(day)
 
                     # combine these steps?
                     # add_ror appends to internal history list
-                    self.fm.add_ror(ror)
+                    # self.fm.add_ror(ror)
                     self.fm.calculate_risky_expectations()
 
                     day = day + 1
@@ -412,45 +419,45 @@ class BasicSimulation(AbstractSimulation):
         Tracks the current state of agent's total assets and owned shares
         """
         tal = (
-                sum([agent.state_now['aLvl'].sum() for agent in self.agents])
-                * self.dollars_per_hark_money_unit
+            sum([agent.state_now["aLvl"].sum() for agent in self.agents])
+            * self.dollars_per_hark_money_unit
         )
         os = sum([sum(agent.shares) for agent in self.agents])
 
         mpl = (
-                mean([agent.state_now['pLvl'].mean() for agent in self.agents])
-                * self.dollars_per_hark_money_unit
+            mean([agent.state_now["pLvl"].mean() for agent in self.agents])
+            * self.dollars_per_hark_money_unit
         )
 
         tcl = (
-                sum(
-                    [
-                        (agent.controls['cNrm'] * agent.state_now['pLvl']).sum()
-                        for agent in self.agents
-                        if agent.macro_day == day
-                    ]
-                )
-                * self.dollars_per_hark_money_unit
+            sum(
+                [
+                    (agent.controls["cNrm"] * agent.state_now["pLvl"]).sum()
+                    for agent in self.agents
+                    if agent.macro_day == day
+                ]
+            )
+            * self.dollars_per_hark_money_unit
         )
 
         permshock_std = np.array(
             [
-                agent.shocks['PermShk']
+                agent.shocks["PermShk"]
                 for agent in self.agents
-                if 'PermShk' in agent.shocks
+                if "PermShk" in agent.shocks
             ]
         ).std()
 
-        self.history['owned_shares'].append(os)
-        self.history['total_assets'].append(tal)
-        self.history['mean_income_level'].append(mpl)
-        self.history['total_consumption_level'].append(tcl)
-        self.history['permshock_std'].append(permshock_std)
-        self.history['class_stats'].append(self.pop.class_stats(store=False))
-        self.history['total_pop_stats'].append(self.pop.agent_df())
-        self.history['buy_sell'].append(self.broker.buy_sell_history[-1])
+        self.history["owned_shares"].append(os)
+        self.history["total_assets"].append(tal)
+        self.history["mean_income_level"].append(mpl)
+        self.history["total_consumption_level"].append(tcl)
+        self.history["permshock_std"].append(permshock_std)
+        self.history["class_stats"].append(self.pop.class_stats(store=False))
+        self.history["total_pop_stats"].append(self.pop.agent_df())
+        # self.history['buy_sell'].append(self.broker.buy_sell_history[-1])
 
-    def update_agent_wealth_capital_gains(self, old_share_price, ror):
+    def update_agent_wealth_capital_gains(self, new_share_price, ror, dividend):
         """
         For all agents,
         given the old share price
@@ -460,41 +467,42 @@ class BasicSimulation(AbstractSimulation):
         for the most recent round of capital gains.
         """
 
-        new_share_price = old_share_price * (1 + ror)
+        old_share_price = new_share_price / (1 + ror)
 
         for agent in self.agents:
             old_raw = agent.shares * old_share_price
             new_raw = agent.shares * new_share_price
+            dividends = agent.shares * dividend
 
-            delta_aNrm = (new_raw - old_raw) / (
-                    self.dollars_per_hark_money_unit * agent.state_now['pLvl']
+            delta_aNrm = (new_raw - old_raw + dividends) / (
+                self.dollars_per_hark_money_unit * agent.state_now["pLvl"]
             )
 
             # update normalized market assets
             # if agent.state_now['aNrm'] < delta_aNrm:
             #     breakpoint()
 
-            agent.state_now['aNrm'] = agent.state_now['aNrm'] + delta_aNrm
+            agent.state_now["aNrm"] = agent.state_now["aNrm"] + delta_aNrm
 
-            if (agent.state_now['aNrm'] < 0).any():
+            if (agent.state_now["aNrm"] < 0).any():
                 print(
                     f"ERROR: Agent with CRRA {agent.parameters['CRRA']}"
                     + "has negative aNrm after capital gains update."
                 )
                 print("Setting normalize assets and shares to 0.")
-                agent.state_now['aNrm'][(agent.state_now['aNrm'] < 0)] = 0.0
+                agent.state_now["aNrm"][(agent.state_now["aNrm"] < 0)] = 0.0
                 ## TODO: This change in shares needs to be registered with the Broker.
-                agent.shares[(agent.state_now['aNrm'] == 0)] = 0
+                agent.shares[(agent.state_now["aNrm"] == 0)] = 0
 
             # update non-normalized market assets
-            agent.state_now['aLvl'] = agent.state_now['aNrm'] * agent.state_now['pLvl']
+            agent.state_now["aLvl"] = agent.state_now["aNrm"] * agent.state_now["pLvl"]
 
     def ror_volatility(self):
         """
         Returns the volatility of the rate of return.
         Must be run after a simulation.
         """
-        return self.data()['ror'].dropna().std()
+        return self.data()["ror"].dropna().std()
 
     def ror_mean(self):
         """
@@ -502,71 +510,71 @@ class BasicSimulation(AbstractSimulation):
         Must be run after a simulation
         """
 
-        return self.data()['ror'].dropna().mean()
+        return self.data()["ror"].dropna().mean()
 
     def buy_sell_stats(self):
         bs_stats = {}
         buy_limits, sell_limits = list(zip(*self.broker.buy_sell_history))
 
-        bs_stats['max_buy_limit'] = max(buy_limits)
-        bs_stats['max_sell_limit'] = max(sell_limits)
+        bs_stats["max_buy_limit"] = max(buy_limits)
+        bs_stats["max_sell_limit"] = max(sell_limits)
 
-        bs_stats['idx_max_buy_limit'] = np.argmax(buy_limits)
-        bs_stats['idx_max_sell_limit'] = np.argmax(sell_limits)
+        bs_stats["idx_max_buy_limit"] = np.argmax(buy_limits)
+        bs_stats["idx_max_sell_limit"] = np.argmax(sell_limits)
 
-        bs_stats['mean_buy_limit'] = np.mean(buy_limits)
-        bs_stats['mean_sell_limit'] = np.mean(sell_limits)
+        bs_stats["mean_buy_limit"] = np.mean(buy_limits)
+        bs_stats["mean_sell_limit"] = np.mean(sell_limits)
 
-        bs_stats['std_buy_limit'] = np.std(buy_limits)
-        bs_stats['std_sell_limit'] = np.std(sell_limits)
+        bs_stats["std_buy_limit"] = np.std(buy_limits)
+        bs_stats["std_sell_limit"] = np.std(sell_limits)
 
-        bs_stats['kurtosis_buy_limit'] = stats.kurtosis(buy_limits)
-        bs_stats['kurtosis_sell_limit'] = stats.kurtosis(sell_limits)
+        bs_stats["kurtosis_buy_limit"] = stats.kurtosis(buy_limits)
+        bs_stats["kurtosis_sell_limit"] = stats.kurtosis(sell_limits)
 
-        bs_stats['skew_buy_limit'] = stats.skew(buy_limits)
-        bs_stats['skew_sell_limit'] = stats.skew(sell_limits)
+        bs_stats["skew_buy_limit"] = stats.skew(buy_limits)
+        bs_stats["skew_sell_limit"] = stats.skew(sell_limits)
 
         return bs_stats
 
     def sim_stats(self):
 
         ## TODO: Can this processing be made less code-heavy?
-        df_mean = self.history['class_stats'][-1][['label', 'aLvl_mean']]
+        df_mean = self.history["class_stats"][-1][["label", "aLvl_mean"]]
         df_mean.columns = df_mean.columns.droplevel(1)
-        sim_stats_mean = df_mean.set_index('label').to_dict()['aLvl_mean']
+        sim_stats_mean = df_mean.set_index("label").to_dict()["aLvl_mean"]
 
-        df_std = self.history['class_stats'][-1][['label', 'aLvl_std']]
+        df_std = self.history["class_stats"][-1][["label", "aLvl_std"]]
         df_std.columns = df_std.columns.droplevel(1)
-        sim_stats_std = df_std.set_index('label').to_dict()['aLvl_std']
+        sim_stats_std = df_std.set_index("label").to_dict()["aLvl_std"]
 
-        df_mNrm_ratio_StE_mean = self.history['class_stats'][-1][
-            ['label', 'mNrm_ratio_StE_mean']
+        df_mNrm_ratio_StE_mean = self.history["class_stats"][-1][
+            ["label", "mNrm_ratio_StE_mean"]
         ]
         df_mNrm_ratio_StE_mean.columns = df_mNrm_ratio_StE_mean.columns.droplevel(1)
         sim_stats_mNrm_ratio_StE_mean = df_mNrm_ratio_StE_mean.set_index(
-            'label'
-        ).to_dict()['mNrm_ratio_StE_mean']
+            "label"
+        ).to_dict()["mNrm_ratio_StE_mean"]
 
-        df_mNrm_ratio_StE_std = self.history['class_stats'][-1][
-            ['label', 'mNrm_ratio_StE_std']
+        df_mNrm_ratio_StE_std = self.history["class_stats"][-1][
+            ["label", "mNrm_ratio_StE_std"]
         ]
         df_mNrm_ratio_StE_std.columns = df_mNrm_ratio_StE_std.columns.droplevel(1)
         sim_stats_mNrm_ratio_StE_std = df_mNrm_ratio_StE_std.set_index(
-            'label'
-        ).to_dict()['mNrm_ratio_StE_std']
+            "label"
+        ).to_dict()["mNrm_ratio_StE_std"]
 
-        sim_stats_mean = {('aLvl_mean', k): v for k, v in sim_stats_mean.items()}
-        sim_stats_std = {('aLvl_std', k): v for k, v in sim_stats_std.items()}
+        sim_stats_mean = {("aLvl_mean", k): v for k, v in sim_stats_mean.items()}
+        sim_stats_std = {("aLvl_std", k): v for k, v in sim_stats_std.items()}
         sim_stats_mNrm_ratio_StE_mean = {
-            ('mNrm_ratio_StE_mean', k): v
+            ("mNrm_ratio_StE_mean", k): v
             for k, v in sim_stats_mNrm_ratio_StE_mean.items()
         }
         sim_stats_mNrm_ratio_StE_std = {
-            ('mNrm_ratio_StE_std', k): v
+            ("mNrm_ratio_StE_std", k): v
             for k, v in sim_stats_mNrm_ratio_StE_std.items()
         }
 
-        total_pop_aLvl = self.history['total_pop_stats'][-1]['aLvl']
+        total_pop_aLvl = self.history["total_pop_stats"][-1]["aLvl"]
         total_pop_aLvl_mean = total_pop_aLvl.mean()
         total_pop_aLvl_std = total_pop_aLvl.std()
 
@@ -580,27 +588,29 @@ class BasicSimulation(AbstractSimulation):
         sim_stats.update(sim_stats_mNrm_ratio_StE_mean)
         sim_stats.update(sim_stats_mNrm_ratio_StE_std)
 
-        sim_stats['q'] = self.quarters_per_simulation
-        sim_stats['r'] = self.runs_per_quarter
+        sim_stats["q"] = self.quarters_per_simulation
+        sim_stats["r"] = self.runs_per_quarter
 
-        sim_stats['market_class'] = self.broker.market.__class__
-        sim_stats['market_seeds'] = self.broker.market.seeds  # seed list should be a requirement for any market class.
+        sim_stats["market_class"] = self.broker.market.__class__
+        sim_stats[
+            "market_seeds"
+        ] = (
+            self.broker.market.seeds
+        )  # seed list should be a requirement for any market class.
 
-        sim_stats['ror_volatility'] = self.ror_volatility()
-        sim_stats['ror_mean'] = self.ror_mean()
+        sim_stats["ror_volatility"] = self.ror_volatility()
+        sim_stats["ror_mean"] = self.ror_mean()
 
-        sim_stats['total_population_aLvl_mean'] = total_pop_aLvl_mean
-        sim_stats['total_population_aLvl_std'] = total_pop_aLvl_std
+        sim_stats["total_population_aLvl_mean"] = total_pop_aLvl_mean
+        sim_stats["total_population_aLvl_std"] = total_pop_aLvl_std
 
-        sim_stats['dividend_ror'] = self.fm.dividend_ror
-        sim_stats['dividend_std'] = self.fm.dividend_std
-        sim_stats['p1'] = self.fm.p1
-        sim_stats['p2'] = self.fm.p2
-        sim_stats['delta_t1'] = self.fm.delta_t1
-        sim_stats['delta_t2'] = self.fm.delta_t2
-        sim_stats['dollars_per_hark_money_unit'] = self.dollars_per_hark_money_unit
+        sim_stats["p1"] = self.fm.p1
+        sim_stats["p2"] = self.fm.p2
+        sim_stats["delta_t1"] = self.fm.delta_t1
+        sim_stats["delta_t2"] = self.fm.delta_t2
+        sim_stats["dollars_per_hark_money_unit"] = self.dollars_per_hark_money_unit
 
-        sim_stats['seconds'] = (self.end_time - self.start_time).seconds
+        sim_stats["seconds"] = (self.end_time - self.start_time).seconds
 
         return sim_stats
 
@@ -633,9 +643,13 @@ class AttentionSimulation(BasicSimulation):
     ## upping this to make more agents engaged in trade
     attention_rate = None
 
-    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500):
+    def __init__(
+        self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500, days_per_quarter=60
+    ):
 
-        super().__init__(pop, fm, q=q, r=r, market=None, dphm=dphm)
+        super().__init__(
+            pop, fm, q=q, r=r, market=None, dphm=dphm, days_per_quarter=days_per_quarter
+        )
 
         # TODO: Make this more variable.
         if a is not None:
@@ -665,6 +679,8 @@ class AttentionSimulation(BasicSimulation):
             for agent in self.agents:
                 agent.shares = self.compute_share_demand(agent)
 
+        self.track(-1)
+
         # Main loop
         for quarter in range(quarters):
             print(f"Q-{quarter}")
@@ -679,7 +695,7 @@ class AttentionSimulation(BasicSimulation):
                     if random.random() < self.attention_rate:
                         self.broker.transact(self.attend(agent))
 
-                buy_sell, ror, price = self.broker.trade()
+                buy_sell, ror, price, dividend = self.broker.trade()
                 # print("ror: " + str(ror))
 
                 new_run = True
@@ -699,16 +715,17 @@ class AttentionSimulation(BasicSimulation):
                         # putting 0,0 here is a stopgap to make plotting code simpler
                         self.broker.buy_sell_history.append((0, 0))
                         self.broker.buy_sell_macro_history.append((0, 0))
+                        self.market.dummy_run()
 
                     # print(f"Q-{quarter}:D-{day}. {updates} macro-updates.")
 
-                    self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
+                    self.update_agent_wealth_capital_gains(price, ror, dividend)
 
                     self.track(day)
 
                     # combine these steps?
                     # add_ror appends to internal history list
-                    self.fm.add_ror(ror)
+                    # self.fm.add_ror(ror)
                     self.fm.calculate_risky_expectations()
 
                     day = day + 1
@@ -719,19 +736,27 @@ class AttentionSimulation(BasicSimulation):
 
     def sim_stats(self):
 
-        sim_stats = self.super().sim_stats()
+        sim_stats = super().sim_stats()
 
-        sim_stats['attention'] = self.attention_rate
+        sim_stats["attention"] = self.attention_rate
 
         return sim_stats
 
 
 class CalibrationSimulation(BasicSimulation):
+    """
+    A simulation in which the broker makes no activity for some number of days,
+    then executes a preset buy and sell order.
+    Used to test the price impact on the market.
+    """
+
+    market = None
+
     def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500):
 
         super().__init__(pop, fm, q=q, r=r, market=market, dphm=dphm)
 
-        self.history['run_times'] = []
+        self.history["run_times"] = []
 
     def simulate(self, n_days, start=True, buy_sell_shock=(0, 0)):
         """
@@ -745,6 +770,8 @@ class CalibrationSimulation(BasicSimulation):
                 agent.shares = self.compute_share_demand(agent)
                 # self.macro_update(agent)
 
+        self.track(-1, 0)
+
         for day in range(n_days):
             start_time = datetime.now()
 
@@ -752,13 +779,13 @@ class CalibrationSimulation(BasicSimulation):
             for agent in self.agents:
                 self.broker.transact(np.zeros(1))
 
-            buy_sell, ror, price = self.broker.trade()
+            buy_sell, ror, price, dividend = self.broker.trade()
 
-            self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
+            self.update_agent_wealth_capital_gains(price, ror, dividend)
 
             # combine these steps?
             # add_ror appends to internal history list
-            self.fm.add_ror(ror)
+            # self.fm.add_ror(ror)
             self.fm.calculate_risky_expectations()
 
             end_time = datetime.now()
@@ -774,11 +801,11 @@ class CalibrationSimulation(BasicSimulation):
         sell = -buy_sell_shock[1]
 
         self.broker.transact(np.array((buy, sell)))
-        buy_sell, ror, price = self.broker.trade()
+        buy_sell, ror, price, dividend = self.broker.trade()
 
-        self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
+        self.update_agent_wealth_capital_gains(price, ror, dividend)
 
-        self.fm.add_ror(ror)
+        # self.fm.add_ror(ror)
         self.fm.calculate_risky_expectations()
 
         end_time = datetime.now()
@@ -795,8 +822,8 @@ class CalibrationSimulation(BasicSimulation):
         Tracks the current state of agent's total assets and owned shares
         """
 
-        self.history['buy_sell'].append(self.broker.buy_sell_history[-1])
-        self.history['run_times'].append(time_delta)
+        # self.history['buy_sell'].append(self.broker.buy_sell_history[-1])
+        self.history["run_times"].append(time_delta)
 
     def data(self):
         """
@@ -804,40 +831,25 @@ class CalibrationSimulation(BasicSimulation):
         """
         ## DEBUGGING
         data = None
-        try:
-            data_dict = {
-                't': range(len(self.broker.market.prices[1:])),
-                'prices': self.broker.market.prices[1:],
-                'buy': [bs[0] for bs in self.broker.buy_sell_history],
-                'sell': [bs[1] for bs in self.broker.buy_sell_history],
-                'ror': self.fm.ror_list,
-                'expected_ror': self.fm.expected_ror_list[1:],
-                'expected_std': self.fm.expected_std_list[1:],
-                'market_times': self.history['run_times']
-            }
 
+        data_dict = {
+            "t": range(len(self.market.prices)),
+            "prices": self.market.prices,
+            "buy": [None] + [bs[0] for bs in self.broker.buy_sell_history],
+            "sell": [None] + [bs[1] for bs in self.broker.buy_sell_history],
+            "ror": [None] + self.market.ror_list(),
+            "expected_ror": self.fm.expected_ror_list,
+            "expected_std": self.fm.expected_std_list,
+            "market_times": self.history["run_times"],
+        }
+
+        try:
             data = pd.DataFrame.from_dict(data_dict)
 
         except Exception as e:
             print(e)
             print(
-                "Lengths:"
-                + str(
-                    {
-                        't': len(self.fm.prices),
-                        'prices': len(self.fm.prices),
-                        'buy': len(
-                            [None] + [bs[0] for bs in self.broker.buy_sell_history]
-                        ),
-                        'sell': len(
-                            [None] + [bs[1] for bs in self.broker.buy_sell_history]
-                        ),
-                        'ror': len([None] + self.fm.ror_list),
-                        'expected_ror': len(self.fm.expected_ror_list),
-                        'expected_std': len(self.fm.expected_std_list),
-                        'market_times': len(self.history['time_delta'])
-                    }
-                )
+                "Lengths:" + str({key: len(value) for key, value in data_dict.items()})
             )
 
         return data

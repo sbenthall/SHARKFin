@@ -29,15 +29,16 @@ from sharkfin.simulation import CalibrationSimulation
 from sharkfin.expectations import FinanceModel
 
 parser = argparse.ArgumentParser()
+## TODO: Grid parameters?
 parser.add_argument("save_as", help="The name of the output for sim_stats")
 parser.add_argument("-t",
                     "--tag", type=str,
                     help="a string tag to be added to the output files")
 parser.add_argument('-q', '--queue', help='name of rabbitmq queue', default='rpc_queue')
 parser.add_argument('-r', '--rhost', help='rabbitmq server location', default='localhost')
-parser.add_argument('-b', '--buysize', help='buy size to shock', default=0)
-parser.add_argument('-s', '--sellsize', help='sell size to shock', default=0)
-parser.add_argument('-p', '--pad', help='number of days to pad market', default=31)
+parser.add_argument('-d', '--seed', help='random seed', default=0)
+#parser.add_argument('-s', '--sellsize', help='sell size to shock', default=0)
+#parser.add_argument('-p', '--pad', help='number of days to pad market', default=31)
 
 timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
@@ -85,10 +86,17 @@ def run_simulation(
     # initialize population
     pop = AgentPopulation(agent_parameters, dist_params, 5)
 
+    # Initialize the financial model
+    fm = FinanceModel() if fm is None else fm
+
+    fm.calculate_risky_expectations()
+    agent_parameters.update(fm.risky_expectations())
+
     # Initialize the population model
     pop.init_simulation()
 
-    sim = CalibrationSimulation(pop, FinanceModel, a = a, q = q, r = r, market = market)
+    ## TODO : Change to AttentionSim
+    sim = CalibrationSimulation(pop, fm, a = a, q = q, r = r, market = market)
     
     sim.simulate(pad, buy_sell_shock=(buy, sell))
 
