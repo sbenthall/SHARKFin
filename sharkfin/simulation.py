@@ -261,6 +261,21 @@ class BasicSimulation(AbstractSimulation):
 
         agent.assign_parameters(**dividend_risky_params)
 
+        # assign solution before simulating
+        # get master solution
+        pop_solution = self.pop.solution.solution_database
+
+        # get solution for agent subgroup
+        functions = pop_solution.loc[agent.CRRA, agent.DiscFac]
+
+        # Using their expectations, construct function depending on
+        # perceptions/beliefs about the stock market
+        ShareFuncAdj = lambda m: functions["shareFunc"](m, agent.RiskyAvg, agent.RiskyStd)
+        cFuncAdj = lambda m: functions["cFunc"](m, agent.RiskyAvg, agent.RiskyStd)
+
+        agent.solution[0].ShareFuncAdj = ShareFuncAdj
+        agent.solution[0].cFuncAdj = cFuncAdj
+
         agent.simulate(sim_periods=1)
 
         ## put back the expectations that include capital gains now
