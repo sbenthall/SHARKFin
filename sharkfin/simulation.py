@@ -11,6 +11,7 @@ from scipy import stats
 from sharkfin.markets import MockMarket
 from sharkfin.broker import Broker
 
+
 class AbstractSimulation(ABC):
     '''
     Abstract class from which simulation classews should inherit
@@ -24,7 +25,7 @@ class AbstractSimulation(ABC):
         Returns a Pandas DataFrame of the data from the simulation run.
         """
         pass
-    
+
     @abstractmethod
     def sim_stats(self, seed: int, buy_sell: tuple[int, int]):
         pass
@@ -32,7 +33,7 @@ class AbstractSimulation(ABC):
     @abstractmethod
     def simulate(self):
         pass
-   
+
 
 class BasicSimulation(AbstractSimulation):
     """
@@ -74,7 +75,7 @@ class BasicSimulation(AbstractSimulation):
     # Best if an integer.
     days_per_run = None
 
-      # for tracking history of the simulation
+    # for tracking history of the simulation
     history = {}
 
     ## saving the time of simulation start and end
@@ -171,10 +172,10 @@ class BasicSimulation(AbstractSimulation):
 
         # denormalize the risky share. See https://github.com/econ-ark/HARK/issues/986
         risky_asset_wealth = (
-            risky_share
-            * asset_normalized
-            * agent.state_now['pLvl']
-            * self.dollars_per_hark_money_unit
+                risky_share
+                * asset_normalized
+                * agent.state_now['pLvl']
+                * self.dollars_per_hark_money_unit
         )
 
         shares = risky_asset_wealth / self.fm.rap()
@@ -245,7 +246,7 @@ class BasicSimulation(AbstractSimulation):
         """
 
         # agent.assign_parameters(AdjustPrb = 0.0)
-        agent.solve()
+        # agent.solve()
 
         ## For risky asset gains in the simulated quarter,
         ## use only the dividend.
@@ -284,7 +285,7 @@ class BasicSimulation(AbstractSimulation):
         # Selling off shares if necessary to
         # finance this period's consumption
         asset_level_in_shares = (
-            agent.state_now['aLvl'] * self.dollars_per_hark_money_unit / self.fm.rap()
+                agent.state_now['aLvl'] * self.dollars_per_hark_money_unit / self.fm.rap()
         )
 
         delta = asset_level_in_shares - agent.shares
@@ -389,7 +390,7 @@ class BasicSimulation(AbstractSimulation):
                     else:
                         # problem is that this should really be nan, nan
                         # putting 0,0 here is a stopgap to make plotting code simpler
-                        self.broker.track((0, 0),(0, 0))
+                        self.broker.track((0, 0), (0, 0))
 
                     self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
 
@@ -397,7 +398,7 @@ class BasicSimulation(AbstractSimulation):
 
                     # combine these steps?
                     # add_ror appends to internal history list
-                    self.fm.add_ror(ror) 
+                    self.fm.add_ror(ror)
                     self.fm.calculate_risky_expectations()
 
                     day = day + 1
@@ -411,25 +412,25 @@ class BasicSimulation(AbstractSimulation):
         Tracks the current state of agent's total assets and owned shares
         """
         tal = (
-            sum([agent.state_now['aLvl'].sum() for agent in self.agents])
-            * self.dollars_per_hark_money_unit
+                sum([agent.state_now['aLvl'].sum() for agent in self.agents])
+                * self.dollars_per_hark_money_unit
         )
         os = sum([sum(agent.shares) for agent in self.agents])
 
         mpl = (
-            mean([agent.state_now['pLvl'].mean() for agent in self.agents])
-            * self.dollars_per_hark_money_unit
+                mean([agent.state_now['pLvl'].mean() for agent in self.agents])
+                * self.dollars_per_hark_money_unit
         )
 
         tcl = (
-            sum(
-                [
-                    (agent.controls['cNrm'] * agent.state_now['pLvl']).sum()
-                    for agent in self.agents
-                    if agent.macro_day == day
-                ]
-            )
-            * self.dollars_per_hark_money_unit
+                sum(
+                    [
+                        (agent.controls['cNrm'] * agent.state_now['pLvl']).sum()
+                        for agent in self.agents
+                        if agent.macro_day == day
+                    ]
+                )
+                * self.dollars_per_hark_money_unit
         )
 
         permshock_std = np.array(
@@ -466,7 +467,7 @@ class BasicSimulation(AbstractSimulation):
             new_raw = agent.shares * new_share_price
 
             delta_aNrm = (new_raw - old_raw) / (
-                self.dollars_per_hark_money_unit * agent.state_now['pLvl']
+                    self.dollars_per_hark_money_unit * agent.state_now['pLvl']
             )
 
             # update normalized market assets
@@ -583,7 +584,7 @@ class BasicSimulation(AbstractSimulation):
         sim_stats['r'] = self.runs_per_quarter
 
         sim_stats['market_class'] = self.broker.market.__class__
-        sim_stats['market_seeds'] = self.broker.market.seeds # seed list should be a requirement for any market class.
+        sim_stats['market_seeds'] = self.broker.market.seeds  # seed list should be a requirement for any market class.
 
         sim_stats['ror_volatility'] = self.ror_volatility()
         sim_stats['ror_mean'] = self.ror_mean()
@@ -602,6 +603,7 @@ class BasicSimulation(AbstractSimulation):
         sim_stats['seconds'] = (self.end_time - self.start_time).seconds
 
         return sim_stats
+
 
 class AttentionSimulation(BasicSimulation):
     """
@@ -706,7 +708,7 @@ class AttentionSimulation(BasicSimulation):
 
                     # combine these steps?
                     # add_ror appends to internal history list
-                    self.fm.add_ror(ror) 
+                    self.fm.add_ror(ror)
                     self.fm.calculate_risky_expectations()
 
                     day = day + 1
@@ -722,6 +724,7 @@ class AttentionSimulation(BasicSimulation):
         sim_stats['attention'] = self.attention_rate
 
         return sim_stats
+
 
 class CalibrationSimulation(BasicSimulation):
     def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500):
@@ -740,7 +743,7 @@ class CalibrationSimulation(BasicSimulation):
         if start:
             for agent in self.agents:
                 agent.shares = self.compute_share_demand(agent)
-                #self.macro_update(agent)
+                # self.macro_update(agent)
 
         for day in range(n_days):
             start_time = datetime.now()
@@ -750,12 +753,12 @@ class CalibrationSimulation(BasicSimulation):
                 self.broker.transact(np.zeros(1))
 
             buy_sell, ror, price = self.broker.trade()
-                
+
             self.update_agent_wealth_capital_gains(self.fm.rap(), ror)
 
             # combine these steps?
             # add_ror appends to internal history list
-            self.fm.add_ror(ror) 
+            self.fm.add_ror(ror)
             self.fm.calculate_risky_expectations()
 
             end_time = datetime.now()
@@ -763,8 +766,6 @@ class CalibrationSimulation(BasicSimulation):
             time_delta = end_time - start_time
 
             self.track(day, time_delta)
-
-
 
         # last day shock
         start_time = datetime.now()
@@ -783,7 +784,7 @@ class CalibrationSimulation(BasicSimulation):
         end_time = datetime.now()
         time_delta = end_time - start_time
 
-        self.track(day+1, time_delta)
+        self.track(day + 1, time_delta)
 
         self.broker.close()
 
@@ -814,7 +815,6 @@ class CalibrationSimulation(BasicSimulation):
                 'expected_std': self.fm.expected_std_list[1:],
                 'market_times': self.history['run_times']
             }
-
 
             data = pd.DataFrame.from_dict(data_dict)
 
