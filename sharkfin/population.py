@@ -249,7 +249,7 @@ class AgentPopulation:
         database = pd.DataFrame(self.agent_dicts)
         database["agents"] = self.agents
 
-        self.database = database
+        self.agent_database = database
 
     def solve_distributed_agents(self):
         # see Market class for an example of how to solve distributed agents in parallel
@@ -285,7 +285,7 @@ class AgentPopulationSolution:
         self.agent_population = agent_population
 
         self.dist_params = self.agent_population.dist_params
-        self.database = self.agent_population.database
+        self.agent_database = self.agent_population.agent_database
 
     def merge_solutions(self, continuous_states):
 
@@ -298,7 +298,7 @@ class AgentPopulationSolution:
 
         discrete_params = list(set(self.dist_params) - set(continuous_states))
 
-        grouped = self.database.groupby(discrete_params)
+        grouped = self.agent_database.groupby(discrete_params)
         solution_database = []
 
         for name, group in grouped:
