@@ -149,7 +149,19 @@ class BasicSimulation(AbstractSimulation):
             assets to compute a share number
         """
         agent.assign_parameters(AdjustPrb=1.0)
-        agent.solve()
+
+        # agent.solve() # agents are now presolved
+
+        # get master solution
+        pop_solution = self.pop.solution.solution_database
+
+        # get solution for agent subgroup
+        functions = pop_solution.loc[agent.CRRA, agent.DiscFac]
+
+        # Using their expectations, construct function depending on
+        # perceptions/beliefs about the stock market
+        ShareFuncAdj = lambda m: functions["ShareFuncAdj"](m, agent.RiskyAvg, agent.RiskyStd)
+
         cNrm = agent.controls['cNrm'] if 'cNrm' in agent.controls else 0
         asset_normalized = agent.state_now['aNrm'] + cNrm
         # breakpoint()
