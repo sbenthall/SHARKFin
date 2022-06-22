@@ -167,7 +167,7 @@ class BasicSimulation(AbstractSimulation):
         # breakpoint()
 
         # ShareFunc takes normalized market assets as argument
-        risky_share = agent.solution[0].ShareFuncAdj(asset_normalized)
+        risky_share = ShareFuncAdj(asset_normalized)
 
         # denormalize the risky share. See https://github.com/econ-ark/HARK/issues/986
         risky_asset_wealth = (
