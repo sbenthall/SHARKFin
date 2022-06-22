@@ -1,3 +1,4 @@
+from HARK.Calibration.Income.IncomeTools import sabelhaus_song_var_profile
 from HARK.ConsumptionSaving.ConsPortfolioModel import SequentialPortfolioConsumerType
 
 from sharkfin.expectations import *
@@ -43,6 +44,9 @@ def test_attention_simulation():
     pop.parse_params()
 
     pop.create_distributed_agents()
+    pop.create_database()
+
+    pop.solve(merge_by=["RiskyAvg", "RiskyStd"])
 
     # initialize the financial model
     fm = FinanceModel()
