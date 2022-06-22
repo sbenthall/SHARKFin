@@ -341,4 +341,6 @@ class AgentPopulationSolution:
 
         self.solution_database = pd.DataFrame(solution_database)
 
+        self.solution_database = self.solution_database.set_index(discrete_params)
+
         return self.solution_database
