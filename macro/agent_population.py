@@ -24,6 +24,15 @@ class AgentPopulation:
         self.time_var = self.agent_class.time_vary
         self.time_inv = self.agent_class.time_inv
 
+        self.dist_params = []
+        param_dict = self.parameter_dict
+        for key_param in param_dict:
+            parameter = param_dict[key_param]
+            if (
+                isinstance(parameter, DataArray) and parameter.dims[0] == "agent"
+            ) or isinstance(parameter, Distribution):
+                self.dist_params.append(key_param)
+
         self.infer_counts()
 
     def infer_counts(self):
