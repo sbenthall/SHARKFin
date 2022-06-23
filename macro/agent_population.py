@@ -1,12 +1,15 @@
 from dataclasses import dataclass
 from typing import NewType
 
+import numpy as np
+import pandas as pd
 from HARK.core import AgentType
 from HARK.distribution import (
     Distribution,
     IndexDistribution,
     combine_indep_dstns,
 )
+from HARK.interpolation import LinearInterpOnInterp1D, LinearInterpOnInterp2D
 from xarray import DataArray
 
 ParameterDict = NewType("ParameterDict", dict)
@@ -339,35 +342,4 @@ class AgentPopulationSolution:
 
         self.solution_database = self.solution_database.set_index(discrete_params)
 
-# t_age = 3
-# agent_class_count = 3
-#
-# parameters = {}
-#
-# parameters["AgentCount"] = DataArray([100, 100, 100], dims=("agent"))
-# parameters["CRRA"] = Uniform(6.0, 10.0)
-# # applies per distinct agent type at all times
-# parameters["DiscFac"] = Uniform(0.96, 0.98)
-# # applies to all per time cycle
-# parameters["LivPrb"] = DataArray([0.98, 0.98, 0.98], dims=("age"))
-# # applies to each agent each cycle
-# parameters["TranShkStd"] = DataArray(
-#     [[0.2, 0.2, 0.2], [0.2, 0.2, 0.2], [0.2, 0.2, 0.2]], dims=("agent", "age")
-# )
-#
-# parameters = ParameterDict(parameters)
-#
-# # number of discrete points
-# approx_params = {
-#     "CRRA": 4,
-#     "DiscFac": 3,
-# }
-#
-# from HARK.ConsumptionSaving.ConsIndShockModel import IndShockConsumerType
-#
-# # important to pass initialized agent so time_vary and time_inv are filled out
-# agent_pop = AgentPopulation(IndShockConsumerType(), parameters)
-#
-# agent_pop.approx_distributions(approx_params)
-#
-# agent_pop.parse_params()
+        return self.solution_database
