@@ -32,7 +32,10 @@ ap.solve_distributed_agents()
 # Step 7 - initialize simulation for each agent sub-population
 ap.init_simulation()
 
-# Creating Master Solution for agent Population
+# Step 8 - create master solution as attribute of population
+# ap.solve(["RiskyAvg", "RiskyStd"])
+
+# Creating Master Solution for agent Population separately
 
 # Step 1. create Agent Population Solution (must follow 1-6 above before this)
 solution = AgentPopulationSolution(ap)

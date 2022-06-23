@@ -1,15 +1,16 @@
+import random
 from abc import ABC, abstractmethod
-from sharkfin.utilities import *
 from datetime import datetime
+from statistics import mean
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import random
 import seaborn as sns
-from statistics import mean
 from scipy import stats
-from sharkfin.markets import MockMarket
+
 from sharkfin.broker import Broker
+from sharkfin.markets import MockMarket
 
 
 class AbstractSimulation(ABC):
@@ -174,6 +175,7 @@ class BasicSimulation(AbstractSimulation):
 
         # Using their expectations, construct function depending on
         # perceptions/beliefs about the stock market
+        cFundAdj = lambda m: functions["cFunc"](m, agent.RiskyAvg, agent.RiskyStd)
         ShareFuncAdj = lambda m: functions["ShareFuncAdj"](
             m, agent.RiskyAvg, agent.RiskyStd
         )
@@ -183,6 +185,7 @@ class BasicSimulation(AbstractSimulation):
         # breakpoint()
 
         # ShareFunc takes normalized market assets as argument
+        # make sure this is the end of period shareFunc
         risky_share = ShareFuncAdj(asset_normalized)
 
         # denormalize the risky share. See https://github.com/econ-ark/HARK/issues/986
