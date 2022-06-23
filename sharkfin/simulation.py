@@ -176,7 +176,7 @@ class BasicSimulation(AbstractSimulation):
         # Using their expectations, construct function depending on
         # perceptions/beliefs about the stock market
         cFundAdj = lambda m: functions["cFunc"](m, agent.RiskyAvg, agent.RiskyStd)
-        ShareFuncAdj = lambda m: functions["ShareFuncAdj"](
+        ShareFuncAdj = lambda m: functions["shareFunc"](
             m, agent.RiskyAvg, agent.RiskyStd
         )
 

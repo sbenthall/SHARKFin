@@ -270,12 +270,11 @@ class AgentPopulation:
             agent.T_sim = T_sim
             agent.initialize_sim()
 
-    def solve(self, merge_by= None):
+    def solve(self, merge_by=None):
 
         self.solve_distributed_agents()
 
         if merge_by is not None:
-
             self.solution = AgentPopulationSolution(self)
             self.solution.merge_solutions(continuous_states=merge_by)
 

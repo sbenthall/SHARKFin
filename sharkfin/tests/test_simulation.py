@@ -35,12 +35,9 @@ def test_attention_simulation():
 
     pop.create_distributed_agents()
     pop.create_database()
+    pop.solve_distributed_agents()
 
     pop.solve(merge_by=["RiskyAvg", "RiskyStd"])
-
-    n_per_class = 1
-
-    pop = AgentPopulation(agent_parameters, dist_params, n_per_class)
 
     # initialize population model
     pop.init_simulation()
