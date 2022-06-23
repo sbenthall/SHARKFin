@@ -272,6 +272,64 @@ class AgentPopulationSolution:
     def __init__(self, agent_population):
         self.agent_population = agent_population
 
+        self.dist_params = self.agent_population.dist_params
+        self.agent_database = self.agent_population.agent_database
+
+    def merge_solutions(self, continuous_states):
+
+        # check that continous states are in heterogeneous parameters
+        for state in continuous_states:
+            if state not in self.dist_params:
+                raise AttributeError(
+                    "{} is not an agent-varying parameter.".format(state)
+                )
+
+        discrete_params = list(set(self.dist_params) - set(continuous_states))
+
+        grouped = self.agent_database.groupby(discrete_params)
+        solution_database = []
+
+        for name, group in grouped:
+            group.sort_values(by=continuous_states)
+            in_grouped = group.groupby("RiskyStd")
+
+            std_vals = np.unique(group.RiskyStd)
+
+            cFunc_by_std = []
+            shareFunc_by_std = []
+            for std, in_group in in_grouped:
+                agents = list(in_group.agents)
+                avg = np.array(in_group.RiskyAvg)
+
+                cFunc_by_std.append(
+                    LinearInterpOnInterp1D(
+                        [agent.solution[0].cFuncAdj for agent in agents], avg
+                    )
+                )
+
+                shareFunc_by_std.append(
+                    (
+                        LinearInterpOnInterp1D(
+                            [agent.solution[0].ShareFuncAdj for agent in agents], avg
+                        )
+                    )
+                )
+
+            cFunc = LinearInterpOnInterp2D(cFunc_by_std, std_vals)
+            shareFunc = LinearInterpOnInterp2D(shareFunc_by_std, std_vals)
+
+            solution_database.append(
+                {
+                    discrete_params[0]: name[0],
+                    discrete_params[1]: name[1],
+                    "cFunc": cFunc,
+                    "shareFunc": shareFunc,
+                }
+            )
+
+        self.solution_database = pd.DataFrame(solution_database)
+
+        self.solution_database = self.solution_database.set_index(discrete_params)
 
 # t_age = 3
 # agent_class_count = 3
