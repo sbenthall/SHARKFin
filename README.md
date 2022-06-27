@@ -35,7 +35,9 @@ TBD
 
 ## Native Python Market Installation
 
-TBD
+SHARKFin comes with a simple native Python market class, the MockMarket.
+
+The MockMarket has a dividend value that follows a lognormal random walk, and a constant price-to-dividend ratio.
 
 ## AMMPS Installation
 
@@ -68,7 +70,7 @@ Refer to AMMPS documentation for parameters and instructions on how to generate 
 3. Run SHARKFin
 
 ```
-python test_chum.py OUTPUT_PREFIX
+python run_chum.py OUTPUT_PREFIX
 ```
 
 ## NetLogo Installation
