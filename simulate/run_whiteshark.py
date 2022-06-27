@@ -118,25 +118,25 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # General simulation arguments
-    seed = args.seed
-    popn = args.popn
-    quarters = args.quarters
-    runs = args.runs
+    seed = int(args.seed)
+    popn = int(args.popn)
+    quarters = int(args.quarters)
+    runs = int(args.runs)
 
     # General market arguments
     # TODO market_type: MockMarket # this determines which Market class to use.
-    dividend_growth_rate = args.dividend_growth_rate
-    dividend_std = args.dividend_std
+    dividend_growth_rate = float(args.dividend_growth_rate)
+    dividend_std = float(args.dividend_std)
 
     # Specific to AttentionSimulation
-    attention = args.attention
-    dphm = args.dphm
+    attention = float(args.attention)
+    dphm = int(args.dphm)
 
     # Memory-based FinanceModel arguments
-    p1 = args.p1
-    p2 = args.p2
-    d1 = args.d1
-    d2 = args.d2
+    p1 = float(args.p1)
+    p2 = float(args.p2)
+    d1 = float(args.d1)
+    d2 = float(args.d2)
 
     # Specific to RabbitMQ AMMPS Market 
     host = args.rhost
