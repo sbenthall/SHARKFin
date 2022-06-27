@@ -3,29 +3,21 @@ sys.path.append('..')
 
 import argparse
 from datetime import datetime
-import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 from HARK.Calibration.Income.IncomeTools import (
      sabelhaus_song_var_profile,
 )
 
-from itertools import product
-import json
 from math import exp
-import matplotlib.pyplot as plt
-import multiprocessing
-import numpy as np
-import math
 import os
 import pandas as pd
 import time
 import uuid
-import yaml
 import pprint
 
 from sharkfin.markets import MockMarket
 from sharkfin.markets.ammps import ClientRPCMarket
 from sharkfin.population import AgentPopulation
-from sharkfin.simulation import CalibrationSimulation
+from sharkfin.simulation import AttentionSimulation
 from sharkfin.expectations import FinanceModel
 
 parser = argparse.ArgumentParser()
@@ -34,11 +26,32 @@ parser.add_argument("save_as", help="The name of the output for sim_stats")
 parser.add_argument("-t",
                     "--tag", type=str,
                     help="a string tag to be added to the output files")
+
+# General simulation arguments
+parser.add_argument('-d', '--seed', help='random seed', default=0)
+parser.add_argument('--popn', help='number of agents per population class', default=25)
+parser.add_argument('--quarters', help='number of quarters', default=2)
+parser.add_argument('--runs', help='runs per simulation', default = 60)
+
+# Specific to AttentionSimulation
+parser.add_argument('--attention', help='chance that agent pays attention to the market on a day', default = 0.05)
+parser.add_argument('--dphm', help='dollars per HARK money unit', default = 1500)
+
+# General market arguments
+# TODO market_type: MockMarket # this determines which Market class to use.
+parser.add_argument('--dividend_growth_rate', help='daily average growth rate of the dividend', default = 1.000628)
+parser.add_argument('--dividend_std', help='daily standard deviation fo the dividend', default = 0.011988)
+
+# Specific to RabbitMQ AMMPS Market 
 parser.add_argument('-q', '--queue', help='name of rabbitmq queue', default='rpc_queue')
 parser.add_argument('-r', '--rhost', help='rabbitmq server location', default='localhost')
-parser.add_argument('-d', '--seed', help='random seed', default=0)
-#parser.add_argument('-s', '--sellsize', help='sell size to shock', default=0)
-#parser.add_argument('-p', '--pad', help='number of days to pad market', default=31)
+
+# Memory-based FinanceModel arguments
+parser.add_argument('--p1', help='memory parameter p1', default=0.1)
+parser.add_argument('--p2', help='memory parameter p2', default=0.1)
+parser.add_argument('--d1', help='memory parameter d1', default=60)
+parser.add_argument('--d2', help='memory parameter d2', default=60)
+
 
 timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
@@ -72,33 +85,28 @@ agent_parameters = {
 def run_simulation(
     agent_parameters,
     dist_params,
-    n_per_class,
+    popn = 5,
     a = None,
     q = None,
     r = 1,
-    fm = None,
     market = None,
     dphm=1500,
-    buy=0,
-    sell=0,
-    pad=30):
+    p1 = 0.1,
+    p2 = 0.1,
+    d1 = 60,
+    d2 = 60
+    ):
 
     # initialize population
-    pop = AgentPopulation(agent_parameters, dist_params, 5)
-
-    # Initialize the financial model
-    fm = FinanceModel() if fm is None else fm
-
-    fm.calculate_risky_expectations()
-    agent_parameters.update(fm.risky_expectations())
+    pop = AgentPopulation(agent_parameters, dist_params, popn)
 
     # Initialize the population model
     pop.init_simulation()
 
-    ## TODO : Change to AttentionSim
-    sim = CalibrationSimulation(pop, fm, a = a, q = q, r = r, market = market)
+    sim = AttentionSimulation(
+        pop, FinanceModel, a = a, q = q, r = r, market = market, dphm = dphm)
     
-    sim.simulate(pad, buy_sell_shock=(buy, sell))
+    sim.simulate()
 
     return sim.data(), sim.history
 
@@ -109,32 +117,75 @@ def env_param(name, default):
 if __name__ == '__main__':
     args = parser.parse_args()
 
-    # requires market server to be running
-    # dphm = int(env_param('BROKERSCALE', 1500))
-    # host = env_param('RPCHOST', 'localhost')
-    # queue = env_param('RPCQUEUE', 'rpc_queue')
+    # General simulation arguments
+    seed = args.seed
+    popn = args.popn
+    quarters = args.quarters
+    runs = args.runs
+
+    # General market arguments
+    # TODO market_type: MockMarket # this determines which Market class to use.
+    dividend_growth_rate = args.dividend_growth_rate
+    dividend_std = args.dividend_std
+
+    # Specific to AttentionSimulation
+    attention = args.attention
+    dphm = args.dphm
+
+    # Memory-based FinanceModel arguments
+    p1 = args.p1
+    p2 = args.p2
+    d1 = args.d1
+    d2 = args.d2
+
+    # Specific to RabbitMQ AMMPS Market 
     host = args.rhost
     queue = args.queue
 
-    buy = int(args.buysize)
-    sell = int(args.sellsize)
-    pad = int(args.pad) - 1
 
-    market = ClientRPCMarket(host=host, queue_name=queue)
+    print(" ".join([str(x) for x in [
+        host,
+        queue,
+        seed,
+        popn,
+        quarters,
+        runs,
+        dividend_growth_rate,
+        dividend_std,
+        attention,
+        dphm,
+        p1,
+        p2,
+        d1,
+        d2
+        ]]))
 
-    data, history = run_simulation(agent_parameters, dist_params, 4, 
-                                   a=0.2, q=4, r=4, 
-                                   market=market, 
-                                   dphm=1500, 
-                                   buy=buy, 
-                                   sell=sell, 
-                                   pad=pad)
+
+    # TODO: Variable Market type
+    # market_type: MockMarket # this determines which Market class to use.
+    #market = ClientRPCMarket(host=host, queue_name=queue)
+    market = MockMarket(
+        dividend_growth_rate = dividend_growth_rate,
+        dividend_std = dividend_std
+        )
+
+    data, history = run_simulation(
+        agent_parameters,
+        dist_params,
+        popn = popn, 
+        a = attention, 
+        q = quarters, 
+        r= runs,
+        market = market,
+        dphm = dphm,
+        p1 = p1,
+        p2 = p2,
+        d1 = d1,
+        d2 = d2
+        )
 
     history_df = pd.DataFrame(dict([(k,pd.Series(v)) for k,v in history.items()]))
     history_df.to_csv(f'{args.save_as}_history.csv')
 
     data.to_csv(f'{args.save_as}_data.csv')
-
-    # pp = pprint.PrettyPrinter(indent=4)
-    # pp.pprint(sim_stats)
 
