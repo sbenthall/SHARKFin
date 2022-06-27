@@ -39,6 +39,7 @@ parser.add_argument('--dphm', help='dollars per HARK money unit', default = 1500
 
 # General market arguments
 # TODO market_type: MockMarket # this determines which Market class to use.
+parser.add_argument('--market', help='name of Market class', default = "MockMarket")
 parser.add_argument('--dividend_growth_rate', help='daily average growth rate of the dividend', default = 1.000628)
 parser.add_argument('--dividend_std', help='daily standard deviation fo the dividend', default = 0.011988)
 
@@ -124,7 +125,7 @@ if __name__ == '__main__':
     runs = int(args.runs)
 
     # General market arguments
-    # TODO market_type: MockMarket # this determines which Market class to use.
+    market_class_name = str(args.market)
     dividend_growth_rate = float(args.dividend_growth_rate)
     dividend_std = float(args.dividend_std)
 
@@ -150,6 +151,7 @@ if __name__ == '__main__':
         popn,
         quarters,
         runs,
+        market_class_name,
         dividend_growth_rate,
         dividend_std,
         attention,
@@ -161,13 +163,25 @@ if __name__ == '__main__':
         ]]))
 
 
-    # TODO: Variable Market type
-    # market_type: MockMarket # this determines which Market class to use.
-    #market = ClientRPCMarket(host=host, queue_name=queue)
-    market = MockMarket(
-        dividend_growth_rate = dividend_growth_rate,
-        dividend_std = dividend_std
-        )
+    market_args = {
+        'dividend_growth_rate' : dividend_growth_rate,
+        'dividend_std' : dividend_std
+    }
+
+    market_class = None
+
+    if market_class_name == "MockMarket":
+        market_class = MockMarket
+    elif market_class_name == "ClientRPCMarket":
+        market_class = ClientRPCMarket
+        market_args['queue_name'] = queue
+        market_args['host'] = host
+        market_args['seed'] = seed
+    else:
+        print(f"{market_class_name} is not a know market class. Using MockMarket.")
+        market_class = MockMarket
+
+    market = market_class(**market_args)
 
     data, history = run_simulation(
         agent_parameters,

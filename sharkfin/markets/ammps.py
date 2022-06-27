@@ -19,7 +19,7 @@ class ClientRPCMarket(AbstractMarket):
     prices = None
 
     def __init__(self,
-        seed_limit=None,
+        seed=None,
         queue_name='',
         host='localhost',
         dividend_growth_rate = 1.000628,
@@ -52,7 +52,7 @@ class ClientRPCMarket(AbstractMarket):
         # if seed_limit is not None:
         #     self.seed_limit = seed_limit
 
-        self.seed_limit = seed_limit
+        self.seed_limit = seed
 
         self.latest_price = None
         self.prices = [self.default_sim_price]
@@ -104,9 +104,9 @@ class ClientRPCMarket(AbstractMarket):
             self.response = body
 
     def run_market(self, seed=None, buy_sell=(0, 0)):
-        if seed is None:
-            seed_limit = self.seed_limit if self.seed_limit is not None else 3000
-            seed = (np.random.randint(seed_limit) + self.sample) % seed_limit
+        #if seed is None:
+        #    seed_limit = self.seed_limit if self.seed_limit is not None else 3000
+        #    seed = (np.random.randint(seed_limit) + self.sample) % seed_limit
 
         self.last_seed = seed
         self.last_buy_sell = buy_sell

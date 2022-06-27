@@ -625,7 +625,7 @@ class AttentionSimulation(BasicSimulation):
 
     def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500, days_per_quarter = 60):
 
-        super().__init__(pop, fm, q=q, r=r, market=None, dphm=dphm, days_per_quarter = days_per_quarter)
+        super().__init__(pop, fm, q=q, r=r, market=market, dphm=dphm, days_per_quarter = days_per_quarter)
 
         # TODO: Make this more variable.
         if a is not None:
