@@ -183,7 +183,7 @@ class ClientRPCMarket(AbstractMarket):
         )
 
 
-    def close_market(self): 
-        self.publish({'seed': 0, 'bl': 0, 'sl': 0, 'end_simulation': True})
-
+    def close_market(self):
+        self.publish({'seed': 0, 'bl': 0, 'sl': 0, 'dividend' : 0, 'end_simulation': True})
+        self.channel.queue_delete(self.callback_queue)
         self.connection.close()
