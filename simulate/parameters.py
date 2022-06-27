@@ -47,6 +47,8 @@ agent_population_params = {
 continuous_dist_params = {
     "CRRA": Uniform(bot=2, top=10),
     "DiscFac": Uniform(bot=0.936, top=0.978),
+    "RiskyAvg": Uniform(bot=1, top=1.2),
+    "RiskyStd": Uniform(bot=0.1, top=0.3),
 }
 
-approx_params = {"CRRA": 3, "DiscFac": 2}
+approx_params = {"CRRA": 3, "DiscFac": 2, "RiskyAvg": 3, "RiskyStd": 3}
