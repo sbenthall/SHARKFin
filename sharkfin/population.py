@@ -37,11 +37,11 @@ class AgentPopulation:
     stored_class_stats = None
     dist_params = None
 
-    def __init__(self, base_parameters, dist_params, n_per_class):
+    def __init__(self, base_parameters, dist_params, n_per_class, rng = None):
         self.base_parameters = base_parameters
         self.dist_params = dist_params
         self.agents = self.create_distributed_agents(
-            self.base_parameters, dist_params, n_per_class
+            self.base_parameters, dist_params, n_per_class, rng = rng
         )
 
     def agent_df(self):
@@ -117,7 +117,7 @@ class AgentPopulation:
 
         return class_stats
 
-    def create_distributed_agents(self, agent_parameters, dist_params, n_per_class):
+    def create_distributed_agents(self, agent_parameters, dist_params, n_per_class, rng = None):
         """
         Creates agents of the given classes with stable parameters.
         Will overwrite the DiscFac with a distribution from CSTW_MPC.
@@ -136,15 +136,17 @@ class AgentPopulation:
         num_classes = math.prod([dist_params[dp]['n'] for dp in dist_params])
         agent_batches = [{'AgentCount': num_classes}] * n_per_class
 
+        rng = rng if rng is not None else np.random.default_rng()
+
         agents = [
             cpm.PortfolioConsumerType(
-                seed=random.randint(0, 2**31 - 1),
+                seed=rng.integers(0, 2**31 - 1),
                 **update_return(agent_parameters, ac),
             )
             for ac in agent_batches
         ]
 
-        agents = AgentList(agents, dist_params)
+        agents = AgentList(agents, dist_params, rng)
 
         return agents
 
@@ -188,3 +190,82 @@ class AgentPopulation:
                 0
             ].cFuncAdj(agent.state_now['mNrm'])
             agent.state_now['aLvl'] = agent.state_now['aNrm'] * agent.state_now['pLvl']
+
+
+# Agent List
+class AgentList:
+    def __init__(self, agents, dist_params, rng):
+        #super special nested list data structure
+        self.agent_cats = []
+        self.idx = -1
+
+        """
+        Distribue the discount rate among a set of agents according
+        the distribution from Carroll et al., "Distribution of Wealth"
+        paper.
+
+        Parameters
+        ----------
+
+        agents: list of AgentType
+            A list of AgentType
+
+        dist_params:
+
+        Returns
+        -------
+            agents: A list of AgentType
+        """
+     
+        # This is hacky. Should streamline this in HARK.
+
+        # does this create a list of lists of distributed agents? (self.agent_cats)
+
+        for param in dist_params:
+            agents_distributed = [
+                distribute_params(
+                    agent,
+                    param,
+                    dist_params[param]['n'],
+                    # allow other types of distributions
+                    # allow support for HARK distributions
+                    Uniform(
+                        bot=dist_params[param]['bot'],
+                        top=dist_params[param]['top']
+                    )
+                )
+                for agent in agents
+            ]
+
+            for agent_dist in agents_distributed:
+                for agent in agent_dist:
+                    ## Why is this happening like this?
+                    # To revisit with new Population class
+                    agent.seed = rng.integers(100000000)
+                    agent.reset_rng()
+                    agent.IncShkDstn[0].seed = rng.integers(0,100000000)
+                    agent.IncShkDstn[0].reset()
+
+    # return agents
+        self.agent_cats = agents_distributed
+
+        self.flattened = list(chain(*self.agent_cats))
+
+        
+    def __iter__(self):
+        return self
+
+
+    def __next__(self):
+        self.idx += 1
+
+        if self.idx >= len(self.flattened):
+            self.idx = -1
+            raise StopIteration
+
+        return self.flattened[self.idx]
+
+
+    def iter_subpops(self):
+        for subpop in self.agent_cats:
+            yield subpop

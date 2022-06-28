@@ -8,6 +8,7 @@ from HARK.Calibration.Income.IncomeTools import (
 )
 
 from math import exp
+import numpy as np
 import os
 import pandas as pd
 import time
@@ -95,17 +96,18 @@ def run_simulation(
     p1 = 0.1,
     p2 = 0.1,
     d1 = 60,
-    d2 = 60
+    d2 = 60,
+    rng = None
     ):
 
     # initialize population
-    pop = AgentPopulation(agent_parameters, dist_params, popn)
+    pop = AgentPopulation(agent_parameters, dist_params, popn, rng = rng)
 
     # Initialize the population model
     pop.init_simulation()
 
     sim = AttentionSimulation(
-        pop, FinanceModel, a = a, q = q, r = r, market = market, dphm = dphm)
+        pop, FinanceModel, a = a, q = q, r = r, market = market, dphm = dphm, rng = rng)
     
     sim.simulate()
 
@@ -162,10 +164,13 @@ if __name__ == '__main__':
         d2
         ]]))
 
+    # random number generator with seed
+    rng = np.random.default_rng(seed)
 
     market_args = {
         'dividend_growth_rate' : dividend_growth_rate,
-        'dividend_std' : dividend_std
+        'dividend_std' : dividend_std,
+        'rng' : rng
     }
 
     market_class = None
@@ -176,7 +181,6 @@ if __name__ == '__main__':
         market_class = ClientRPCMarket
         market_args['queue_name'] = queue
         market_args['host'] = host
-        market_args['seed'] = seed
     else:
         print(f"{market_class_name} is not a know market class. Using MockMarket.")
         market_class = MockMarket
@@ -195,7 +199,8 @@ if __name__ == '__main__':
         p1 = p1,
         p2 = p2,
         d1 = d1,
-        d2 = d2
+        d2 = d2,
+        rng = rng
         )
 
     history_df = pd.DataFrame(dict([(k,pd.Series(v)) for k,v in history.items()]))

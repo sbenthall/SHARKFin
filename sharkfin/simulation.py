@@ -4,7 +4,6 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import random
 import seaborn as sns
 from statistics import mean
 from scipy import stats
@@ -623,9 +622,11 @@ class AttentionSimulation(BasicSimulation):
     ## upping this to make more agents engaged in trade
     attention_rate = None
 
-    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500, days_per_quarter = 60):
+    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500, days_per_quarter = 60, rng = None):
 
         super().__init__(pop, fm, q=q, r=r, market=market, dphm=dphm, days_per_quarter = days_per_quarter)
+
+        self.rng = rng if rng is not None else np.random.default_rng()
 
         # TODO: Make this more variable.
         if a is not None:
@@ -635,7 +636,7 @@ class AttentionSimulation(BasicSimulation):
 
         # assign macro-days to each agent
         for agent in self.agents:
-            agent.macro_day = random.randrange(self.days_per_quarter)
+            agent.macro_day = self.rng.integers(self.days_per_quarter)
 
     def simulate(self, quarters=None, start=True):
         """
@@ -669,7 +670,7 @@ class AttentionSimulation(BasicSimulation):
 
                 # Set to a number for a fixed seed, or None to rotate
                 for agent in self.agents:
-                    if random.random() < self.attention_rate:
+                    if self.rng.random() < self.attention_rate:
                         self.broker.transact(self.attend(agent))
 
                 buy_sell, ror, price, dividend = self.broker.trade()

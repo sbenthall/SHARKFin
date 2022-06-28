@@ -41,6 +41,14 @@ class AbstractMarket(ABC):
         """
         pass
 
+    @property
+    @abstractmethod
+    def rng(self):
+        """
+        A random number generator
+        """
+        pass
+
     @abstractmethod
     def run_market(self) -> tuple([float, float]):
         """
@@ -123,7 +131,7 @@ class AbstractMarket(ABC):
         # standard deviation of underlying distribution
         exp_std = np.sqrt(np.log(1 + div_psi_std ** 2 / div_psi_ror ** 2))
 
-        return self.dividends[-1] * np.random.lognormal(exp_ror, exp_std) * self.dividend_growth_rate
+        return self.dividends[-1] * self.rng.lognormal(exp_ror, exp_std) * self.dividend_growth_rate
 
 
 class MockMarket(AbstractMarket):
@@ -151,11 +159,14 @@ class MockMarket(AbstractMarket):
     dividend_growth_rate = None
     dividend_std = None
 
+    rng = None
+
     def __init__(
         self,
         dividend_growth_rate = 1.000628,
         dividend_std = 0.011988,
-        price_to_dividend_ratio = 60 / 0.05
+        price_to_dividend_ratio = 60 / 0.05,
+        rng = None
         ):
         """
         """
@@ -167,6 +178,8 @@ class MockMarket(AbstractMarket):
 
         self.prices = [self.default_sim_price]
         self.dividends = [self.default_sim_price / self.price_to_dividend_ratio]
+
+        self.rng = rng if rng is not None else np.random.default_rng()
 
     def run_market(self, seed=0, buy_sell=(0,0)):
         """
