@@ -4,7 +4,6 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import random
 import seaborn as sns
 from statistics import mean
 from scipy import stats
@@ -81,7 +80,13 @@ class BasicSimulation(AbstractSimulation):
     start_time = None
     end_time = None
 
-    def __init__(self, pop, Fm, q=1, r=None, market=None, dphm=1500, days_per_quarter = 60):
+    def __init__(
+        self, pop, Fm, q=1, r=None, market=None, dphm=1500, days_per_quarter = 60,
+        p1 = 0.1,
+        p2 = 0.1,
+        d1 = 60,
+        d2 = 60 
+    ):
         """
         pop - agent population
         fm - expectation class
@@ -106,7 +111,14 @@ class BasicSimulation(AbstractSimulation):
         # Create the Market wrapper
         self.market = MockMarket() if market is None else market
 
-        self.fm = Fm(self.market, days_per_quarter = self.days_per_quarter)
+        self.fm = Fm(
+            self.market,
+            p1 = p1,
+            p2 = p2,
+            delta_t1 = d1,
+            delta_t2 = d2,
+            days_per_quarter = self.days_per_quarter
+            )
         self.fm.calculate_risky_expectations()
 
         self.broker = Broker(self.market)
@@ -610,9 +622,11 @@ class AttentionSimulation(BasicSimulation):
     ## upping this to make more agents engaged in trade
     attention_rate = None
 
-    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500, days_per_quarter = 60):
+    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500, days_per_quarter = 60, rng = None):
 
-        super().__init__(pop, fm, q=q, r=r, market=None, dphm=dphm, days_per_quarter = days_per_quarter)
+        super().__init__(pop, fm, q=q, r=r, market=market, dphm=dphm, days_per_quarter = days_per_quarter)
+
+        self.rng = rng if rng is not None else np.random.default_rng()
 
         # TODO: Make this more variable.
         if a is not None:
@@ -622,7 +636,7 @@ class AttentionSimulation(BasicSimulation):
 
         # assign macro-days to each agent
         for agent in self.agents:
-            agent.macro_day = random.randrange(self.days_per_quarter)
+            agent.macro_day = self.rng.integers(self.days_per_quarter)
 
     def simulate(self, quarters=None, start=True):
         """
@@ -656,7 +670,7 @@ class AttentionSimulation(BasicSimulation):
 
                 # Set to a number for a fixed seed, or None to rotate
                 for agent in self.agents:
-                    if random.random() < self.attention_rate:
+                    if self.rng.random() < self.attention_rate:
                         self.broker.transact(self.attend(agent))
 
                 buy_sell, ror, price, dividend = self.broker.trade()

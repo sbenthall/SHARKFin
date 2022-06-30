@@ -62,7 +62,11 @@ def test_attention_simulation():
     
     days_per_quarter = 30
 
-    attsim = AttentionSimulation(pop, FinanceModel, a=a, q=q, r=r, market=market, days_per_quarter = days_per_quarter)
+    seed = 1000
+
+    rng = np.random.default_rng(seed)
+
+    attsim = AttentionSimulation(pop, FinanceModel, a=a, q=q, r=r, market=market, days_per_quarter = days_per_quarter, rng = rng)
     attsim.simulate()
 
     ## testing for existence of this class stat

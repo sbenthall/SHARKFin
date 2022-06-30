@@ -127,6 +127,3 @@ if __name__ == '__main__':
 
     data.to_csv(f'{args.save_as}_data.csv')
 
-    # pp = pprint.PrettyPrinter(indent=4)
-    # pp.pprint(sim_stats)
-
