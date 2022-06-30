@@ -9,11 +9,8 @@ from simulate.parameters import (
 
 parameter_dict = agent_population_params | continuous_dist_params
 
-parameter_dict["cycles"] = 1
-
 
 def test_agent_population():
-
     # Initializing an Agent Population
 
     # Step 1 - create agent population with initial parameters
@@ -32,14 +29,7 @@ def test_agent_population():
     ap.create_database()
 
     # Step 6 - solve each of the agent groups in the population
-    # ap.solve_distributed_agents()
-
-    # Because solving takes so long, create fake terminal solution
-
-    solution = [ap.agents[0].solution_terminal]
-
-    for agent in ap.agents:
-        agent.solution = solution
+    ap.solve_distributed_agents()
 
     # Step 7 - initialize simulation for each agent sub-population
     ap.init_simulation()
@@ -50,7 +40,7 @@ def test_agent_population():
     # Creating Master Solution for agent Population separately
 
     # Step 1. create Agent Population Solution (must follow 1-6 above before this)
-    solution = AgentPopulationSolution(ap)
+    # solution = AgentPopulationSolution(ap)
 
     # Step 2. provide parameters that will become state variables
-    solution.merge_solutions(["RiskyAvg", "RiskyStd"])
+    # solution.merge_solutions(["RiskyAvg", "RiskyStd"])
