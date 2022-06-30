@@ -25,15 +25,15 @@ def test_agent_population():
     # # Step 3 - parse all parameters to create distributed agent parameter dictionaries
     ap.parse_params()
     print("parsed parameters")
-    
+
     # # Step 4 - create distributed agents and put them in a list
-    # ap.create_distributed_agents()
-    # print("created distributed agents")
-    #
+    ap.create_distributed_agents()
+    print("created distributed agents")
+
     # # Step 5 - create pandas database of agents for better selection by parameters
-    # ap.create_database()
-    # print("created agent database")
-    #
+    ap.create_database()
+    print("created agent database")
+    
     # # Step 6 - solve each of the agent groups in the population
     # ap.solve_distributed_agents()
     # print("solved distributed agents")
