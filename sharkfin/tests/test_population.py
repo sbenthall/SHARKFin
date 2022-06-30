@@ -48,8 +48,8 @@ def test_agent_population():
     # # Creating Master Solution for agent Population separately
     #
     # # Step 1. create Agent Population Solution (must follow 1-6 above before this)
-    solution = AgentPopulationSolution(ap)
-    print("created solution object")
+    # solution = AgentPopulationSolution(ap)
+    # print("created solution object")
 
     # # Step 2. provide parameters that will become state variables
     # solution.merge_solutions(["RiskyAvg", "RiskyStd"])
