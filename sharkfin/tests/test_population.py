@@ -37,7 +37,7 @@ def test_agent_population():
     # # Step 6 - solve each of the agent groups in the population
     ap.solve_distributed_agents()
     print("solved distributed agents")
-    
+
     # # Step 7 - initialize simulation for each agent sub-population
     # ap.init_simulation()
     # print("initialized simulation")
