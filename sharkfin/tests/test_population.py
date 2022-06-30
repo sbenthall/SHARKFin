@@ -21,11 +21,11 @@ def test_agent_population():
     # # Step 2 - provide approximation parameters
     ap.approx_distributions(approx_params)
     print("approximated continuous distributions")
-    
+
     # # Step 3 - parse all parameters to create distributed agent parameter dictionaries
-    # ap.parse_params()
-    # print("parsed parameters")
-    #
+    ap.parse_params()
+    print("parsed parameters")
+    
     # # Step 4 - create distributed agents and put them in a list
     # ap.create_distributed_agents()
     # print("created distributed agents")
