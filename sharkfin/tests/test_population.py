@@ -39,8 +39,8 @@ def test_agent_population():
     print("solved distributed agents")
 
     # # Step 7 - initialize simulation for each agent sub-population
-    # ap.init_simulation()
-    # print("initialized simulation")
+    ap.init_simulation()
+    print("initialized simulation")
     #
     # # Step 8 - create master solution as attribute of population
     # # ap.solve(["RiskyAvg", "RiskyStd"])
@@ -48,9 +48,9 @@ def test_agent_population():
     # # Creating Master Solution for agent Population separately
     #
     # # Step 1. create Agent Population Solution (must follow 1-6 above before this)
-    # solution = AgentPopulationSolution(ap)
-    # print("created solution object")
-    #
+    solution = AgentPopulationSolution(ap)
+    print("created solution object")
+
     # # Step 2. provide parameters that will become state variables
     # solution.merge_solutions(["RiskyAvg", "RiskyStd"])
     # print("merged solutions")
