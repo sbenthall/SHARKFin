@@ -58,21 +58,21 @@ class AgentPopulation:
         )
 
     def agent_df(self):
-        '''
+        """
         Output a dataframe for agent attributes
 
         returns agent_df from class_stats
-        '''
+        """
 
         records = []
 
         for agent in self.agents:
-            for i, aLvl in enumerate(agent.state_now['aLvl']):
+            for i, aLvl in enumerate(agent.state_now["aLvl"]):
                 record = {
-                    'aLvl': aLvl,
-                    'mNrm': agent.state_now['mNrm'][i],
-                    'cNrm': agent.controls['cNrm'][i]
-                    if 'cNrm' in agent.controls
+                    "aLvl": aLvl,
+                    "mNrm": agent.state_now["mNrm"][i],
+                    "cNrm": agent.controls["cNrm"][i]
+                    if "cNrm" in agent.controls
                     else None,
                 }
 
@@ -93,12 +93,12 @@ class AgentPopulation:
         records = []
 
         for agent in self.agents:
-            for i, aLvl in enumerate(agent.state_now['aLvl']):
+            for i, aLvl in enumerate(agent.state_now["aLvl"]):
                 record = {
-                    'aLvl': aLvl,
-                    'mNrm': agent.state_now['mNrm'][i],
+                    "aLvl": aLvl,
+                    "mNrm": agent.state_now["mNrm"][i],
                     # difference between mNrm and the equilibrium mNrm from BST
-                    'mNrm_ratio_StE': agent.state_now['mNrm'][i] / agent.mNrmStE,
+                    "mNrm_ratio_StE": agent.state_now["mNrm"][i] / agent.mNrmStE,
                 }
 
                 for dp in self.dist_params:
@@ -110,20 +110,20 @@ class AgentPopulation:
 
         class_stats = (
             agent_df.groupby(list(self.dist_params.keys()))
-            .aggregate(['mean', 'std'])
+            .aggregate(["mean", "std"])
             .reset_index()
         )
 
         cs = class_stats
-        cs['label'] = round(cs['CRRA'], 2).apply(lambda x: f'CRRA: {x}, ') + round(
-            cs['DiscFac'], 2
+        cs["label"] = round(cs["CRRA"], 2).apply(lambda x: f"CRRA: {x}, ") + round(
+            cs["DiscFac"], 2
         ).apply(lambda x: f"DiscFac: {x}")
-        cs['aLvl_mean'] = cs['aLvl']['mean']
-        cs['aLvl_std'] = cs['aLvl']['std']
-        cs['mNrm_mean'] = cs['mNrm']['mean']
-        cs['mNrm_std'] = cs['mNrm']['std']
-        cs['mNrm_ratio_StE_mean'] = cs['mNrm_ratio_StE']['mean']
-        cs['mNrm_ratio_StE_std'] = cs['mNrm_ratio_StE']['std']
+        cs["aLvl_mean"] = cs["aLvl"]["mean"]
+        cs["aLvl_std"] = cs["aLvl"]["std"]
+        cs["mNrm_mean"] = cs["mNrm"]["mean"]
+        cs["mNrm_std"] = cs["mNrm"]["std"]
+        cs["mNrm_ratio_StE_mean"] = cs["mNrm_ratio_StE"]["mean"]
+        cs["mNrm_ratio_StE_std"] = cs["mNrm_ratio_StE"]["std"]
 
         if store:
             self.stored_class_stats = class_stats
@@ -146,12 +146,12 @@ class AgentPopulation:
         n_per_class: int
             number of agents to instantiate per class
         """
-        num_classes = math.prod([dist_params[dp]['n'] for dp in dist_params])
-        agent_batches = [{'AgentCount': num_classes}] * n_per_class
+        num_classes = math.prod([dist_params[dp]["n"] for dp in dist_params])
+        agent_batches = [{"AgentCount": num_classes}] * n_per_class
 
         agents = [
             cpm.PortfolioConsumerType(
-                seed=random.randint(0, 2 ** 31 - 1),
+                seed=random.randint(0, 2**31 - 1),
                 **update_return(agent_parameters, ac),
             )
             for ac in agent_batches
@@ -166,7 +166,7 @@ class AgentPopulation:
         Sets up the agents with their state for the state of the simulation
         """
         for agent in self.agents:
-            agent.track_vars += ['pLvl', 'mNrm', 'cNrm', 'Share', 'Risky']
+            agent.track_vars += ["pLvl", "mNrm", "cNrm", "Share", "Risky"]
 
             agent.assign_parameters(AdjustPrb=1.0)
             agent.T_sim = 1000  # arbitrary!
@@ -184,7 +184,7 @@ class AgentPopulation:
                 ind_shock_double.solve()
                 mNrmStE = ind_shock_double.solution[0].mNrmStE
 
-                agent.state_now['mNrm'][:] = mNrmStE
+                agent.state_now["mNrm"][:] = mNrmStE
                 agent.mNrmStE = (
                     mNrmStE  # saving this for later, in case we do the analysis.
                 )
@@ -193,14 +193,14 @@ class AgentPopulation:
                 mNrm = (
                     self.stored_class_stats.copy()
                     .set_index([dp for dp in self.dist_params])
-                    .xs((idx))['mNrm']['mean']
+                    .xs((idx))["mNrm"]["mean"]
                 )
-                agent.state_now['mNrm'][:] = mNrm
+                agent.state_now["mNrm"][:] = mNrm
 
-            agent.state_now['aNrm'] = agent.state_now['mNrm'] - agent.solution[
+            agent.state_now["aNrm"] = agent.state_now["mNrm"] - agent.solution[
                 0
-            ].cFuncAdj(agent.state_now['mNrm'])
-            agent.state_now['aLvl'] = agent.state_now['aNrm'] * agent.state_now['pLvl']
+            ].cFuncAdj(agent.state_now["mNrm"])
+            agent.state_now["aLvl"] = agent.state_now["aNrm"] * agent.state_now["pLvl"]
 
 
 @dataclass
@@ -220,7 +220,7 @@ class AgentPopulationNew:
         for key_param in param_dict:
             parameter = param_dict[key_param]
             if (
-                    isinstance(parameter, DataArray) and parameter.dims[0] == "agent"
+                isinstance(parameter, DataArray) and parameter.dims[0] == "agent"
             ) or isinstance(parameter, Distribution):
                 self.dist_params.append(key_param)
 
@@ -325,8 +325,8 @@ class AgentPopulationNew:
 
                 elif key_param in self.time_inv:
                     if (
-                            isinstance(parameter, DataArray)
-                            and parameter.dims[0] == "agent"
+                        isinstance(parameter, DataArray)
+                        and parameter.dims[0] == "agent"
                     ):
                         agent_params[key_param] = parameter[agent].item()
                     elif isinstance(parameter, (int, float)):
@@ -463,11 +463,11 @@ class AgentPopulationNew:
         self.solve_distributed_agents()
 
         if merge_by is not None:
-            self.solution = AgentPopulationNewSolution(self)
+            self.solution = AgentPopulationSolution(self)
             self.solution.merge_solutions(continuous_states=merge_by)
 
 
-class AgentPopulationNewSolution:
+class AgentPopulationSolution:
     def __init__(self, agent_population):
         self.agent_population = agent_population
 
