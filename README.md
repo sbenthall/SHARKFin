@@ -70,7 +70,7 @@ Refer to AMMPS documentation for parameters and instructions on how to generate 
 3. Run SHARKFin
 
 ```
-python run_chum.py OUTPUT_PREFIX
+python run_whiteshark.py OUTPUT_PREFIX
 ```
 
 ## NetLogo Installation

@@ -20,8 +20,8 @@ idx_40 = ssvp["Age"].index(40)
 ### parameters shared by all agents
 agent_parameters = {
     "aNrmInitStd": 0.0,
-    "LivPrb": [0.98 ** 0.25],
-    "PermGroFac": [1.01 ** 0.25],
+    "LivPrb": [0.98**0.25],
+    "PermGroFac": [1.01**0.25],
     "pLvlInitMean": 1.0,
     # initial distribution of permanent income
     "pLvlInitStd": 0.0,
@@ -35,8 +35,8 @@ agent_parameters = {
 
 agent_population_params = {
     "aNrmInitStd": 0.0,
-    "LivPrb": 0.98 ** 0.25,
-    "PermGroFac": 1.01 ** 0.25,
+    "LivPrb": 0.98**0.25,
+    "PermGroFac": 1.01**0.25,
     "pLvlInitMean": 1.0,
     "pLvlInitStd": 0.0,
     "Rfree": 1.0,
@@ -47,6 +47,8 @@ agent_population_params = {
 continuous_dist_params = {
     "CRRA": Uniform(bot=2, top=10),
     "DiscFac": Uniform(bot=0.936, top=0.978),
+    "RiskyAvg": Uniform(bot=1, top=1.2),
+    "RiskyStd": Uniform(bot=0.1, top=0.3),
 }
 
-approx_params = {"CRRA": 3, "DiscFac": 2}
+approx_params = {"CRRA": 3, "DiscFac": 2, "RiskyAvg": 3, "RiskyStd": 3}
