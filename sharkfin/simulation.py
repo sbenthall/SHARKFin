@@ -52,7 +52,7 @@ class BasicSimulation(AbstractSimulation):
 
     """
 
-    agents = None  # replace with references to/operations on pop
+    #agents = None  # replace with references to/operations on pop
     broker = None
     pop = None
 
@@ -92,7 +92,7 @@ class BasicSimulation(AbstractSimulation):
         fm - expectation class
 
         """
-        self.agents = pop.agents
+        #self.agents = pop.agents
 
         self.pop = pop
 
@@ -135,7 +135,7 @@ class BasicSimulation(AbstractSimulation):
 
         # assign macro-days to each agent
         # This is a somewhat frustrating artifact to be cleaned up...
-        for agent in self.agents:
+        for agent in self.pop.agents:
             agent.macro_day = 0
 
     def attend(self, agent):
@@ -346,7 +346,7 @@ class BasicSimulation(AbstractSimulation):
 
         # Initialize share ownership for agents
         if start:
-            for agent in self.agents:
+            for agent in self.pop.agents:
                 agent.shares = self.compute_share_demand(agent)
 
         ## ?
@@ -371,7 +371,7 @@ class BasicSimulation(AbstractSimulation):
 
                 for day_in_run in range(int(self.days_per_run)):
                     updates = 0
-                    for agent in self.agents:
+                    for agent in self.pop.agents:
                         if agent.macro_day == day:
                             updates = updates + 1
                             self.macro_update(agent)
@@ -453,7 +453,7 @@ class BasicSimulation(AbstractSimulation):
 
         old_share_price = new_share_price / (1 + ror)
 
-        for agent in self.agents:
+        for agent in self.pop.agents:
             old_raw = agent.shares * old_share_price
             new_raw = agent.shares * new_share_price
             dividends = agent.shares * dividend
@@ -635,7 +635,7 @@ class AttentionSimulation(BasicSimulation):
             self.attention_rate = 1 / self.runs_per_quarter
 
         # assign macro-days to each agent
-        for agent in self.agents:
+        for agent in self.pop.agents:
             agent.macro_day = self.rng.integers(self.days_per_quarter)
 
     def simulate(self, quarters=None, start=True):
@@ -653,7 +653,7 @@ class AttentionSimulation(BasicSimulation):
 
         # Initialize share ownership for agents
         if start:
-            for agent in self.agents:
+            for agent in self.pop.agents:
                 agent.shares = self.compute_share_demand(agent)
 
         
@@ -669,7 +669,7 @@ class AttentionSimulation(BasicSimulation):
                 # print(f"Q-{quarter}:R-{run}")
 
                 # Set to a number for a fixed seed, or None to rotate
-                for agent in self.agents:
+                for agent in self.pop.agents:
                     if self.rng.random() < self.attention_rate:
                         self.broker.transact(self.attend(agent))
 
@@ -680,7 +680,7 @@ class AttentionSimulation(BasicSimulation):
 
                 for day_in_run in range(int(self.days_per_run)):
                     updates = 0
-                    for agent in self.agents:
+                    for agent in self.pop.agents:
                         if agent.macro_day == day:
                             updates = updates + 1
                             self.macro_update(agent)
@@ -743,7 +743,7 @@ class CalibrationSimulation(BasicSimulation):
 
         # Initialize share ownership for agents
         if start:
-            for agent in self.agents:
+            for agent in self.pop.agents:
                 agent.shares = self.compute_share_demand(agent)
                 #self.macro_update(agent)
 
@@ -753,7 +753,7 @@ class CalibrationSimulation(BasicSimulation):
             start_time = datetime.now()
 
             # is this needed for chum?
-            for agent in self.agents:
+            for agent in self.pop.agents:
                 self.broker.transact(np.zeros(1))
 
             buy_sell, ror, price, dividend = self.broker.trade()
