@@ -383,7 +383,7 @@ class BasicSimulation(AbstractSimulation):
                         # putting 0,0 here is a stopgap to make plotting code simpler
                         self.broker.track((0, 0),(0, 0))
 
-                    self.update_agent_wealth_capital_gains(price, ror)
+                    self.pop.update_agent_wealth_capital_gains(price, ror, self.dollars_per_hark_money_unit)
 
                     self.track(day)
 
@@ -440,46 +440,6 @@ class BasicSimulation(AbstractSimulation):
         self.history['class_stats'].append(self.pop.class_stats(store=False))
         self.history['total_pop_stats'].append(self.pop.agent_df())
         # self.history['buy_sell'].append(self.broker.buy_sell_history[-1])
-
-    def update_agent_wealth_capital_gains(self, new_share_price, ror, dividend):
-        """
-        For all agents,
-        given the old share price
-        and a rate of return
-
-        update the agent's wealth level to adjust
-        for the most recent round of capital gains.
-        """
-
-        old_share_price = new_share_price / (1 + ror)
-
-        for agent in self.pop.agents:
-            old_raw = agent.shares * old_share_price
-            new_raw = agent.shares * new_share_price
-            dividends = agent.shares * dividend
-
-            delta_aNrm = (new_raw - old_raw + dividends) / (
-                self.dollars_per_hark_money_unit * agent.state_now['pLvl']
-            )
-
-            # update normalized market assets
-            # if agent.state_now['aNrm'] < delta_aNrm:
-            #     breakpoint()
-
-            agent.state_now['aNrm'] = agent.state_now['aNrm'] + delta_aNrm
-
-            if (agent.state_now['aNrm'] < 0).any():
-                print(
-                    f"ERROR: Agent with CRRA {agent.parameters['CRRA']}"
-                    + "has negative aNrm after capital gains update."
-                )
-                print("Setting normalize assets and shares to 0.")
-                agent.state_now['aNrm'][(agent.state_now['aNrm'] < 0)] = 0.0
-                ## TODO: This change in shares needs to be registered with the Broker.
-                agent.shares[(agent.state_now['aNrm'] == 0)] = 0
-
-            # update non-normalized market assets
-            agent.state_now['aLvl'] = agent.state_now['aNrm'] * agent.state_now['pLvl']
 
     def ror_volatility(self):
         """
@@ -697,7 +657,7 @@ class AttentionSimulation(BasicSimulation):
 
                     # print(f"Q-{quarter}:D-{day}. {updates} macro-updates.")
 
-                    self.update_agent_wealth_capital_gains(price, ror, dividend)
+                    self.pop.update_agent_wealth_capital_gains(price, ror, dividend, self.dollars_per_hark_money_unit)
 
                     self.track(day)
 
@@ -758,7 +718,7 @@ class CalibrationSimulation(BasicSimulation):
 
             buy_sell, ror, price, dividend = self.broker.trade()
                 
-            self.update_agent_wealth_capital_gains(price, ror, dividend)
+            self.pop.update_agent_wealth_capital_gains(price, ror, dividend, self.dollars_per_hark_money_unit)
 
             # combine these steps?
             # add_ror appends to internal history list
@@ -782,7 +742,7 @@ class CalibrationSimulation(BasicSimulation):
         self.broker.transact(np.array((buy, sell)))
         buy_sell, ror, price, dividend = self.broker.trade()
 
-        self.update_agent_wealth_capital_gains(price, ror, dividend)
+        self.pop.update_agent_wealth_capital_gains(price, ror, dividend, self.dollars_per_hark_money_unit)
 
         # self.fm.add_ror(ror)
         self.fm.calculate_risky_expectations()
