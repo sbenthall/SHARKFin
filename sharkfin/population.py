@@ -191,6 +191,55 @@ class AgentPopulation:
             ].cFuncAdj(agent.state_now["mNrm"])
             agent.state_now["aLvl"] = agent.state_now["aNrm"] * agent.state_now["pLvl"]
 
+    def macro_update(self, agent, dollars_per_hark_money_unit, price ):
+        """
+        Input: an agent, dollars_per_hark_money_units conversion rate, current asset price
+
+        Simulates one "macro" period for the agent (quarterly by assumption).
+        For the purposes of the simulation, award the agent dividend income
+        but not capital gains on the risky asset.
+
+        Output: The difference in shares (really, sales of shares) in order
+        to finance consumption; must be passed to a broker.
+        """
+
+        # agent.assign_parameters(AdjustPrb = 0.0)
+        agent.solve()
+
+        ## For risky asset gains in the simulated quarter,
+        ## use only the dividend.
+        true_risky_expectations = {
+            "RiskyAvg": agent.parameters['RiskyAvg'],
+            "RiskyStd": agent.parameters['RiskyStd'],
+        }
+
+
+        # No change -- both capital gains and dividends awarded daily. See #100
+        macro_risky_params = {
+            "RiskyAvg": 1,
+            "RiskyStd": 0,
+        }
+
+        agent.assign_parameters(**macro_risky_params)
+
+        agent.simulate(sim_periods=1)
+
+        ## put back the expectations that include capital gains now
+        agent.assign_parameters(**true_risky_expectations)
+
+        # Selling off shares if necessary to
+        # finance this period's consumption
+        asset_level_in_shares = (
+            agent.state_now['aLvl'] * dollars_per_hark_money_unit / price
+        )
+
+        delta = asset_level_in_shares - agent.shares
+        delta[delta > 0] = 0
+
+        agent.shares = agent.shares + delta
+
+        return delta
+
     def update_agent_wealth_capital_gains(self, new_share_price, ror, dividend, dollars_per_hark_money_unit):
         """
         For all agents,

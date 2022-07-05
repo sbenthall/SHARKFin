@@ -235,51 +235,6 @@ class BasicSimulation(AbstractSimulation):
 
         return data
 
-    def macro_update(self, agent):
-        """
-        Input: an agent, a FinancialModel, and a Broker
-
-        Simulates one "macro" period for the agent (quarterly by assumption).
-        For the purposes of the simulation, award the agent dividend income
-        but not capital gains on the risky asset.
-        """
-
-        # agent.assign_parameters(AdjustPrb = 0.0)
-        agent.solve()
-
-        ## For risky asset gains in the simulated quarter,
-        ## use only the dividend.
-        true_risky_expectations = {
-            "RiskyAvg": agent.parameters['RiskyAvg'],
-            "RiskyStd": agent.parameters['RiskyStd'],
-        }
-
-
-        # No change -- both capital gains and dividends awarded daily. See #100
-        macro_risky_params = {
-            "RiskyAvg": 1,
-            "RiskyStd": 0,
-        }
-
-        agent.assign_parameters(**macro_risky_params)
-
-        agent.simulate(sim_periods=1)
-
-        ## put back the expectations that include capital gains now
-        agent.assign_parameters(**true_risky_expectations)
-
-        # Selling off shares if necessary to
-        # finance this period's consumption
-        asset_level_in_shares = (
-            agent.state_now['aLvl'] * self.dollars_per_hark_money_unit / self.fm.rap()
-        )
-
-        delta = asset_level_in_shares - agent.shares
-        delta[delta > 0] = 0
-
-        agent.shares = agent.shares + delta
-        self.broker.transact(delta, macro=True)
-
     def report(self):
         data = self.data()
 
@@ -374,7 +329,7 @@ class BasicSimulation(AbstractSimulation):
                     for agent in self.pop.agents:
                         if agent.macro_day == day:
                             updates = updates + 1
-                            self.macro_update(agent)
+                            self.broker.transact(self.pop.macro_update(agent, self.dollars_per_hark_money_unit, price), macro=True)
 
                     if new_run:
                         new_run = False
@@ -643,7 +598,7 @@ class AttentionSimulation(BasicSimulation):
                     for agent in self.pop.agents:
                         if agent.macro_day == day:
                             updates = updates + 1
-                            self.macro_update(agent)
+                            self.broker.transact(self.pop.macro_update(agent, self.dollars_per_hark_money_unit, price), macro=True)
 
                     if new_run:
                         new_run = False
@@ -705,7 +660,6 @@ class CalibrationSimulation(BasicSimulation):
         if start:
             for agent in self.pop.agents:
                 agent.shares = self.compute_share_demand(agent)
-                #self.macro_update(agent)
 
         self.track(-1, 0)
 
