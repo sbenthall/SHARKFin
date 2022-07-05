@@ -9,6 +9,7 @@ from statistics import mean
 from scipy import stats
 from sharkfin.markets import MockMarket
 from sharkfin.broker import Broker
+import sharkfin.stylized_facts as stylized_facts
 
 class AbstractSimulation(ABC):
     '''
@@ -591,6 +592,12 @@ class BasicSimulation(AbstractSimulation):
         sim_stats['dollars_per_hark_money_unit'] = self.dollars_per_hark_money_unit
 
         sim_stats['seconds'] = (self.end_time - self.start_time).seconds
+
+        # stylized facts
+        sim_stats['log_return_autocorrelation'] = stylized_facts.DW_test(
+            np.array([r for r in self.market.ror_list()])) - 2
+        sim_stats['log_return_squared_autocorrelation'] = stylized_facts.DW_test(
+            np.array([r ** 2 for r in self.market.ror_list()])) - 2
 
         return sim_stats
 
