@@ -74,6 +74,8 @@ class AgentPopulation:
                     "cNrm": agent.controls["cNrm"][i]
                     if "cNrm" in agent.controls
                     else None,
+                    # difference between mNrm and the equilibrium mNrm from BST
+                    "mNrm_ratio_StE": agent.state_now["mNrm"][i] / agent.mNrmStE,
                 }
 
                 for dp in self.dist_params:
@@ -89,24 +91,7 @@ class AgentPopulation:
 
         Currently limited to asset level in the final simulated period (aLvl_T)
         """
-        # get records for each agent with distributed parameter values and wealth (asset level: aLvl)
-        records = []
-
-        for agent in self.agents:
-            for i, aLvl in enumerate(agent.state_now["aLvl"]):
-                record = {
-                    "aLvl": aLvl,
-                    "mNrm": agent.state_now["mNrm"][i],
-                    # difference between mNrm and the equilibrium mNrm from BST
-                    "mNrm_ratio_StE": agent.state_now["mNrm"][i] / agent.mNrmStE,
-                }
-
-                for dp in self.dist_params:
-                    record[dp] = agent.parameters[dp]
-
-                records.append(record)
-
-        agent_df = pd.DataFrame.from_records(records)
+        agent_df =  self.agent_df()
 
         class_stats = (
             agent_df.groupby(list(self.dist_params.keys()))
@@ -447,6 +432,8 @@ class AgentPopulationNew:
                         "cNrm": agent.controls["cNrm"][i]
                         if "cNrm" in agent.controls
                         else None,
+                        # difference between mNrm and the equilibrium mNrm from BST
+                        "mNrm_ratio_StE": agent.state_now["mNrm"][i] / agent.mNrmStE,
                     }
 
                     for dp in self.dist_params:
@@ -464,24 +451,7 @@ class AgentPopulationNew:
 
         Currently limited to asset level in the final simulated period (aLvl_T)
         """
-        # get records for each agent with distributed parameter values and wealth (asset level: aLvl)
-        records = []
-
-        for agent in self.agents:
-            for i, aLvl in enumerate(agent.state_now["aLvl"]):
-                record = {
-                    "aLvl": aLvl,
-                    "mNrm": agent.state_now["mNrm"][i],
-                    # difference between mNrm and the equilibrium mNrm from BST
-                    "mNrm_ratio_StE": agent.state_now["mNrm"][i] / agent.mNrmStE,
-                }
-
-                for dp in self.dist_params:
-                    record[dp] = agent.parameters[dp]
-
-                records.append(record)
-
-        agent_df = pd.DataFrame.from_records(records)
+        agent_df = self.agent_df()
 
         class_stats = (
             agent_df.groupby(list(self.dist_params.keys()))
