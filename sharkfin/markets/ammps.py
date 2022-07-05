@@ -98,7 +98,6 @@ class ClientRPCMarket(AbstractMarket):
         self.dividends.append(new_dividend)
 
         data = {
-            'seed': self.seed,
             'bl': buy_sell[0],
             'sl': buy_sell[1],
             'dividend' : new_dividend,
