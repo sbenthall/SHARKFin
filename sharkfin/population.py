@@ -191,6 +191,46 @@ class AgentPopulation:
             ].cFuncAdj(agent.state_now["mNrm"])
             agent.state_now["aLvl"] = agent.state_now["aNrm"] * agent.state_now["pLvl"]
 
+    def compute_share_demand(self, agent, price, dollars_per_hark_money_unit):
+        """
+        Computes the number of shares an agent _wants_ to own.
+
+        Inputs:
+         - an agent
+         - current asset price
+         - dollars_per_hark_money_unit - a conversion factor
+
+        This involves:
+          - Computing a solution function based on their
+            expectations and personal properties
+          - Using the solution and the agent's current normalized
+            assets to compute a share number
+        """
+        agent.assign_parameters(AdjustPrb=1.0)
+        agent.solve()
+        cNrm = agent.controls['cNrm'] if 'cNrm' in agent.controls else 0
+        asset_normalized = agent.state_now['aNrm'] + cNrm
+        # breakpoint()
+
+        # ShareFunc takes normalized market assets as argument
+        risky_share = agent.solution[0].ShareFuncAdj(asset_normalized)
+
+        # denormalize the risky share. See https://github.com/econ-ark/HARK/issues/986
+        risky_asset_wealth = (
+            risky_share
+            * asset_normalized
+            * agent.state_now['pLvl']
+            * dollars_per_hark_money_unit
+        )
+
+        shares = risky_asset_wealth / price
+
+        if (np.isnan(shares)).any():
+            print("ERROR: Agent has nan shares")
+
+        return shares
+
+
     def macro_update(self, agent, dollars_per_hark_money_unit, price ):
         """
         Input: an agent, dollars_per_hark_money_units conversion rate, current asset price

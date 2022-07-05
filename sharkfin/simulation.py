@@ -138,7 +138,7 @@ class BasicSimulation(AbstractSimulation):
         for agent in self.pop.agents:
             agent.macro_day = 0
 
-    def attend(self, agent):
+    def attend(self, agent, price, dollars_per_hark_money_unit):
         """
         Cause the agent to attend to the financial model.
 
@@ -153,7 +153,7 @@ class BasicSimulation(AbstractSimulation):
         # Note: this mutates the underlying agent
         agent.assign_parameters(**self.fm.risky_expectations())
 
-        d_shares = self.compute_share_demand(agent)
+        d_shares = self.pop.compute_share_demand(agent, price, dollars_per_hark_money_unit)
 
         delta_shares = d_shares - agent.shares
 
@@ -161,39 +161,7 @@ class BasicSimulation(AbstractSimulation):
         agent.shares = d_shares
         return delta_shares
 
-    def compute_share_demand(self, agent):
-        """
-        Computes the number of shares an agent _wants_ to own.
 
-        This involves:
-          - Computing a solution function based on their
-            expectations and personal properties
-          - Using the solution and the agent's current normalized
-            assets to compute a share number
-        """
-        agent.assign_parameters(AdjustPrb=1.0)
-        agent.solve()
-        cNrm = agent.controls['cNrm'] if 'cNrm' in agent.controls else 0
-        asset_normalized = agent.state_now['aNrm'] + cNrm
-        # breakpoint()
-
-        # ShareFunc takes normalized market assets as argument
-        risky_share = agent.solution[0].ShareFuncAdj(asset_normalized)
-
-        # denormalize the risky share. See https://github.com/econ-ark/HARK/issues/986
-        risky_asset_wealth = (
-            risky_share
-            * asset_normalized
-            * agent.state_now['pLvl']
-            * self.dollars_per_hark_money_unit
-        )
-
-        shares = risky_asset_wealth / self.fm.rap()
-
-        if (np.isnan(shares)).any():
-            print("ERROR: Agent has nan shares")
-
-        return shares
 
     def data(self):
         """
@@ -302,7 +270,7 @@ class BasicSimulation(AbstractSimulation):
         # Initialize share ownership for agents
         if start:
             for agent in self.pop.agents:
-                agent.shares = self.compute_share_demand(agent)
+                agent.shares = self.pop.compute_share_demand(agent, self.market.prices[-1], self.dollars_per_hark_money_unit)
 
         ## ?
         self.track(-1)
@@ -317,7 +285,7 @@ class BasicSimulation(AbstractSimulation):
                 # print(f"Q-{quarter}:R-{run}")
 
                 # Basic simulation has an attention rate of 1
-                self.broker.transact(self.attend(agent))
+                self.broker.transact(self.attend(agent, self.market.prices[-1], self.dollars_per_hark_money_unit))
 
                 buy_sell, ror, price, dividend = self.broker.trade()
                 # print("ror: " + str(ror))
@@ -569,7 +537,7 @@ class AttentionSimulation(BasicSimulation):
         # Initialize share ownership for agents
         if start:
             for agent in self.pop.agents:
-                agent.shares = self.compute_share_demand(agent)
+                agent.shares = self.pop.compute_share_demand(agent, self.market.prices[-1], self.dollars_per_hark_money_unit)
 
         
         self.track(-1)
@@ -586,7 +554,7 @@ class AttentionSimulation(BasicSimulation):
                 # Set to a number for a fixed seed, or None to rotate
                 for agent in self.pop.agents:
                     if self.rng.random() < self.attention_rate:
-                        self.broker.transact(self.attend(agent))
+                        self.broker.transact(self.attend(agent, self.market.prices[-1], self.dollars_per_hark_money_unit))
 
                 buy_sell, ror, price, dividend = self.broker.trade()
                 # print("ror: " + str(ror))
@@ -659,7 +627,7 @@ class CalibrationSimulation(BasicSimulation):
         # Initialize share ownership for agents
         if start:
             for agent in self.pop.agents:
-                agent.shares = self.compute_share_demand(agent)
+                agent.shares = self.pop.compute_share_demand(agent, self.market.prices[-1], self.dollars_per_hark_money_unit)
 
         self.track(-1, 0)
 
