@@ -56,8 +56,8 @@ def test_attention_simulation():
     # arguments to attention simulation
     
     a = 0.2
-    q = 1
-    r = 1
+    q = 2
+    r = 2
     market = None
     
     days_per_quarter = 30

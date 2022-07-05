@@ -263,7 +263,7 @@ class BasicSimulation(AbstractSimulation):
                 # print(f"Q-{quarter}:R-{run}")
 
                 # Basic simulation has an attention rate of 1
-                self.broker.transact(self.pop.attend(agent, self.market.prices[-1], self.dollars_per_hark_money_unit))
+                self.broker.transact(self.pop.attend(agent, self.market.prices[-1], self.dollars_per_hark_money_unit, self.fm.risky_expectations()))
 
                 buy_sell, ror, price, dividend = self.broker.trade()
                 # print("ror: " + str(ror))
@@ -532,7 +532,13 @@ class AttentionSimulation(BasicSimulation):
                 # Set to a number for a fixed seed, or None to rotate
                 for agent in self.pop.agents:
                     if self.rng.random() < self.attention_rate:
-                        self.broker.transact(self.pop.attend(agent, self.market.prices[-1], self.dollars_per_hark_money_unit))
+                        self.broker.transact(self.pop.attend(
+                            agent,
+                            self.market.prices[-1],
+                            self.dollars_per_hark_money_unit,
+                            self.fm.risky_expectations()
+                            )
+                        )
 
                 buy_sell, ror, price, dividend = self.broker.trade()
                 # print("ror: " + str(ror))
