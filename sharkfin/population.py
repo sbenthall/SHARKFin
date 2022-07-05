@@ -416,34 +416,32 @@ class AgentPopulationNew:
     def agent_df(self):
         """
         Output a dataframe for agent attributes
+         -- this is not the same as the agent_database,
+            but rather is a specially designed dataframe
+            used for reporting.
 
         returns agent_df from class_stats
         """
+        for agent in self.agent_database.agents.values:
+            for i, aLvl in enumerate(agent.state_now["aLvl"]):
+                record = {
+                    "aLvl": aLvl,
+                    "mNrm": agent.state_now["mNrm"][i],
+                    "cNrm": agent.controls["cNrm"][i]
+                    if "cNrm" in agent.controls
+                    else None,
+                    # difference between mNrm and the equilibrium mNrm from BST
+                    "mNrm_ratio_StE": agent.state_now["mNrm"][i] / agent.mNrmStE,
+                }
 
-        if self.agent_database is None:
+                for dp in self.dist_params:
+                    record[dp] = agent.parameters[dp]
 
-            records = []
+                records.append(record)
 
-            for agent in self.agents:
-                for i, aLvl in enumerate(agent.state_now["aLvl"]):
-                    record = {
-                        "aLvl": aLvl,
-                        "mNrm": agent.state_now["mNrm"][i],
-                        "cNrm": agent.controls["cNrm"][i]
-                        if "cNrm" in agent.controls
-                        else None,
-                        # difference between mNrm and the equilibrium mNrm from BST
-                        "mNrm_ratio_StE": agent.state_now["mNrm"][i] / agent.mNrmStE,
-                    }
+        agent_dF = pd.DataFrame.from_records(records)
 
-                    for dp in self.dist_params:
-                        record[dp] = agent.parameters[dp]
-
-                    records.append(record)
-
-            self.agent_database = pd.DataFrame.from_records(records)
-
-        return self.agent_database
+        return self.agent_df
 
     def class_stats(self, store=False):
         """
