@@ -403,13 +403,13 @@ class BasicSimulation(AbstractSimulation):
         Tracks the current state of agent's total assets and owned shares
         """
         tal = (
-            sum([agent.state_now['aLvl'].sum() for agent in self.agents])
+            sum([agent.state_now['aLvl'].sum() for agent in self.pop.agents])
             * self.dollars_per_hark_money_unit
         )
-        os = sum([sum(agent.shares) for agent in self.agents])
+        os = sum([sum(agent.shares) for agent in self.pop.agents])
 
         mpl = (
-            mean([agent.state_now['pLvl'].mean() for agent in self.agents])
+            mean([agent.state_now['pLvl'].mean() for agent in self.pop.agents])
             * self.dollars_per_hark_money_unit
         )
 
@@ -417,7 +417,7 @@ class BasicSimulation(AbstractSimulation):
             sum(
                 [
                     (agent.controls['cNrm'] * agent.state_now['pLvl']).sum()
-                    for agent in self.agents
+                    for agent in self.pop.agents
                     if agent.macro_day == day
                 ]
             )
@@ -427,7 +427,7 @@ class BasicSimulation(AbstractSimulation):
         permshock_std = np.array(
             [
                 agent.shocks['PermShk']
-                for agent in self.agents
+                for agent in self.pop.agents
                 if 'PermShk' in agent.shocks
             ]
         ).std()
