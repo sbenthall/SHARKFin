@@ -138,28 +138,6 @@ class BasicSimulation(AbstractSimulation):
         for agent in self.pop.agents:
             agent.macro_day = 0
 
-    def attend(self, agent, price, dollars_per_hark_money_unit):
-        """
-        Cause the agent to attend to the financial model.
-
-        This will update their expectations of the risky asset.
-        They will then adjust their owned risky asset shares to meet their
-        target.
-
-        Return the delta of risky asset shares ordered through the brokers.
-
-        NOTE: This MUTATES the agents with their new target share amounts.
-        """
-        # Note: this mutates the underlying agent
-        agent.assign_parameters(**self.fm.risky_expectations())
-
-        d_shares = self.pop.compute_share_demand(agent, price, dollars_per_hark_money_unit)
-
-        delta_shares = d_shares - agent.shares
-
-        # NOTE: This mutates the agent
-        agent.shares = d_shares
-        return delta_shares
 
 
 
@@ -285,7 +263,7 @@ class BasicSimulation(AbstractSimulation):
                 # print(f"Q-{quarter}:R-{run}")
 
                 # Basic simulation has an attention rate of 1
-                self.broker.transact(self.attend(agent, self.market.prices[-1], self.dollars_per_hark_money_unit))
+                self.broker.transact(self.pop.attend(agent, self.market.prices[-1], self.dollars_per_hark_money_unit))
 
                 buy_sell, ror, price, dividend = self.broker.trade()
                 # print("ror: " + str(ror))
@@ -554,7 +532,7 @@ class AttentionSimulation(BasicSimulation):
                 # Set to a number for a fixed seed, or None to rotate
                 for agent in self.pop.agents:
                     if self.rng.random() < self.attention_rate:
-                        self.broker.transact(self.attend(agent, self.market.prices[-1], self.dollars_per_hark_money_unit))
+                        self.broker.transact(self.pop.attend(agent, self.market.prices[-1], self.dollars_per_hark_money_unit))
 
                 buy_sell, ror, price, dividend = self.broker.trade()
                 # print("ror: " + str(ror))

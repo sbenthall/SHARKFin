@@ -191,6 +191,30 @@ class AgentPopulation:
             ].cFuncAdj(agent.state_now["mNrm"])
             agent.state_now["aLvl"] = agent.state_now["aNrm"] * agent.state_now["pLvl"]
 
+    def attend(self, agent, price, dollars_per_hark_money_unit):
+        """
+        Cause the agent to attend to the financial model.
+
+        This will update their expectations of the risky asset.
+        They will then adjust their owned risky asset shares to meet their
+        target.
+
+        Return the delta of risky asset shares ordered through the brokers.
+
+        NOTE: This MUTATES the agents with their new target share amounts.
+        """
+        # Note: this mutates the underlying agent
+        agent.assign_parameters(**self.fm.risky_expectations())
+
+        d_shares = self.pop.compute_share_demand(agent, price, dollars_per_hark_money_unit)
+
+        delta_shares = d_shares - agent.shares
+
+        # NOTE: This mutates the agent
+        agent.shares = d_shares
+        return delta_shares
+
+
     def compute_share_demand(self, agent, price, dollars_per_hark_money_unit):
         """
         Computes the number of shares an agent _wants_ to own.
