@@ -592,9 +592,9 @@ class AgentPopulationNew:
 
                 records.append(record)
 
-        agent_dF = pd.DataFrame.from_records(records)
+        agent_df = pd.DataFrame.from_records(records)
 
-        return self.agent_df
+        return agent_df
 
     def class_stats(self, store=False):
         """
