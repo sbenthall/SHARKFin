@@ -56,3 +56,6 @@ def test_agent_population():
     # Step 2. provide parameters that will become state variables
     solution.merge_solutions(["RiskyAvg", "RiskyStd"])
     print("merged solutions")
+
+    ap.agent_df()
+    ap.class_stats()
