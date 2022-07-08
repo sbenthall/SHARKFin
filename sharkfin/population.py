@@ -575,6 +575,9 @@ class AgentPopulationNew:
 
         returns agent_df from class_stats
         """
+
+        records = []
+
         for agent in self.agent_database.agents.values:
             for i, aLvl in enumerate(agent.state_now["aLvl"]):
                 record = {
@@ -583,8 +586,11 @@ class AgentPopulationNew:
                     "cNrm": agent.controls["cNrm"][i]
                     if "cNrm" in agent.controls
                     else None,
+                    # Removed because this attribute is missing from SequentialPortfolioConsumerType
+                    # but is interesting for analysis according to CDC.
+                    # Maybe something to be fixed in HARK?
                     # difference between mNrm and the equilibrium mNrm from BST
-                    "mNrm_ratio_StE": agent.state_now["mNrm"][i] / agent.mNrmStE,
+                    #"mNrm_ratio_StE": agent.state_now["mNrm"][i] / agent.mNrmStE,
                 }
 
                 for dp in self.dist_params:
@@ -605,7 +611,7 @@ class AgentPopulationNew:
         agent_df = self.agent_df()
 
         class_stats = (
-            agent_df.groupby(list(self.dist_params.keys()))
+            agent_df.groupby(list(self.dist_params))
             .aggregate(["mean", "std"])
             .reset_index()
         )
@@ -618,8 +624,10 @@ class AgentPopulationNew:
         cs["aLvl_std"] = cs["aLvl"]["std"]
         cs["mNrm_mean"] = cs["mNrm"]["mean"]
         cs["mNrm_std"] = cs["mNrm"]["std"]
-        cs["mNrm_ratio_StE_mean"] = cs["mNrm_ratio_StE"]["mean"]
-        cs["mNrm_ratio_StE_std"] = cs["mNrm_ratio_StE"]["std"]
+        # Can only have these if included in agent_df
+        # But maybe the properties included in agent_df should be _listed_, so these are not hard-coded
+        #cs["mNrm_ratio_StE_mean"] = cs["mNrm_ratio_StE"]["mean"]
+        #cs["mNrm_ratio_StE_std"] = cs["mNrm_ratio_StE"]["std"]
 
         if store:
             self.stored_class_stats = class_stats
