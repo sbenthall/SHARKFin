@@ -595,9 +595,9 @@ class BasicSimulation(AbstractSimulation):
 
         # stylized facts
         sim_stats['log_return_autocorrelation'] = stylized_facts.DW_test(
-            np.array([r for r in self.market.ror_list()])) - 2
+            np.array([r for r in self.market.log_return_list()])) - 2
         sim_stats['log_return_squared_autocorrelation'] = stylized_facts.DW_test(
-            np.array([r ** 2 for r in self.market.ror_list()])) - 2
+            np.array([r ** 2 for r in self.market.log_return_list()])) - 2
 
         return sim_stats
 

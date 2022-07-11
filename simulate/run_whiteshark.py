@@ -111,7 +111,7 @@ def run_simulation(
     
     sim.simulate()
 
-    return sim.data(), sim.history
+    return sim.data(), sim.sim_stats(), sim.history
 
 def env_param(name, default):
     return os.environ[name] if name in os.environ else default
@@ -187,7 +187,7 @@ if __name__ == '__main__':
 
     market = market_class(**market_args)
 
-    data, history = run_simulation(
+    data, sim_stats, history = run_simulation(
         agent_parameters,
         dist_params,
         popn = popn, 
@@ -206,5 +206,9 @@ if __name__ == '__main__':
     history_df = pd.DataFrame(dict([(k,pd.Series(v)) for k,v in history.items()]))
     history_df.to_csv(f'{args.save_as}_history.csv')
 
+    with open(f'{args.save_as}_sim_stats.txt', 'w+') as f:
+        f.write(str(sim_stats))
+
     data.to_csv(f'{args.save_as}_data.csv')
+
 
