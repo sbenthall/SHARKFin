@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from functools import partial
 from typing import NewType
 
 import HARK.ConsumptionSaving.ConsIndShockModel as cism
@@ -91,7 +92,7 @@ class AgentPopulation:
 
         Currently limited to asset level in the final simulated period (aLvl_T)
         """
-        agent_df =  self.agent_df()
+        agent_df = self.agent_df()
 
         class_stats = (
             agent_df.groupby(list(self.dist_params.keys()))
@@ -214,7 +215,6 @@ class AgentPopulation:
         agent.shares = d_shares
         return delta_shares
 
-
     def compute_share_demand(self, agent, price, dollars_per_hark_money_unit):
         """
         Computes the number of shares an agent _wants_ to own.
@@ -232,8 +232,8 @@ class AgentPopulation:
         """
         agent.assign_parameters(AdjustPrb=1.0)
         agent.solve()
-        cNrm = agent.controls['cNrm'] if 'cNrm' in agent.controls else 0
-        asset_normalized = agent.state_now['aNrm'] + cNrm
+        cNrm = agent.controls["cNrm"] if "cNrm" in agent.controls else 0
+        asset_normalized = agent.state_now["aNrm"] + cNrm
         # breakpoint()
 
         # ShareFunc takes normalized market assets as argument
@@ -243,7 +243,7 @@ class AgentPopulation:
         risky_asset_wealth = (
             risky_share
             * asset_normalized
-            * agent.state_now['pLvl']
+            * agent.state_now["pLvl"]
             * dollars_per_hark_money_unit
         )
 
@@ -254,8 +254,7 @@ class AgentPopulation:
 
         return shares
 
-
-    def macro_update(self, agent, dollars_per_hark_money_unit, price ):
+    def macro_update(self, agent, dollars_per_hark_money_unit, price):
         """
         Input: an agent, dollars_per_hark_money_units conversion rate, current asset price
 
@@ -273,10 +272,9 @@ class AgentPopulation:
         ## For risky asset gains in the simulated quarter,
         ## use only the dividend.
         true_risky_expectations = {
-            "RiskyAvg": agent.parameters['RiskyAvg'],
-            "RiskyStd": agent.parameters['RiskyStd'],
+            "RiskyAvg": agent.parameters["RiskyAvg"],
+            "RiskyStd": agent.parameters["RiskyStd"],
         }
-
 
         # No change -- both capital gains and dividends awarded daily. See #100
         macro_risky_params = {
@@ -294,7 +292,7 @@ class AgentPopulation:
         # Selling off shares if necessary to
         # finance this period's consumption
         asset_level_in_shares = (
-            agent.state_now['aLvl'] * dollars_per_hark_money_unit / price
+            agent.state_now["aLvl"] * dollars_per_hark_money_unit / price
         )
 
         delta = asset_level_in_shares - agent.shares
@@ -304,7 +302,9 @@ class AgentPopulation:
 
         return delta
 
-    def update_agent_wealth_capital_gains(self, new_share_price, ror, dividend, dollars_per_hark_money_unit):
+    def update_agent_wealth_capital_gains(
+        self, new_share_price, ror, dividend, dollars_per_hark_money_unit
+    ):
         """
         For all agents,
         given the old share price
@@ -322,27 +322,27 @@ class AgentPopulation:
             dividends = agent.shares * dividend
 
             delta_aNrm = (new_raw - old_raw + dividends) / (
-                dollars_per_hark_money_unit * agent.state_now['pLvl']
+                dollars_per_hark_money_unit * agent.state_now["pLvl"]
             )
 
             # update normalized market assets
             # if agent.state_now['aNrm'] < delta_aNrm:
             #     breakpoint()
 
-            agent.state_now['aNrm'] = agent.state_now['aNrm'] + delta_aNrm
+            agent.state_now["aNrm"] = agent.state_now["aNrm"] + delta_aNrm
 
-            if (agent.state_now['aNrm'] < 0).any():
+            if (agent.state_now["aNrm"] < 0).any():
                 print(
                     f"ERROR: Agent with CRRA {agent.parameters['CRRA']}"
                     + "has negative aNrm after capital gains update."
                 )
                 print("Setting normalize assets and shares to 0.")
-                agent.state_now['aNrm'][(agent.state_now['aNrm'] < 0)] = 0.0
+                agent.state_now["aNrm"][(agent.state_now["aNrm"] < 0)] = 0.0
                 ## TODO: This change in shares needs to be registered with the Broker.
-                agent.shares[(agent.state_now['aNrm'] == 0)] = 0
+                agent.shares[(agent.state_now["aNrm"] == 0)] = 0
 
             # update non-normalized market assets
-            agent.state_now['aLvl'] = agent.state_now['aNrm'] * agent.state_now['pLvl']
+            agent.state_now["aLvl"] = agent.state_now["aNrm"] * agent.state_now["pLvl"]
 
 
 # Agent List
@@ -442,6 +442,8 @@ class AgentPopulationNew:
                 self.dist_params.append(key_param)
 
         self.infer_counts()
+
+        self.stored_class_stats = None
 
     def infer_counts(self):
 
@@ -590,7 +592,7 @@ class AgentPopulationNew:
                     # but is interesting for analysis according to CDC.
                     # Maybe something to be fixed in HARK?
                     # difference between mNrm and the equilibrium mNrm from BST
-                    #"mNrm_ratio_StE": agent.state_now["mNrm"][i] / agent.mNrmStE,
+                    # "mNrm_ratio_StE": agent.state_now["mNrm"][i] / agent.mNrmStE,
                 }
 
                 for dp in self.dist_params:
@@ -626,8 +628,8 @@ class AgentPopulationNew:
         cs["mNrm_std"] = cs["mNrm"]["std"]
         # Can only have these if included in agent_df
         # But maybe the properties included in agent_df should be _listed_, so these are not hard-coded
-        #cs["mNrm_ratio_StE_mean"] = cs["mNrm_ratio_StE"]["mean"]
-        #cs["mNrm_ratio_StE_std"] = cs["mNrm_ratio_StE"]["std"]
+        # cs["mNrm_ratio_StE_mean"] = cs["mNrm_ratio_StE"]["mean"]
+        # cs["mNrm_ratio_StE_std"] = cs["mNrm_ratio_StE"]["std"]
 
         if store:
             self.stored_class_stats = class_stats
@@ -666,6 +668,34 @@ class AgentPopulationNew:
             agent.T_sim = T_sim
             agent.initialize_sim()
 
+        if self.stored_class_stats is None:
+
+            ## build an IndShockConsumerType "double" of this agent, with the same parameters
+            ind_shock_double = cism.IndShockConsumerType(**agent.parameters)
+
+            ## solve to get the mNrmStE value
+            ## that is, the Steady-state Equilibrium value of mNrm, for the IndShockModel
+            ind_shock_double.solve()
+            mNrmStE = ind_shock_double.solution[0].mNrmStE
+
+            agent.state_now["mNrm"][:] = mNrmStE
+            agent.mNrmStE = (
+                mNrmStE  # saving this for later, in case we do the analysis.
+            )
+        else:
+            idx = [agent.parameters[dp] for dp in self.dist_params]
+            mNrm = (
+                self.stored_class_stats.copy()
+                .set_index([dp for dp in self.dist_params])
+                .xs((idx))["mNrm"]["mean"]
+            )
+            agent.state_now["mNrm"][:] = mNrm
+
+        agent.state_now["aNrm"] = agent.state_now["mNrm"] - agent.solution[0].cFuncAdj(
+            agent.state_now["mNrm"]
+        )
+        agent.state_now["aLvl"] = agent.state_now["aNrm"] * agent.state_now["pLvl"]
+
     def solve(self, merge_by=None):
 
         self.solve_distributed_agents()
@@ -673,6 +703,193 @@ class AgentPopulationNew:
         if merge_by is not None:
             self.solution = AgentPopulationSolution(self)
             self.solution.merge_solutions(continuous_states=merge_by)
+
+    def attend(self, agent, price, dollars_per_hark_money_unit, risky_expectations):
+        """
+        Cause the agent to attend to the financial model.
+
+        This will update their expectations of the risky asset.
+        They will then adjust their owned risky asset shares to meet their
+        target.
+
+        Return the delta of risky asset shares ordered through the brokers.
+
+        NOTE: This MUTATES the agents with their new target share amounts.
+        """
+        # Note: this mutates the underlying agent
+        # we should also assign their solution
+        agent.assign_parameters(**risky_expectations)
+        self.assign_solution(agent)
+
+        d_shares = self.compute_share_demand(agent, price, dollars_per_hark_money_unit)
+
+        delta_shares = d_shares - agent.shares
+
+        # NOTE: This mutates the agent
+        agent.shares = d_shares
+        return delta_shares
+
+    def assign_solution(self, agent):
+        """_summary_
+        Assign the respective solution to the agent using the master solution and
+        the agent's perceptions of the market.
+        """
+
+        # assign solution before simulating
+        # get master solution
+        pop_solution = self.pop.solution.solution_database
+
+        # get solution for agent subgroup
+        functions = pop_solution.loc[agent.CRRA, agent.DiscFac]
+
+        # Using their expectations, construct function depending on
+        # perceptions/beliefs about the stock market
+        ShareFuncAdj = partial(
+            functions["shareFunc"], y=agent.RiskyAvg, z=agent.RiskyStd
+        )
+        cFuncAdj = partial(functions["cFunc"], y=agent.RiskyAvg, z=agent.RiskyStd)
+
+        agent.solution[0].ShareFuncAdj = ShareFuncAdj
+        agent.solution[0].cFuncAdj = cFuncAdj
+
+    def compute_share_demand(self, agent, price, dollars_per_hark_money_unit):
+        """
+        Computes the number of shares an agent _wants_ to own.
+
+        Inputs:
+         - an agent
+         - current asset price
+         - dollars_per_hark_money_unit - a conversion factor
+
+        This involves:
+          - Computing a solution function based on their
+            expectations and personal properties
+          - Using the solution and the agent's current normalized
+            assets to compute a share number
+        """
+
+        # this should be part of the initial parameters
+        # agent.assign_parameters(AdjustPrb=1.0)
+
+        # do not need to solve the agents every period, since we have
+        # population solution
+        # agent.solve()
+
+        cNrm = agent.controls["cNrm"] if "cNrm" in agent.controls else 0
+        asset_normalized = agent.state_now["aNrm"] + cNrm
+        # breakpoint()
+
+        # ShareFunc takes normalized market assets as argument
+        risky_share = agent.solution[0].ShareFuncAdj(asset_normalized)
+
+        # denormalize the risky share. See https://github.com/econ-ark/HARK/issues/986
+        risky_asset_wealth = (
+            risky_share
+            * asset_normalized
+            * agent.state_now["pLvl"]
+            * dollars_per_hark_money_unit
+        )
+
+        shares = risky_asset_wealth / price
+
+        if (np.isnan(shares)).any():
+            print("ERROR: Agent has nan shares")
+
+        return shares
+
+    def macro_update(self, agent, dollars_per_hark_money_unit, price):
+        """
+        Input: an agent, dollars_per_hark_money_units conversion rate, current asset price
+
+        Simulates one "macro" period for the agent (quarterly by assumption).
+        For the purposes of the simulation, award the agent dividend income
+        but not capital gains on the risky asset.
+
+        Output: The difference in shares (really, sales of shares) in order
+        to finance consumption; must be passed to a broker.
+        """
+
+        # agent.assign_parameters(AdjustPrb = 0.0)
+        agent.solve()
+
+        ## For risky asset gains in the simulated quarter,
+        ## use only the dividend.
+        true_risky_expectations = {
+            "RiskyAvg": agent.parameters["RiskyAvg"],
+            "RiskyStd": agent.parameters["RiskyStd"],
+        }
+
+        # No change -- both capital gains and dividends awarded daily. See #100
+        macro_risky_params = {
+            "RiskyAvg": 1,
+            "RiskyStd": 0,
+        }
+
+        # assign_solution should always come after assign_parameters
+        # to ensure that the correct master solution is used.
+        agent.assign_parameters(**macro_risky_params)
+        self.assign_solution(agent)
+
+        agent.simulate(sim_periods=1)
+
+        ## put back the expectations that include capital gains now
+        agent.assign_parameters(**true_risky_expectations)
+        self.assign_solution(agent)
+
+        # Selling off shares if necessary to
+        # finance this period's consumption
+        asset_level_in_shares = (
+            agent.state_now["aLvl"] * dollars_per_hark_money_unit / price
+        )
+
+        delta = asset_level_in_shares - agent.shares
+        delta[delta > 0] = 0
+
+        agent.shares = agent.shares + delta
+
+        return delta
+
+    def update_agent_wealth_capital_gains(
+        self, new_share_price, ror, dividend, dollars_per_hark_money_unit
+    ):
+        """
+        For all agents,
+        given the old share price
+        and a rate of return
+
+        update the agent's wealth level to adjust
+        for the most recent round of capital gains.
+        """
+
+        old_share_price = new_share_price / (1 + ror)
+
+        for agent in self.agents:
+            old_raw = agent.shares * old_share_price
+            new_raw = agent.shares * new_share_price
+            dividends = agent.shares * dividend
+
+            delta_aNrm = (new_raw - old_raw + dividends) / (
+                dollars_per_hark_money_unit * agent.state_now["pLvl"]
+            )
+
+            # update normalized market assets
+            # if agent.state_now['aNrm'] < delta_aNrm:
+            #     breakpoint()
+
+            agent.state_now["aNrm"] = agent.state_now["aNrm"] + delta_aNrm
+
+            if (agent.state_now["aNrm"] < 0).any():
+                print(
+                    f"ERROR: Agent with CRRA {agent.parameters['CRRA']}"
+                    + "has negative aNrm after capital gains update."
+                )
+                print("Setting normalize assets and shares to 0.")
+                agent.state_now["aNrm"][(agent.state_now["aNrm"] < 0)] = 0.0
+                ## TODO: This change in shares needs to be registered with the Broker.
+                agent.shares[(agent.state_now["aNrm"] == 0)] = 0
+
+            # update non-normalized market assets
+            agent.state_now["aLvl"] = agent.state_now["aNrm"] * agent.state_now["pLvl"]
 
 
 class AgentPopulationSolution:
