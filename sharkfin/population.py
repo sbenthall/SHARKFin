@@ -666,6 +666,34 @@ class AgentPopulationNew:
             agent.T_sim = T_sim
             agent.initialize_sim()
 
+        if self.stored_class_stats is None:
+
+            ## build an IndShockConsumerType "double" of this agent, with the same parameters
+            ind_shock_double = cism.IndShockConsumerType(**agent.parameters)
+
+            ## solve to get the mNrmStE value
+            ## that is, the Steady-state Equilibrium value of mNrm, for the IndShockModel
+            ind_shock_double.solve()
+            mNrmStE = ind_shock_double.solution[0].mNrmStE
+
+            agent.state_now["mNrm"][:] = mNrmStE
+            agent.mNrmStE = (
+                mNrmStE  # saving this for later, in case we do the analysis.
+            )
+        else:
+            idx = [agent.parameters[dp] for dp in self.dist_params]
+            mNrm = (
+                self.stored_class_stats.copy()
+                .set_index([dp for dp in self.dist_params])
+                .xs((idx))["mNrm"]["mean"]
+            )
+            agent.state_now["mNrm"][:] = mNrm
+
+        agent.state_now["aNrm"] = agent.state_now["mNrm"] - agent.solution[0].cFuncAdj(
+            agent.state_now["mNrm"]
+        )
+        agent.state_now["aLvl"] = agent.state_now["aNrm"] * agent.state_now["pLvl"]
+
     def solve(self, merge_by=None):
 
         self.solve_distributed_agents()
