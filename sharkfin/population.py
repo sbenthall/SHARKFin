@@ -727,6 +727,28 @@ class AgentPopulationNew:
         agent.shares = d_shares
         return delta_shares
 
+    def assign_solution(self, agent):
+        """_summary_
+        Assign the respective solution to the agent using the master solution and
+        the agent's perceptions of the market.
+        """
+
+        # assign solution before simulating
+        # get master solution
+        pop_solution = self.pop.solution.solution_database
+
+        # get solution for agent subgroup
+        functions = pop_solution.loc[agent.CRRA, agent.DiscFac]
+
+        # Using their expectations, construct function depending on
+        # perceptions/beliefs about the stock market
+        ShareFuncAdj = partial(
+            functions["shareFunc"], y=agent.RiskyAvg, z=agent.RiskyStd
+        )
+        cFuncAdj = partial(functions["cFunc"], y=agent.RiskyAvg, z=agent.RiskyStd)
+
+        agent.solution[0].ShareFuncAdj = ShareFuncAdj
+        agent.solution[0].cFuncAdj = cFuncAdj
 class AgentPopulationSolution:
     def __init__(self, agent_population):
         self.agent_population = agent_population
