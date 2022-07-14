@@ -702,6 +702,30 @@ class AgentPopulationNew:
             self.solution = AgentPopulationSolution(self)
             self.solution.merge_solutions(continuous_states=merge_by)
 
+    def attend(self, agent, price, dollars_per_hark_money_unit, risky_expectations):
+        """
+        Cause the agent to attend to the financial model.
+
+        This will update their expectations of the risky asset.
+        They will then adjust their owned risky asset shares to meet their
+        target.
+
+        Return the delta of risky asset shares ordered through the brokers.
+
+        NOTE: This MUTATES the agents with their new target share amounts.
+        """
+        # Note: this mutates the underlying agent
+        # we should also assign their solution
+        agent.assign_parameters(**risky_expectations)
+        self.assign_solution(agent)
+
+        d_shares = self.compute_share_demand(agent, price, dollars_per_hark_money_unit)
+
+        delta_shares = d_shares - agent.shares
+
+        # NOTE: This mutates the agent
+        agent.shares = d_shares
+        return delta_shares
 
 class AgentPopulationSolution:
     def __init__(self, agent_population):
