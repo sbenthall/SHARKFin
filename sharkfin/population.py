@@ -443,6 +443,8 @@ class AgentPopulationNew:
 
         self.infer_counts()
 
+        self.stored_class_stats = None
+
     def infer_counts(self):
 
         param_dict = self.parameter_dict
