@@ -127,3 +127,53 @@ def test_calibration_simulation():
     data = sim.data()
 
     assert(len(data['prices']) == 4)
+def test_new_attention_simulation():
+    """
+    Sets up and runs an agent population simulation
+    """
+    parameter_dict = agent_population_params | continuous_dist_params
+
+    parameter_dict["AgentCount"] = 1
+
+    pop = AgentPopulationNew(SequentialPortfolioConsumerType(), parameter_dict)
+    pop.approx_distributions(approx_params)
+    pop.parse_params()
+
+    pop.create_distributed_agents()
+    pop.create_database()
+    pop.solve_distributed_agents()
+
+    pop.solve(merge_by=["RiskyAvg", "RiskyStd"])
+
+    # initialize population model
+    pop.init_simulation()
+
+    # arguments to attention simulation
+
+    a = 0.2
+    q = 1
+    r = 1
+    market = None
+
+    days_per_quarter = 30
+
+    attsim = AttentionSimulation(
+        pop,
+        FinanceModel,
+        a=a,
+        q=q,
+        r=r,
+        market=market,
+        days_per_quarter=days_per_quarter,
+    )
+    attsim.simulate()
+
+    ## testing for existence of this class stat
+    attsim.pop.class_stats()["mNrm_ratio_StE_mean"]
+
+    attsim.data()["sell_macro"]
+
+    attsim.sim_stats()
+
+    assert attsim.days_per_quarter == days_per_quarter
+    assert attsim.fm.days_per_quarter == days_per_quarter
