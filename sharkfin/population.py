@@ -737,10 +737,10 @@ class AgentPopulationNew:
 
         # assign solution before simulating
         # get master solution
-        pop_solution = self.pop.solution.solution_database
+        pop_solution = self.solution.solution_database
 
         # get solution for agent subgroup
-        functions = pop_solution.loc[agent.CRRA, agent.DiscFac]
+        functions = pop_solution.loc[agent.DiscFac, agent.CRRA]
 
         # Using their expectations, construct function depending on
         # perceptions/beliefs about the stock market
