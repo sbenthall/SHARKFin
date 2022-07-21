@@ -668,33 +668,33 @@ class AgentPopulationNew:
             agent.T_sim = T_sim
             agent.initialize_sim()
 
-        if self.stored_class_stats is None:
+            if self.stored_class_stats is None:
 
-            ## build an IndShockConsumerType "double" of this agent, with the same parameters
-            ind_shock_double = cism.IndShockConsumerType(**agent.parameters)
+                ## build an IndShockConsumerType "double" of this agent, with the same parameters
+                ind_shock_double = cism.IndShockConsumerType(**agent.parameters)
 
-            ## solve to get the mNrmStE value
-            ## that is, the Steady-state Equilibrium value of mNrm, for the IndShockModel
-            ind_shock_double.solve()
-            mNrmStE = ind_shock_double.solution[0].mNrmStE
+                ## solve to get the mNrmStE value
+                ## that is, the Steady-state Equilibrium value of mNrm, for the IndShockModel
+                ind_shock_double.solve()
+                mNrmStE = ind_shock_double.solution[0].mNrmStE
 
-            agent.state_now["mNrm"][:] = mNrmStE
-            agent.mNrmStE = (
-                mNrmStE  # saving this for later, in case we do the analysis.
-            )
-        else:
-            idx = [agent.parameters[dp] for dp in self.dist_params]
-            mNrm = (
-                self.stored_class_stats.copy()
-                .set_index([dp for dp in self.dist_params])
-                .xs((idx))["mNrm"]["mean"]
-            )
-            agent.state_now["mNrm"][:] = mNrm
+                agent.state_now["mNrm"][:] = mNrmStE
+                agent.mNrmStE = (
+                    mNrmStE  # saving this for later, in case we do the analysis.
+                )
+            else:
+                idx = [agent.parameters[dp] for dp in self.dist_params]
+                mNrm = (
+                    self.stored_class_stats.copy()
+                    .set_index([dp for dp in self.dist_params])
+                    .xs((idx))["mNrm"]["mean"]
+                )
+                agent.state_now["mNrm"][:] = mNrm
 
-        agent.state_now["aNrm"] = agent.state_now["mNrm"] - agent.solution[0].cFuncAdj(
-            agent.state_now["mNrm"]
-        )
-        agent.state_now["aLvl"] = agent.state_now["aNrm"] * agent.state_now["pLvl"]
+            agent.state_now["aNrm"] = agent.state_now["mNrm"] - agent.solution[
+                0
+            ].cFuncAdj(agent.state_now["mNrm"])
+            agent.state_now["aLvl"] = agent.state_now["aNrm"] * agent.state_now["pLvl"]
 
     def solve(self, merge_by=None):
 
@@ -737,7 +737,7 @@ class AgentPopulationNew:
 
         # assign solution before simulating
         # get master solution
-        pop_solution = self.pop.solution.solution_database
+        pop_solution = self.solution.solution_database
 
         # get solution for agent subgroup
         functions = pop_solution.loc[agent.CRRA, agent.DiscFac]
@@ -909,6 +909,7 @@ class AgentPopulationSolution:
                 )
 
         discrete_params = list(set(self.dist_params) - set(continuous_states))
+        discrete_params.sort()
 
         grouped = self.agent_database.groupby(discrete_params)
         solution_database = []
