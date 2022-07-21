@@ -3,26 +3,14 @@ sys.path.append('..')
 
 import argparse
 from datetime import datetime
-import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 from HARK.Calibration.Income.IncomeTools import (
      sabelhaus_song_var_profile,
 )
 
-from itertools import product
-import json
 from math import exp
-import matplotlib.pyplot as plt
-import multiprocessing
-import numpy as np
-import math
 import os
 import pandas as pd
-import time
-import uuid
-import yaml
-import pprint
 
-from sharkfin.markets import MockMarket
 from sharkfin.markets.ammps import ClientRPCMarket
 from sharkfin.population import AgentPopulation
 from sharkfin.simulation import CalibrationSimulation
@@ -35,6 +23,7 @@ parser.add_argument("-t",
                     help="a string tag to be added to the output files")
 parser.add_argument('-q', '--queue', help='name of rabbitmq queue', default='rpc_queue')
 parser.add_argument('-r', '--rhost', help='rabbitmq server location', default='localhost')
+
 parser.add_argument('-b', '--buysize', help='buy size to shock', default=0)
 parser.add_argument('-s', '--sellsize', help='sell size to shock', default=0)
 parser.add_argument('-p', '--pad', help='number of days to pad market', default=31)
