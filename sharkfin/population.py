@@ -740,7 +740,7 @@ class AgentPopulationNew:
         pop_solution = self.solution.solution_database
 
         # get solution for agent subgroup
-        functions = pop_solution.loc[agent.DiscFac, agent.CRRA]
+        functions = pop_solution.loc[agent.CRRA, agent.DiscFac]
 
         # Using their expectations, construct function depending on
         # perceptions/beliefs about the stock market
@@ -909,6 +909,7 @@ class AgentPopulationSolution:
                 )
 
         discrete_params = list(set(self.dist_params) - set(continuous_states))
+        discrete_params.sort()
 
         grouped = self.agent_database.groupby(discrete_params)
         solution_database = []
