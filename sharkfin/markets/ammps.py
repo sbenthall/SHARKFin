@@ -38,7 +38,7 @@ class ClientRPCMarket(AbstractMarket):
 
         self.simulation_price_scale = 1
         self.default_sim_price = 100
-
+        self.seeds = seed
         self.rng = rng if rng is not None else np.random.default_rng()
 
         self.latest_price = None
