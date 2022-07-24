@@ -187,8 +187,7 @@ def test_new_attention_simulation():
     attsim.simulate()
 
     ## testing for existence of this class stat
-    # test for different class stat since mNrm_ratio_StE_mean was removed
-    attsim.pop.class_stats()["mNrm_std"]
+    attsim.pop.class_stats()["mNrm_ratio_StE_mean"]
 
     attsim.data()["sell_macro"]
 
