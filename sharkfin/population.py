@@ -588,11 +588,8 @@ class AgentPopulationNew:
                     "cNrm": agent.controls["cNrm"][i]
                     if "cNrm" in agent.controls
                     else None,
-                    # Removed because this attribute is missing from SequentialPortfolioConsumerType
-                    # but is interesting for analysis according to CDC.
-                    # Maybe something to be fixed in HARK?
                     # difference between mNrm and the equilibrium mNrm from BST
-                    # "mNrm_ratio_StE": agent.state_now["mNrm"][i] / agent.mNrmStE,
+                    "mNrm_ratio_StE": agent.state_now["mNrm"][i] / agent.mNrmStE,
                 }
 
                 for dp in self.dist_params:
@@ -627,9 +624,10 @@ class AgentPopulationNew:
         cs["mNrm_mean"] = cs["mNrm"]["mean"]
         cs["mNrm_std"] = cs["mNrm"]["std"]
         # Can only have these if included in agent_df
-        # But maybe the properties included in agent_df should be _listed_, so these are not hard-coded
-        # cs["mNrm_ratio_StE_mean"] = cs["mNrm_ratio_StE"]["mean"]
-        # cs["mNrm_ratio_StE_std"] = cs["mNrm_ratio_StE"]["std"]
+        # But maybe the properties included in agent_df should
+        # be _listed_, so these are not hard-coded
+        cs["mNrm_ratio_StE_mean"] = cs["mNrm_ratio_StE"]["mean"]
+        cs["mNrm_ratio_StE_std"] = cs["mNrm_ratio_StE"]["std"]
 
         if store:
             self.stored_class_stats = class_stats
