@@ -391,63 +391,32 @@ class BasicSimulation(AbstractSimulation):
 
         sim_stats = {}
 
+        def class_stat_column_to_dict(clabel):
+            df = self.history['class_stats'][-1][['label', clabel]]
+            df.columns = df.columns.droplevel(1)
+
+            data= df.set_index('label').to_dict()[clabel]
+
+            return {(clabel, k): v for k, v in data.items()}
+
         # All the try blocks here are confusing, bad code that should be fixed somehow.
         try:
-            df_mean = self.history['class_stats'][-1][['label', 'aLvl_mean']]
-            df_mean.columns = df_mean.columns.droplevel(1)
-            sim_stats_mean = df_mean.set_index('label').to_dict()['aLvl_mean']
-
-            sim_stats_mean = {('aLvl_mean', k): v for k, v in sim_stats_mean.items()}
-
-            sim_stats.update(sim_stats_mean)
+            sim_stats.update(class_stat_column_to_dict('aLvl_mean'))
         except Exception as e:
             print(e)
 
         try:
-            df_std = self.history['class_stats'][-1][['label', 'aLvl_std']]
-            df_std.columns = df_std.columns.droplevel(1)
-            sim_stats_std = df_std.set_index('label').to_dict()['aLvl_std']
-
-            sim_stats_std = {('aLvl_std', k): v for k, v in sim_stats_std.items()}
-
-            sim_stats.update(sim_stats_std)
+            sim_stats.update(class_stat_column_to_dict('aLvl_std'))
         except Exception as e:
             print(e)
 
         try:
-            df_mNrm_ratio_StE_mean = self.history['class_stats'][-1][
-                ['label', 'mNrm_ratio_StE_mean']
-            ]
-            df_mNrm_ratio_StE_mean.columns = df_mNrm_ratio_StE_mean.columns.droplevel(1)
-            sim_stats_mNrm_ratio_StE_mean = df_mNrm_ratio_StE_mean.set_index(
-                'label'
-            ).to_dict()['mNrm_ratio_StE_mean']
+            sim_stats.update(class_stat_column_to_dict('mNrm_ratio_StE_mean'))
 
-            df_mNrm_ratio_StE_std = self.history['class_stats'][-1][
-                ['label', 'mNrm_ratio_StE_std']
-            ]
-            df_mNrm_ratio_StE_std.columns = df_mNrm_ratio_StE_std.columns.droplevel(1)
-            sim_stats_mNrm_ratio_StE_std = df_mNrm_ratio_StE_std.set_index(
-                'label'
-            ).to_dict()['mNrm_ratio_StE_std']
-
-            sim_stats_mNrm_ratio_StE_mean = {
-                ('mNrm_ratio_StE_mean', k): v
-                for k, v in sim_stats_mNrm_ratio_StE_mean.items()
-            }
-
-            sim_stats_mNrm_ratio_StE_std = {
-                ('mNrm_ratio_StE_std', k): v
-                for k, v in sim_stats_mNrm_ratio_StE_std.items()
-            }
-
-            sim_stats.update(sim_stats_mNrm_ratio_StE_mean)
-            sim_stats.update(sim_stats_mNrm_ratio_StE_std)
+            sim_stats.update(class_stat_column_to_dict('mNrm_ratio_StE_std'))
         except Exception as e:
             print(e)
             print("Most likely, the AgentPopulation does not support ")
-
-
 
         bs_stats = self.buy_sell_stats()
         sim_stats.update(bs_stats)
