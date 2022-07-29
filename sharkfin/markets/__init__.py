@@ -125,7 +125,7 @@ class AbstractMarket(ABC):
         --- These should not _include_ the dividend because the price _reflects_ the dividend
 
         """
-        return [np.log((self.prices[i+1])/ self.prices[i]) for i in range(len(self.prices) - 1)]
+        return [np.log((self.prices[i+1]  + self.dividends[i + 1]) / self.prices[i]) for i in range(len(self.prices) - 1)]
 
     def next_dividend(self):
         """
