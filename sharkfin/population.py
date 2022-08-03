@@ -808,7 +808,7 @@ class AgentPopulationNew:
         """
 
         # agent.assign_parameters(AdjustPrb = 0.0)
-        agent.solve()
+        # agent.solve()
 
         ## For risky asset gains in the simulated quarter,
         ## use only the dividend.
@@ -817,22 +817,24 @@ class AgentPopulationNew:
             "RiskyStd": agent.parameters["RiskyStd"],
         }
 
+        # assing solution based on agent's true expectations
+        # the true agent's expectations should already be assigned
+        self.assign_solution(agent)
+
         # No change -- both capital gains and dividends awarded daily. See #100
         macro_risky_params = {
             "RiskyAvg": 1,
             "RiskyStd": 0,
         }
 
-        # assign_solution should always come after assign_parameters
-        # to ensure that the correct master solution is used.
+        # Now that the agent has their true expectations policy assigned,
+        # simulate using the no change marco expectations to avoid
+        # realization of market returns and asset growth
         agent.assign_parameters(**macro_risky_params)
-        self.assign_solution(agent)
-
         agent.simulate(sim_periods=1)
 
         ## put back the expectations that include capital gains now
         agent.assign_parameters(**true_risky_expectations)
-        self.assign_solution(agent)
 
         # Selling off shares if necessary to
         # finance this period's consumption
