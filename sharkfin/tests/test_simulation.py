@@ -22,109 +22,24 @@ from simulate.parameters import (
 #
 #  ror = mock.daily_rate_of_return(buy_sell=(0,0))
 
-
-def test_attention_simulation():
-    """
-    Sets up and runs an agent population simulation
-    """
-    dist_params = {
-        "CRRA": {"bot": 2, "top": 10, "n": 2},  # Chosen for "interesting" results
-        "DiscFac": {"bot": 0.936, "top": 0.978, "n": 2},  # from CSTW "MPC" results
-    }
-
-    ssvp = sabelhaus_song_var_profile()
-
-    # assume all agents are 27
-    idx_27 = ssvp["Age"].index(27)
-
-    # parameters shared by all agents
-    agent_parameters = {
-        "aNrmInitStd": 0.0,
-        "LivPrb": [0.98**0.25],
-        "PermGroFac": [1.01**0.25],
-        "pLvlInitMean": 1.0,  # initial distribution of permanent income
-        "pLvlInitStd": 0.0,
-        "Rfree": 1.0,
-        "TranShkStd": [
-            ssvp["TranShkStd"][idx_27] / 2
-        ],  # Adjust non-multiplicative shock to quarterly
-        "PermShkStd": [ssvp["PermShkStd"][idx_27] ** 0.25],
-    }
-
-    n_per_class = 1
-
-    pop = AgentPopulation(agent_parameters, dist_params, n_per_class)
-
-    # initialize population model
-    pop.init_simulation()
-
-    # arguments to attention simulation
-
-    a = 0.2
-    q = 2
-    r = 2
-    market = None
-
-    days_per_quarter = 30
-
-    seed = 1000
-
-    rng = np.random.default_rng(seed)
-
-    attsim = AttentionSimulation(
-        pop,
-        FinanceModel,
-        a=a,
-        q=q,
-        r=r,
-        market=market,
-        days_per_quarter=days_per_quarter,
-        rng=rng,
-    )
-    attsim.simulate()
-
-    ## testing for existence of this class stat
-    attsim.pop.class_stats()["mNrm_ratio_StE_mean"]
-
-    attsim.data()["sell_macro"]
-
-    attsim.sim_stats()
-
-    assert attsim.days_per_quarter == days_per_quarter
-    assert attsim.fm.days_per_quarter == days_per_quarter
-
-
 def test_calibration_simulation():
     """
     Sets up and runs an agent population simulation
     """
-    dist_params = {
-        "CRRA": {"bot": 2, "top": 10, "n": 2},  # Chosen for "interesting" results
-        "DiscFac": {"bot": 0.936, "top": 0.978, "n": 2},  # from CSTW "MPC" results
-    }
 
-    ssvp = sabelhaus_song_var_profile()
+    parameter_dict = agent_population_params | continuous_dist_params
 
-    # assume all agents are 27
-    idx_27 = ssvp["Age"].index(27)
+    parameter_dict["AgentCount"] = 1
 
-    # parameters shared by all agents
-    agent_parameters = {
-        "aNrmInitStd": 0.0,
-        "LivPrb": [0.98**0.25],
-        "PermGroFac": [1.01**0.25],
-        "pLvlInitMean": 1.0,  # initial distribution of permanent income
-        "pLvlInitStd": 0.0,
-        "Rfree": 1.0,
-        "TranShkStd": [
-            ssvp["TranShkStd"][idx_27] / 2
-        ],  # Adjust non-multiplicative shock to quarterly
-        "PermShkStd": [ssvp["PermShkStd"][idx_27] ** 0.25],
-    }
+    pop = AgentPopulation(SequentialPortfolioConsumerType(), parameter_dict)
+    pop.approx_distributions(approx_params)
+    pop.parse_params()
 
-    n_per_class = 1
+    pop.create_distributed_agents()
+    pop.create_database()
+    pop.solve_distributed_agents()
 
-    pop = AgentPopulation(agent_parameters, dist_params, n_per_class)
+    pop.solve(merge_by=["RiskyAvg", "RiskyStd"])
 
     # initialize population model
     pop.init_simulation()
@@ -145,7 +60,7 @@ def test_calibration_simulation():
     assert len(data["prices"]) == 4
 
 
-def test_new_attention_simulation():
+def test_attention_simulation():
     """
     Sets up and runs an agent population simulation
     """
@@ -153,7 +68,7 @@ def test_new_attention_simulation():
 
     parameter_dict["AgentCount"] = 1
 
-    pop = AgentPopulationNew(SequentialPortfolioConsumerType(), parameter_dict)
+    pop = AgentPopulation(SequentialPortfolioConsumerType(), parameter_dict)
     pop.approx_distributions(approx_params)
     pop.parse_params()
 

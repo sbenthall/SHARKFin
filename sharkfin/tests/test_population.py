@@ -1,6 +1,6 @@
 from HARK.ConsumptionSaving.ConsPortfolioModel import SequentialPortfolioConsumerType
 
-from sharkfin.population import AgentPopulationNew, AgentPopulationSolution
+from sharkfin.population import AgentPopulation, AgentPopulationSolution
 from simulate.parameters import (
     agent_population_params,
     continuous_dist_params,
@@ -16,7 +16,7 @@ def test_agent_population():
     # Initializing an Agent Population
 
     # Step 1 - create agent population with initial parameters
-    ap = AgentPopulationNew(SequentialPortfolioConsumerType(), parameter_dict)
+    ap = AgentPopulation(SequentialPortfolioConsumerType(), parameter_dict)
     # ADD PRINT LINE AFTER EVERY STEP
     print("created agent population")
 
