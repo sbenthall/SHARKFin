@@ -7,16 +7,20 @@ from simulate.parameters import (
     approx_params,
 )
 
+import numpy as np
+
 parameter_dict = agent_population_params | continuous_dist_params
 
 parameter_dict["AgentCount"] = 1
 
 
 def test_agent_population():
+
+    seed = 14
     # Initializing an Agent Population
 
     # Step 1 - create agent population with initial parameters
-    ap = AgentPopulation(SequentialPortfolioConsumerType(), parameter_dict)
+    ap = AgentPopulation(SequentialPortfolioConsumerType(), parameter_dict, rng = np.random.default_rng(seed))
     # ADD PRINT LINE AFTER EVERY STEP
     print("created agent population")
 

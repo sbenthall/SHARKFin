@@ -12,6 +12,7 @@ from HARK.distribution import (
     combine_indep_dstns,
 )
 from HARK.interpolation import LinearInterpOnInterp1D, LinearInterpOnInterp2D
+import numpy as np
 from xarray import DataArray
 
 from sharkfin.utilities import *
@@ -25,6 +26,7 @@ class AgentPopulation:
     parameter_dict: ParameterDict
     t_age: int = None
     agent_class_count: int = None
+    rng : np.random.Generator = None # random number generator
 
     def __post_init__(self):
 
@@ -235,8 +237,12 @@ class AgentPopulation:
 
     def create_distributed_agents(self):
 
+        rng = self.rng if self.rng is not None else np.random.default_rng()
+
         self.agents = [
-            self.agent_class.__class__(**agent_dict) for agent_dict in self.agent_dicts
+            self.agent_class.__class__(
+                seed=rng.integers(0, 2**31 - 1), **agent_dict
+                ) for agent_dict in self.agent_dicts
         ]
 
     def create_database(self):
