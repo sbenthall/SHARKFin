@@ -7,6 +7,7 @@ import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 from HARK.Calibration.Income.IncomeTools import (
      sabelhaus_song_var_profile,
 )
+from HARK.ConsumptionSaving.ConsPortfolioModel import SequentialPortfolioConsumerType
 # import sharkfin.hark_portfolio_agents as hpa
 from itertools import product
 import json
@@ -28,6 +29,13 @@ from sharkfin.expectations import *
 from sharkfin.population import *
 from sharkfin.simulation import *
 
+from simulate.parameters import (
+    agent_population_params,
+    approx_params,
+    continuous_dist_params,
+)
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument("save_as", help="The name of the output for sim_stats")
 parser.add_argument("-t",
@@ -38,44 +46,41 @@ timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
 ### Configuring the agent population
 
-dist_params = {
-    'CRRA' : {'bot' : 2, 'top' : 10, 'n' : 3}, # Chosen for "interesting" results
-    'DiscFac' : {'bot' : 0.936, 'top' : 0.978, 'n' : 2} # from CSTW "MPC" results
-}
+parameter_dict = agent_population_params | continuous_dist_params
+parameter_dict["AgentCount"] = 1
 
-# Get empirical data from Sabelhaus and Song
-ssvp = sabelhaus_song_var_profile()
+def build_population(agent_type, parameters, rng = None):
+    pop = AgentPopulation(agent_type(), parameters, rng = rng)
+    pop.approx_distributions(approx_params)
+    pop.parse_params()
 
-# Assume all the agents are 40 for now.
-# We will need to make more coherent assumptions about the timing and age of the population later.
-# Scaling from annual to quarterly
-idx_40 = ssvp['Age'].index(40)
+    pop.create_distributed_agents()
+    pop.create_database()
+    pop.solve_distributed_agents()
 
-### parameters shared by all agents
-agent_parameters = {
-    'aNrmInitStd' : 0.0,
-    'LivPrb' : [0.98 ** 0.25],
-    'PermGroFac': [1.01 ** 0.25],
-    'pLvlInitMean' : 1.0, # initial distribution of permanent income
-    'pLvlInitStd' : 0.0,
-    'Rfree' : 1.0,
-    'TranShkStd' : [ssvp['TranShkStd'][idx_40] / 2],  # Adjust non-multiplicative shock to quarterly
-    'PermShkStd' : [ssvp['PermShkStd'][idx_40] ** 0.25]
-}
+    pop.solve(merge_by=["RiskyAvg", "RiskyStd"])
+
+    # initialize population model
+    pop.init_simulation()
+
+    return pop
 
 def run_simulation(
     agent_parameters,
-    dist_params,
-    n_per_class,
     a = None,
     q = None,
     r = 1,
     fm = None,
     market = None,
-    dphm=1500):
+    dphm=1500,
+    rng = None):
 
     # initialize population
-    pop = AgentPopulation(agent_parameters, dist_params, 5)
+    pop = build_population(
+        SequentialPortfolioConsumerType,
+        agent_parameters,
+        rng = rng
+        )
 
     # Initialize the financial model
     fm = FinanceModel() if fm is None else fm
@@ -100,7 +105,7 @@ if __name__ == '__main__':
 
     market = ClientRPCMarket(host=host, queue_name=queue)
     
-    data, sim_stats, history = run_simulation(agent_parameters, dist_params, 4, a=0.2, q=1, r=4, market=market, dphm=dphm)
+    data, sim_stats, history = run_simulation(parameter_dict, a=0.2, q=1, r=4, market=market, dphm=dphm)
 
     with open(f'{args.save_as}.txt', 'w+') as f:
         f.write(str(sim_stats))

@@ -106,9 +106,6 @@ def run_simulation(
         rng = rng
         )
 
-    # Initialize the population model
-    pop.init_simulation()
-
     sim = AttentionSimulation(
         pop, FinanceModel, a = a, q = q, r = r, market = market, dphm = dphm, rng = rng)
     
