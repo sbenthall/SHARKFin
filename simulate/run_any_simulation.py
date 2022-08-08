@@ -78,7 +78,7 @@ parameter_dict = agent_population_params | continuous_dist_params
 parameter_dict["AgentCount"] = 1
 
 def build_population(agent_type, parameters, rng = None, dphm = 1500):
-    pop = AgentPopulation(agent_type(), parameters, rng = , dollars_per_hark_money_unit = dphm)
+    pop = AgentPopulation(agent_type(), parameters, rng = rng, dollars_per_hark_money_unit = dphm)
     pop.approx_distributions(approx_params)
     pop.parse_params()
 
