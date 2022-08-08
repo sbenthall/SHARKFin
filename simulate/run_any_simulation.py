@@ -6,6 +6,12 @@ from datetime import datetime
 from HARK.Calibration.Income.IncomeTools import (
      sabelhaus_song_var_profile,
 )
+from HARK.ConsumptionSaving.ConsPortfolioModel import SequentialPortfolioConsumerType
+from simulate.parameters import (
+    agent_population_params,
+    approx_params,
+    continuous_dist_params,
+)
 
 from math import exp
 import numpy as np
@@ -68,35 +74,27 @@ timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
 
 ### Configuring the agent population
 
-dist_params = {
-    'CRRA' : {'bot' : 2, 'top' : 10, 'n' : 3}, # Chosen for "interesting" results
-    'DiscFac' : {'bot' : 0.936, 'top' : 0.978, 'n' : 2} # from CSTW "MPC" results
-}
+parameter_dict = agent_population_params | continuous_dist_params
+parameter_dict["AgentCount"] = 1
 
-# Get empirical data from Sabelhaus and Song
-ssvp = sabelhaus_song_var_profile()
+def build_population(agent_type, parameters, rng = None):
+    pop = AgentPopulation(agent_type(), parameters, rng = rng)
+    pop.approx_distributions(approx_params)
+    pop.parse_params()
 
-# Assume all the agents are 40 for now.
-# We will need to make more coherent assumptions about the timing and age of the population later.
-# Scaling from annual to quarterly
-idx_40 = ssvp['Age'].index(40)
+    pop.create_distributed_agents()
+    pop.create_database()
+    pop.solve_distributed_agents()
 
-### parameters shared by all agents
-agent_parameters = {
-    'aNrmInitStd' : 0.0,
-    'LivPrb' : [0.98 ** 0.25],
-    'PermGroFac': [1.01 ** 0.25],
-    'pLvlInitMean' : 1.0, # initial distribution of permanent income
-    'pLvlInitStd' : 0.0,
-    'Rfree' : 1.0,
-    'TranShkStd' : [ssvp['TranShkStd'][idx_40] / 2],  # Adjust non-multiplicative shock to quarterly
-    'PermShkStd' : [ssvp['PermShkStd'][idx_40] ** 0.25]
-}
+    pop.solve(merge_by=["RiskyAvg", "RiskyStd"])
+
+    # initialize population model
+    pop.init_simulation()
+
+    return pop
 
 def run_attention_simulation(
     agent_parameters,
-    dist_params,
-    popn = 5,
     a = None,
     q = None,
     r = 1,
@@ -110,10 +108,11 @@ def run_attention_simulation(
     ):
 
     # initialize population
-    pop = AgentPopulation(agent_parameters, dist_params, popn, rng = rng)
-
-    # Initialize the population model
-    pop.init_simulation()
+    pop = build_population(
+        SequentialPortfolioConsumerType,
+        agent_parameters,
+        rng = rng
+        )
 
     sim = AttentionSimulation(
         pop, FinanceModel, a = a, q = q, r = r, market = market, dphm = dphm, rng = rng)
@@ -125,8 +124,6 @@ def run_attention_simulation(
 
 def run_chum_simulation(
     agent_parameters,
-    dist_params,
-    popn,
     a = None,
     q = None,
     r = 1,
@@ -138,10 +135,11 @@ def run_chum_simulation(
     pad=30):
 
     # initialize population
-    pop = AgentPopulation(agent_parameters, dist_params, popn)
-
-    # Initialize the population model
-    pop.init_simulation()
+    pop = build_population(
+        SequentialPortfolioConsumerType,
+        agent_parameters,
+        rng = rng
+        )
 
     sim = CalibrationSimulation(pop, FinanceModel, a = a, q = q, r = r, market = market)
     
@@ -235,9 +233,7 @@ if __name__ == '__main__':
 
     if args.simulation == 'Attention':
         data, sim_stats, history = run_attention_simulation(
-            agent_parameters,
-            dist_params,
-            popn = popn, 
+            parameter_dict,
             a = attention, 
             q = quarters, 
             r= runs,
@@ -249,10 +245,9 @@ if __name__ == '__main__':
             d2 = d2,
             rng = rng
         )
-    elif args.simulation == 'Chum':
+    elif args.simulation == 'Calibration':
         data, sim_stats, history = run_chum_simulation(
-            agent_parameters, dist_params,
-            popn, 
+            parameter_dict,
             a = attention, q = quarters, r = runs, 
             market=market, 
             dphm=dphm, 
@@ -260,6 +255,8 @@ if __name__ == '__main__':
             sell= sellsize, 
             pad= pad
             )
+    else:
+        print(f"No known --simulation {args.simulation}. Valid options include: Attention, Calibration")
 
     history_df = pd.DataFrame(dict([(k,pd.Series(v)) for k,v in history.items()]))
 
