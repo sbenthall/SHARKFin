@@ -69,8 +69,8 @@ timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
 parameter_dict = agent_population_params | continuous_dist_params
 parameter_dict["AgentCount"] = 1
 
-def build_population(agent_type, parameters, rng = None):
-    pop = AgentPopulation(agent_type(), parameters, rng = rng)
+def build_population(agent_type, parameters, rng = None, dphm = 1500):
+    pop = AgentPopulation(agent_type(), parameters, rng = rng, dollars_per_hark_money_unit = dphm)
     pop.approx_distributions(approx_params)
     pop.parse_params()
 
@@ -91,7 +91,7 @@ def run_simulation(
     q = None,
     r = 1,
     market = None,
-    dphm=1500,
+    dphm = 1500,
     p1 = 0.1,
     p2 = 0.1,
     d1 = 60,
@@ -103,11 +103,12 @@ def run_simulation(
     pop = build_population(
         SequentialPortfolioConsumerType,
         agent_parameters,
-        rng = rng
+        rng = rng,
+        dphm = dphm
         )
 
     sim = AttentionSimulation(
-        pop, FinanceModel, a = a, q = q, r = r, market = market, dphm = dphm, rng = rng)
+        pop, FinanceModel, a = a, q = q, r = r, market = market, rng = rng)
     
     sim.simulate()
 

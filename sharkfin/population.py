@@ -27,6 +27,7 @@ class AgentPopulation:
     t_age: int = None
     agent_class_count: int = None
     rng : np.random.Generator = None # random number generator
+    dollars_per_hark_money_unit: float = 1500
 
     def __post_init__(self):
 
@@ -307,7 +308,7 @@ class AgentPopulation:
             self.solution = AgentPopulationSolution(self)
             self.solution.merge_solutions(continuous_states=merge_by)
 
-    def attend(self, agent, price, dollars_per_hark_money_unit, risky_expectations):
+    def attend(self, agent, price, risky_expectations):
         """
         Cause the agent to attend to the financial model.
 
@@ -324,7 +325,7 @@ class AgentPopulation:
         agent.assign_parameters(**risky_expectations)
         self.assign_solution(agent)
 
-        d_shares = self.compute_share_demand(agent, price, dollars_per_hark_money_unit)
+        d_shares = self.compute_share_demand(agent, price)
 
         delta_shares = d_shares - agent.shares
 
@@ -355,14 +356,13 @@ class AgentPopulation:
         agent.solution[0].ShareFuncAdj = ShareFuncAdj
         agent.solution[0].cFuncAdj = cFuncAdj
 
-    def compute_share_demand(self, agent, price, dollars_per_hark_money_unit):
+    def compute_share_demand(self, agent, price):
         """
         Computes the number of shares an agent _wants_ to own.
 
         Inputs:
          - an agent
          - current asset price
-         - dollars_per_hark_money_unit - a conversion factor
 
         This involves:
           - Computing a solution function based on their
@@ -390,7 +390,7 @@ class AgentPopulation:
             risky_share
             * asset_normalized
             * agent.state_now["pLvl"]
-            * dollars_per_hark_money_unit
+            * self.dollars_per_hark_money_unit
         )
 
         shares = risky_asset_wealth / price
@@ -400,9 +400,9 @@ class AgentPopulation:
 
         return shares
 
-    def macro_update(self, agent, dollars_per_hark_money_unit, price):
+    def macro_update(self, agent, price):
         """
-        Input: an agent, dollars_per_hark_money_units conversion rate, current asset price
+        Input: an agent, current asset price
 
         Simulates one "macro" period for the agent (quarterly by assumption).
         For the purposes of the simulation, award the agent dividend income
@@ -444,7 +444,7 @@ class AgentPopulation:
         # Selling off shares if necessary to
         # finance this period's consumption
         asset_level_in_shares = (
-            agent.state_now["aLvl"] * dollars_per_hark_money_unit / price
+            agent.state_now["aLvl"] * self.dollars_per_hark_money_unit / price
         )
 
         delta = asset_level_in_shares - agent.shares
@@ -455,7 +455,7 @@ class AgentPopulation:
         return delta
 
     def update_agent_wealth_capital_gains(
-        self, new_share_price, ror, dividend, dollars_per_hark_money_unit
+        self, new_share_price, ror, dividend
     ):
         """
         For all agents,
@@ -474,7 +474,7 @@ class AgentPopulation:
             dividends = agent.shares * dividend
 
             delta_aNrm = (new_raw - old_raw + dividends) / (
-                dollars_per_hark_money_unit * agent.state_now["pLvl"]
+                self.dollars_per_hark_money_unit * agent.state_now["pLvl"]
             )
 
             # update normalized market assets

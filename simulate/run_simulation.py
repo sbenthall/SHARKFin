@@ -49,8 +49,8 @@ timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
 parameter_dict = agent_population_params | continuous_dist_params
 parameter_dict["AgentCount"] = 1
 
-def build_population(agent_type, parameters, rng = None):
-    pop = AgentPopulation(agent_type(), parameters, rng = rng)
+def build_population(agent_type, parameters, rng = None, dphm = 1500):
+    pop = AgentPopulation(agent_type(), parameters, rng = rng, dollars_per_hark_money_unit=dphm)
     pop.approx_distributions(approx_params)
     pop.parse_params()
 
@@ -79,7 +79,8 @@ def run_simulation(
     pop = build_population(
         SequentialPortfolioConsumerType,
         agent_parameters,
-        rng = rng
+        rng = rng,
+        dphm = dphm
         )
 
     # Initialize the financial model

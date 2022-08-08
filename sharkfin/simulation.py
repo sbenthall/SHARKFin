@@ -82,7 +82,7 @@ class BasicSimulation(AbstractSimulation):
     end_time = None
 
     def __init__(
-        self, pop, Fm, q=1, r=None, market=None, dphm=1500, days_per_quarter = 60,
+        self, pop, Fm, q=1, r=None, market=None, days_per_quarter = 60,
         p1 = 0.1,
         p2 = 0.1,
         d1 = 60,
@@ -96,8 +96,6 @@ class BasicSimulation(AbstractSimulation):
         #self.agents = pop.agents
 
         self.pop = pop
-
-        self.dollars_per_hark_money_unit = dphm
 
         self.quarters_per_simulation = q
 
@@ -249,7 +247,7 @@ class BasicSimulation(AbstractSimulation):
         # Initialize share ownership for agents
         if start:
             for agent in self.pop.agents:
-                agent.shares = self.pop.compute_share_demand(agent, self.market.prices[-1], self.dollars_per_hark_money_unit)
+                agent.shares = self.pop.compute_share_demand(agent, self.market.prices[-1])
 
         ## ?
         self.track(-1)
@@ -264,7 +262,7 @@ class BasicSimulation(AbstractSimulation):
                 # print(f"Q-{quarter}:R-{run}")
 
                 # Basic simulation has an attention rate of 1
-                self.broker.transact(self.pop.attend(agent, self.market.prices[-1], self.dollars_per_hark_money_unit, self.fm.risky_expectations()))
+                self.broker.transact(self.pop.attend(agent, self.market.prices[-1], self.fm.risky_expectations()))
 
                 buy_sell, ror, price, dividend = self.broker.trade()
                 # print("ror: " + str(ror))
@@ -276,7 +274,7 @@ class BasicSimulation(AbstractSimulation):
                     for agent in self.pop.agents:
                         if agent.macro_day == day:
                             updates = updates + 1
-                            self.broker.transact(self.pop.macro_update(agent, self.dollars_per_hark_money_unit, price), macro=True)
+                            self.broker.transact(self.pop.macro_update(agent, price), macro=True)
 
                     if new_run:
                         new_run = False
@@ -285,7 +283,7 @@ class BasicSimulation(AbstractSimulation):
                         # putting 0,0 here is a stopgap to make plotting code simpler
                         self.broker.track((0, 0),(0, 0))
 
-                    self.pop.update_agent_wealth_capital_gains(price, ror, self.dollars_per_hark_money_unit)
+                    self.pop.update_agent_wealth_capital_gains(price, ror)
 
                     self.track(day)
 
@@ -306,13 +304,13 @@ class BasicSimulation(AbstractSimulation):
         """
         tal = (
             sum([agent.state_now['aLvl'].sum() for agent in self.pop.agents])
-            * self.dollars_per_hark_money_unit
+            * self.pop.dollars_per_hark_money_unit
         )
         os = sum([sum(agent.shares) for agent in self.pop.agents])
 
         mpl = (
             mean([agent.state_now['pLvl'].mean() for agent in self.pop.agents])
-            * self.dollars_per_hark_money_unit
+            * self.pop.dollars_per_hark_money_unit
         )
 
         tcl = (
@@ -323,7 +321,7 @@ class BasicSimulation(AbstractSimulation):
                     if agent.macro_day == day
                 ]
             )
-            * self.dollars_per_hark_money_unit
+            * self.pop.dollars_per_hark_money_unit
         )
 
         permshock_std = np.array(
@@ -445,7 +443,7 @@ class BasicSimulation(AbstractSimulation):
         sim_stats['p2'] = self.fm.p2
         sim_stats['delta_t1'] = self.fm.delta_t1
         sim_stats['delta_t2'] = self.fm.delta_t2
-        sim_stats['dollars_per_hark_money_unit'] = self.dollars_per_hark_money_unit
+        sim_stats['dollars_per_hark_money_unit'] = self.pop.dollars_per_hark_money_unit
 
         sim_stats['seconds'] = (self.end_time - self.start_time).seconds
 
@@ -478,16 +476,14 @@ class AttentionSimulation(BasicSimulation):
 
     market: Market
 
-    dphm: int
-
     """
 
     ## upping this to make more agents engaged in trade
     attention_rate = None
 
-    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500, days_per_quarter = 60, rng = None):
+    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, days_per_quarter = 60, rng = None):
 
-        super().__init__(pop, fm, q=q, r=r, market=market, dphm=dphm, days_per_quarter = days_per_quarter)
+        super().__init__(pop, fm, q=q, r=r, market=market, days_per_quarter = days_per_quarter)
 
         self.rng = rng if rng is not None else np.random.default_rng()
 
@@ -517,7 +513,7 @@ class AttentionSimulation(BasicSimulation):
         # Initialize share ownership for agents
         if start:
             for agent in self.pop.agents:
-                agent.shares = self.pop.compute_share_demand(agent, self.market.prices[-1], self.dollars_per_hark_money_unit)
+                agent.shares = self.pop.compute_share_demand(agent, self.market.prices[-1])
 
         
         self.track(-1)
@@ -537,7 +533,6 @@ class AttentionSimulation(BasicSimulation):
                         self.broker.transact(self.pop.attend(
                             agent,
                             self.market.prices[-1],
-                            self.dollars_per_hark_money_unit,
                             self.fm.risky_expectations()
                             )
                         )
@@ -552,7 +547,7 @@ class AttentionSimulation(BasicSimulation):
                     for agent in self.pop.agents:
                         if agent.macro_day == day:
                             updates = updates + 1
-                            self.broker.transact(self.pop.macro_update(agent, self.dollars_per_hark_money_unit, price), macro=True)
+                            self.broker.transact(self.pop.macro_update(agent, price), macro=True)
 
                     if new_run:
                         new_run = False
@@ -566,7 +561,7 @@ class AttentionSimulation(BasicSimulation):
 
                     # print(f"Q-{quarter}:D-{day}. {updates} macro-updates.")
 
-                    self.pop.update_agent_wealth_capital_gains(price, ror, dividend, self.dollars_per_hark_money_unit)
+                    self.pop.update_agent_wealth_capital_gains(price, ror, dividend)
 
                     self.track(day)
 
@@ -598,9 +593,9 @@ class CalibrationSimulation(BasicSimulation):
     """
     market = None
 
-    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, dphm=1500):
+    def __init__(self, pop, fm, q=1, r=None, a=None, market=None):
 
-        super().__init__(pop, fm, q=q, r=r, market=market, dphm=dphm)
+        super().__init__(pop, fm, q=q, r=r, market=market)
 
         self.history['run_times'] = []
 
@@ -613,7 +608,7 @@ class CalibrationSimulation(BasicSimulation):
         # Initialize share ownership for agents
         if start:
             for agent in self.pop.agents:
-                agent.shares = self.pop.compute_share_demand(agent, self.market.prices[-1], self.dollars_per_hark_money_unit)
+                agent.shares = self.pop.compute_share_demand(agent, self.market.prices[-1])
 
         self.track(-1, 0)
 
@@ -626,7 +621,7 @@ class CalibrationSimulation(BasicSimulation):
 
             buy_sell, ror, price, dividend = self.broker.trade()
                 
-            self.pop.update_agent_wealth_capital_gains(price, ror, dividend, self.dollars_per_hark_money_unit)
+            self.pop.update_agent_wealth_capital_gains(price, ror, dividend)
 
             # combine these steps?
             # add_ror appends to internal history list
@@ -650,7 +645,7 @@ class CalibrationSimulation(BasicSimulation):
         self.broker.transact(np.array((buy, sell)))
         buy_sell, ror, price, dividend = self.broker.trade()
 
-        self.pop.update_agent_wealth_capital_gains(price, ror, dividend, self.dollars_per_hark_money_unit)
+        self.pop.update_agent_wealth_capital_gains(price, ror, dividend)
 
         # self.fm.add_ror(ror)
         self.fm.calculate_risky_expectations()

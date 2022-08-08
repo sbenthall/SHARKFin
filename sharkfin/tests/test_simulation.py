@@ -68,7 +68,7 @@ def test_attention_simulation():
 
     parameter_dict["AgentCount"] = 1
 
-    pop = AgentPopulation(SequentialPortfolioConsumerType(), parameter_dict)
+    pop = AgentPopulation(SequentialPortfolioConsumerType(), parameter_dict, dollars_per_hark_money_unit=2000)
     pop.approx_distributions(approx_params)
     pop.parse_params()
 
