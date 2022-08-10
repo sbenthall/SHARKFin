@@ -137,7 +137,32 @@ class BasicSimulation(AbstractSimulation):
         for agent in self.pop.agents:
             agent.macro_day = 0
 
+    def burn_in(self, n_days):
+        """
+        Runs for n_days days with no broker activity.
+        Used for warming up the agents in the market.
+        """
+        for day in range(n_days):
+            start_time = datetime.now()
 
+            # is this needed for chum?
+            for agent in self.pop.agents:
+                self.broker.transact(np.zeros(1))
+
+            buy_sell, ror, price, dividend = self.broker.trade()
+                
+            self.pop.update_agent_wealth_capital_gains(price, ror, dividend)
+
+            # combine these steps?
+            # add_ror appends to internal history list
+            #self.fm.add_ror(ror) 
+            self.fm.calculate_risky_expectations()
+
+            end_time = datetime.now()
+
+            time_delta = end_time - start_time
+
+            self.track(day, time_delta)
 
 
     def data(self):
@@ -233,24 +258,39 @@ class BasicSimulation(AbstractSimulation):
         ax = sns.lineplot(data=data, x='time', y='aLvl_mean', hue='label')
         ax.set_title("mean aLvl by class subpopulation")
 
-    def simulate(self, quarters=None, start=True):
+    def start_simulation(self):
+        self.start_time = datetime.now()
+
+        # Initialize share ownership for agents
+        for agent in self.pop.agents:
+            agent.shares = self.pop.compute_share_demand(agent, self.market.prices[-1])
+
+        self.track(-1)
+
+        return self.start_time
+
+
+    def simulate(self, quarters=None, start=True, burn_in = None):
         """
         DUMMY METHOD -- need to functionalize/parameterize out.
         See #88
         Workhorse method that runs the simulation.
+
+        Parameters
+        ------------
+
+        burn_in : int or None
+           If not None, then an int number of days with no broker activity to run before starting the simulation.
         """
-        self.start_time = datetime.now()
+
+        if start:
+            self.start_simulation()
+
+        if burn_in is not None:
+            self.burn_in(burn_in)
 
         if quarters is None:
             quarters = self.quarters_per_simulation
-
-        # Initialize share ownership for agents
-        if start:
-            for agent in self.pop.agents:
-                agent.shares = self.pop.compute_share_demand(agent, self.market.prices[-1])
-
-        ## ?
-        self.track(-1)
 
         # Main loop
         for quarter in range(quarters):
@@ -497,26 +537,29 @@ class AttentionSimulation(BasicSimulation):
         for agent in self.pop.agents:
             agent.macro_day = self.rng.integers(self.days_per_quarter)
 
-    def simulate(self, quarters=None, start=True):
+    def simulate(self, quarters=None, start=True, burn_in = None):
         """
         Workhorse method that runs the simulation.
 
         In the AttentionSimulation, this is done in a special way:
          - Agents have a daily attention rate
          - This is separate from the macro-update day
+
+        Parameters
+        ------------
+
+        burn_in : int or None
+           If not None, then an int number of days with no broker activity to run before starting the simulation.
         """
-        self.start_time = datetime.now()
+
+        if start:
+            self.start_simulation()
+
+        if burn_in is not None:
+            self.burn_in(burn_in)
 
         if quarters is None:
             quarters = self.quarters_per_simulation
-
-        # Initialize share ownership for agents
-        if start:
-            for agent in self.pop.agents:
-                agent.shares = self.pop.compute_share_demand(agent, self.market.prices[-1])
-
-        
-        self.track(-1)
 
         # Main loop
         for quarter in range(quarters):
@@ -599,41 +642,6 @@ class CalibrationSimulation(BasicSimulation):
 
         self.history['run_times'] = []
 
-    def start_simulation(self):
-        self.start_time = datetime.now()
-
-        # Initialize share ownership for agents
-        for agent in self.pop.agents:
-            agent.shares = self.pop.compute_share_demand(agent, self.market.prices[-1])
-
-        self.track(-1, 0)
-
-        return self.start_time
-
-
-    def burn_in(self, n_days):
-        for day in range(n_days):
-            start_time = datetime.now()
-
-            # is this needed for chum?
-            for agent in self.pop.agents:
-                self.broker.transact(np.zeros(1))
-
-            buy_sell, ror, price, dividend = self.broker.trade()
-                
-            self.pop.update_agent_wealth_capital_gains(price, ror, dividend)
-
-            # combine these steps?
-            # add_ror appends to internal history list
-            #self.fm.add_ror(ror) 
-            self.fm.calculate_risky_expectations()
-
-            end_time = datetime.now()
-
-            time_delta = end_time - start_time
-
-            self.track(day, time_delta)
-
 
     def simulate(self, start=True, buy_sell_shock=(0, 0), burn_in = 0):
         """
@@ -662,13 +670,13 @@ class CalibrationSimulation(BasicSimulation):
         end_time = datetime.now()
         time_delta = end_time - start_time
 
-        self.track(day+1, time_delta)
+        self.track(day+1, time_delta = time_delta)
 
         self.broker.close()
 
         self.end_time = datetime.now()
 
-    def track(self, day, time_delta):
+    def track(self, day, time_delta = 0):
         """
         Tracks the current state of agent's total assets and owned shares
         """
