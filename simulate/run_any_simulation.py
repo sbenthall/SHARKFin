@@ -145,7 +145,7 @@ def run_chum_simulation(
 
     sim = CalibrationSimulation(pop, FinanceModel, a = a, q = q, r = r, market = market)
     
-    sim.simulate(pad, buy_sell_shock=(buy, sell))
+    sim.simulate(burn_in=pad, buy_sell_shock=(buy, sell))
 
     return sim.data(), {}, sim.history
 

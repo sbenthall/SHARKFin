@@ -599,19 +599,19 @@ class CalibrationSimulation(BasicSimulation):
 
         self.history['run_times'] = []
 
-    def simulate(self, n_days, start=True, buy_sell_shock=(0, 0)):
-        """
-        Workhorse method that runs the simulation.
-        """
+    def start_simulation(self):
         self.start_time = datetime.now()
 
         # Initialize share ownership for agents
-        if start:
-            for agent in self.pop.agents:
-                agent.shares = self.pop.compute_share_demand(agent, self.market.prices[-1])
+        for agent in self.pop.agents:
+            agent.shares = self.pop.compute_share_demand(agent, self.market.prices[-1])
 
         self.track(-1, 0)
 
+        return self.start_time
+
+
+    def burn_in(self, n_days):
         for day in range(n_days):
             start_time = datetime.now()
 
@@ -635,9 +635,18 @@ class CalibrationSimulation(BasicSimulation):
             self.track(day, time_delta)
 
 
+    def simulate(self, start=True, buy_sell_shock=(0, 0), burn_in = 0):
+        """
+        Workhorse method that runs the simulation.
+        """
+        if start:
+            self.start_simulation()
 
-        # last day shock
+        self.burn_in(burn_in)
+
         start_time = datetime.now()
+
+        day = burn_in
 
         buy = buy_sell_shock[0]
         sell = -buy_sell_shock[1]
