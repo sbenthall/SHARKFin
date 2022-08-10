@@ -162,7 +162,7 @@ class BasicSimulation(AbstractSimulation):
 
             time_delta = end_time - start_time
 
-            self.track(day, time_delta)
+            self.track(day, time_delta = time_delta)
 
 
     def data(self):
@@ -338,10 +338,11 @@ class BasicSimulation(AbstractSimulation):
 
         self.end_time = datetime.now()
 
-    def track(self, day):
+    def track(self, day, time_delta = 0):
         """
         Tracks the current state of agent's total assets and owned shares
         """
+
         tal = (
             sum([agent.state_now['aLvl'].sum() for agent in self.pop.agents])
             * self.pop.dollars_per_hark_money_unit

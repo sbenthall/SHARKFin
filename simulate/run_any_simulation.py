@@ -67,7 +67,7 @@ parser.add_argument('--d2', help='FinanceModel: memory parameter d2', default=60
 # Chum parameters
 parser.add_argument('--buysize', help='Chum: buy size to shock', default=0)
 parser.add_argument('--sellsize', help='Chum: sell size to shock', default=0)
-parser.add_argument('--pad', help='Chum: number of days to pad market', default=31)
+parser.add_argument('--pad', help='Nmber of days to burn in the market', default=None)
 
 
 timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
@@ -104,7 +104,8 @@ def run_attention_simulation(
     p2 = 0.1,
     d1 = 60,
     d2 = 60,
-    rng = None
+    rng = None,
+    pad = None
     ):
 
     # initialize population
@@ -118,7 +119,7 @@ def run_attention_simulation(
     sim = AttentionSimulation(
         pop, FinanceModel, a = a, q = q, r = r, market = market, rng = rng)
     
-    sim.simulate()
+    sim.simulate(burn_in = pad)
 
     return sim.data(), sim.sim_stats(), sim.history
 
@@ -184,7 +185,7 @@ if __name__ == '__main__':
     ## Chum parameters
     buysize = int(args.buysize)
     sellsize = int(args.sellsize)
-    pad = int(args.pad) - 1
+    pad = int(args.pad) - 1 if args.pad is not None else None
 
 
     print(" ".join([str(x) for x in [
@@ -245,7 +246,8 @@ if __name__ == '__main__':
             p2 = p2,
             d1 = d1,
             d2 = d2,
-            rng = rng
+            rng = rng,
+            pad = pad
         )
     elif args.simulation == 'Calibration':
         data, sim_stats, history = run_chum_simulation(
