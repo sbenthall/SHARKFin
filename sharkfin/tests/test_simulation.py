@@ -51,13 +51,13 @@ def test_calibration_simulation():
     market = None
 
     sim = CalibrationSimulation(pop, FinanceModel, q=q, r=r, market=market)
-    sim.simulate(n_days=2, buy_sell_shock=(200, 600))
+    sim.simulate(burn_in=2, buy_sell_shock=(200, 600))
 
     assert sim.broker.buy_sell_history[1] == (0, 0)
     # assert(len(sim.history['buy_sell']) == 3) # need the padded day
     data = sim.data()
 
-    assert len(data["prices"]) == 4
+    assert len(data["prices"]) == 2
 
 
 def test_attention_simulation():
@@ -99,7 +99,7 @@ def test_attention_simulation():
         market=market,
         days_per_quarter=days_per_quarter,
     )
-    attsim.simulate()
+    attsim.simulate(burn_in=20)
 
     ## testing for existence of this class stat
     attsim.pop.class_stats()["mNrm_ratio_StE_mean"]
@@ -110,3 +110,7 @@ def test_attention_simulation():
 
     assert attsim.days_per_quarter == days_per_quarter
     assert attsim.fm.days_per_quarter == days_per_quarter
+
+    data = attsim.data()
+
+    assert len(data["prices"]) == 30
