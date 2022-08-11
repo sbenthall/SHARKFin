@@ -141,9 +141,11 @@ class BasicSimulation(AbstractSimulation):
         """
         Runs for n_days days with no broker activity.
         Used for warming up the agents in the market.
+
+        Tracking is disabled during the burn-in period.
         """
         for day in range(n_days):
-            start_time = datetime.now()
+            #start_time = datetime.now()
 
             # is this needed for chum?
             for agent in self.pop.agents:
@@ -158,11 +160,10 @@ class BasicSimulation(AbstractSimulation):
             #self.fm.add_ror(ror) 
             self.fm.calculate_risky_expectations()
 
-            end_time = datetime.now()
-
-            time_delta = end_time - start_time
-
-            self.track(day, time_delta = time_delta)
+            # tracking has been disabled. Should it be optional?
+            #end_time = datetime.now()
+            #time_delta = end_time - start_time
+            #self.track(day, time_delta = time_delta)
 
 
     def data(self):
@@ -173,20 +174,20 @@ class BasicSimulation(AbstractSimulation):
         data = None
         
         data_dict = {
-            't': range(len(self.market.prices[1:])),
-            'prices': self.market.prices[1:],
-            'buy': [bs[0] for bs in self.broker.buy_sell_history],
-            'sell': [bs[1] for bs in self.broker.buy_sell_history],
-            'buy_macro': [bs[0] for bs in self.broker.buy_sell_macro_history],
-            'sell_macro': [bs[1] for bs in self.broker.buy_sell_macro_history],
+            't': range(len(self.market.prices[self.burn_in + 1:])),
+            'prices': self.market.prices[self.burn_in + 1:],
+            'buy': [bs[0] for bs in self.broker.buy_sell_history][self.burn_in:],
+            'sell': [bs[1] for bs in self.broker.buy_sell_history][self.burn_in:],
+            'buy_macro': [bs[0] for bs in self.broker.buy_sell_macro_history][self.burn_in:],
+            'sell_macro': [bs[1] for bs in self.broker.buy_sell_macro_history][self.burn_in:],
             'owned': self.history['owned_shares'][1:],
             'total_assets': self.history['total_assets'][1:],
             'mean_income': self.history['mean_income_level'][1:],
             'total_consumption': self.history['total_consumption_level'][1:],
             'permshock_std': self.history['permshock_std'][1:],
-            'ror': self.market.ror_list(),
-            'expected_ror': self.fm.expected_ror_list[1:],
-            'expected_std': self.fm.expected_std_list[1:],
+            'ror': self.market.ror_list()[self.burn_in:],
+            'expected_ror': self.fm.expected_ror_list[self.burn_in + 1:],
+            'expected_std': self.fm.expected_std_list[self.burn_in + 1:],
         }
 
         try:
@@ -258,16 +259,16 @@ class BasicSimulation(AbstractSimulation):
         ax = sns.lineplot(data=data, x='time', y='aLvl_mean', hue='label')
         ax.set_title("mean aLvl by class subpopulation")
 
-    def start_simulation(self):
+    def start_simulation(self, burn_in = None):
         self.start_time = datetime.now()
-
         # Initialize share ownership for agents
         for agent in self.pop.agents:
             agent.shares = self.pop.compute_share_demand(agent, self.market.prices[-1])
 
-        self.track(-1)
+        if burn_in is not None:
+            self.burn_in(burn_in)
 
-        return self.start_time
+        self.burn_in = burn_in if burn_in is not None else 0
 
 
     def simulate(self, quarters=None, start=True, burn_in = None):
@@ -284,10 +285,9 @@ class BasicSimulation(AbstractSimulation):
         """
 
         if start:
-            self.start_simulation()
-
-        if burn_in is not None:
-            self.burn_in(burn_in)
+            self.start_simulation(burn_in)
+        
+        self.track(-1)
 
         if quarters is None:
             quarters = self.quarters_per_simulation
@@ -552,12 +552,12 @@ class AttentionSimulation(BasicSimulation):
         burn_in : int or None
            If not None, then an int number of days with no broker activity to run before starting the simulation.
         """
+        self.start_time = datetime.now()
 
         if start:
-            self.start_simulation()
+            self.start_simulation(burn_in)
 
-        if burn_in is not None:
-            self.burn_in(burn_in)
+        self.track(-1)
 
         if quarters is None:
             quarters = self.quarters_per_simulation
@@ -648,14 +648,16 @@ class CalibrationSimulation(BasicSimulation):
         """
         Workhorse method that runs the simulation.
         """
-        if start:
-            self.start_simulation()
+        self.start_time = datetime.now()
 
-        self.burn_in(burn_in)
+        if start:
+            self.start_simulation(burn_in)
+
+        self.track(-1)
 
         start_time = datetime.now()
 
-        day = burn_in
+        day = burn_in if burn_in is not None else 0
 
         buy = buy_sell_shock[0]
         sell = -buy_sell_shock[1]
@@ -693,13 +695,14 @@ class CalibrationSimulation(BasicSimulation):
         data = None
 
         data_dict = {
-            't': range(len(self.market.prices)),
-            'prices': self.market.prices,
-            'buy': [None] + [bs[0] for bs in self.broker.buy_sell_history],
-            'sell': [None] +  [bs[1] for bs in self.broker.buy_sell_history],
-            'ror': [None] + self.market.ror_list(),
-            'expected_ror': self.fm.expected_ror_list,
-            'expected_std': self.fm.expected_std_list,
+            't': range(len(self.market.prices) - self.burn_in),
+            'prices': self.market.prices[self.burn_in:],
+            'dividends': self.market.dividends[self.burn_in:],
+            'buy': [None] + [bs[0] for bs in self.broker.buy_sell_history][self.burn_in:],
+            'sell': [None] +  [bs[1] for bs in self.broker.buy_sell_history][self.burn_in:],
+            'ror': [None] + self.market.ror_list()[self.burn_in:],
+            'expected_ror': self.fm.expected_ror_list[self.burn_in:],
+            'expected_std': self.fm.expected_std_list[self.burn_in:],
             'market_times': self.history['run_times']
         }
 

@@ -21,7 +21,7 @@ class AbstractMarket(ABC):
     @abstractmethod
     def dividends(self):
         """
-        A list of prices, beginning with the default price.
+        A list of dividends, beginning with the default price.
         """
         pass
 
