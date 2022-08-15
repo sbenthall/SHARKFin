@@ -170,38 +170,36 @@ class AgentPopulation:
 
         self.agent_dicts = agent_dicts
 
-    def agent_df(self):
+    def agent_data(self):
         """
         Output a dataframe for agent attributes
          -- this is not the same as the agent_database,
             but rather is a specially designed dataframe
             used for reporting.
 
-        returns agent_df from class_stats
+        returns agent_data from class_stats
         """
 
-        records = []
+        # suppress assignment warnings
+        pdomca = pd.options.mode.chained_assignment = None
+        pd.options.mode.chained_assignment = None  # default='warn'
 
-        for agent in self.agent_database.agents.values:
-            for i, aLvl in enumerate(agent.state_now["aLvl"]):
-                record = {
-                    "aLvl": aLvl,
-                    "mNrm": agent.state_now["mNrm"][i],
-                    "cNrm": agent.controls["cNrm"][i]
-                    if "cNrm" in agent.controls
-                    else None,
-                    # difference between mNrm and the equilibrium mNrm from BST
-                    "mNrm_ratio_StE": agent.state_now["mNrm"][i] / agent.mNrmStE,
-                }
+        agent_data = self.agent_database[['CRRA', 'DiscFac'] + ['agents']]
 
-                for dp in self.dist_params:
-                    record[dp] = agent.parameters[dp]
+        data_calls = {
+            'aLvl' : lambda a : a.state_now['aLvl'][0],
+            'mNrm' : lambda a: a.state_now['mNrm'][0],
+            'cNrm' : lambda a: a.controls['cNrm'][0]  if 'cNrm' in a.controls else None,
+            'mNrm_ratio_StE' : lambda a: a.state_now['mNrm'][0] / a.mNrmStE
+        }
 
-                records.append(record)
+        for dc in data_calls:
+            col = agent_data.loc[:,'agents'].apply(data_calls[dc])
+            agent_data[dc] = col
 
-        agent_df = pd.DataFrame.from_records(records)
+        pd.options.mode.chained_assignment = pdomca
 
-        return agent_df
+        return agent_data
 
     def class_stats(self, store=False):
         """
@@ -209,32 +207,24 @@ class AgentPopulation:
 
         Currently limited to asset level in the final simulated period (aLvl_T)
         """
-        agent_df = self.agent_df()
+        agent_data = self.agent_data().drop(columns='agents')
 
-        class_stats = (
-            agent_df.groupby(list(self.dist_params))
+        cs = (
+            agent_data.groupby(['CRRA', 'DiscFac'] )
             .aggregate(["mean", "std"])
             .reset_index()
         )
 
-        cs = class_stats
+        cs.columns = ['_'.join(col).strip('_') for col in cs.columns.values]
+
         cs["label"] = round(cs["CRRA"], 2).apply(lambda x: f"CRRA: {x}, ") + round(
             cs["DiscFac"], 2
         ).apply(lambda x: f"DiscFac: {x}")
-        cs["aLvl_mean"] = cs["aLvl"]["mean"]
-        cs["aLvl_std"] = cs["aLvl"]["std"]
-        cs["mNrm_mean"] = cs["mNrm"]["mean"]
-        cs["mNrm_std"] = cs["mNrm"]["std"]
-        # Can only have these if included in agent_df
-        # But maybe the properties included in agent_df should
-        # be _listed_, so these are not hard-coded
-        cs["mNrm_ratio_StE_mean"] = cs["mNrm_ratio_StE"]["mean"]
-        cs["mNrm_ratio_StE_std"] = cs["mNrm_ratio_StE"]["std"]
 
         if store:
-            self.stored_class_stats = class_stats
+            self.stored_class_stats = cs
 
-        return class_stats
+        return cs
 
     def create_distributed_agents(self):
 

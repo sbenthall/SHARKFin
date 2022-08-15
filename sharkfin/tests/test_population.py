@@ -61,5 +61,5 @@ def test_agent_population():
     solution.merge_solutions(["RiskyAvg", "RiskyStd"])
     print("merged solutions")
 
-    ap.agent_df()
+    ap.agent_data()
     ap.class_stats()
