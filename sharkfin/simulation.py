@@ -485,6 +485,8 @@ class BasicSimulation(AbstractSimulation):
         sim_stats['delta_t1'] = self.fm.delta_t1
         sim_stats['delta_t2'] = self.fm.delta_t2
         sim_stats['dollars_per_hark_money_unit'] = self.pop.dollars_per_hark_money_unit
+        sim_stats['dividend_growth_rate'] = self.market.dividend_growth_rate
+        sim_stats['dividend_std'] = self.market.dividend_std
 
         sim_stats['seconds'] = (self.end_time - self.start_time).seconds
 
