@@ -121,7 +121,7 @@ def run_attention_simulation(
     
     sim.simulate(burn_in = pad)
 
-    return sim.data(), sim.sim_stats(), sim.history
+    return sim.data(), sim.sim_stats(), sim.history, sim.pop.class_stats()
 
 
 def run_chum_simulation(
@@ -148,7 +148,7 @@ def run_chum_simulation(
     
     sim.simulate(burn_in=pad, buy_sell_shock=(buy, sell))
 
-    return sim.data(), {}, sim.history
+    return sim.data(), {}, sim.history, sim.pop.class_stats()
 
 def env_param(name, default):
     return os.environ[name] if name in os.environ else default
@@ -235,7 +235,7 @@ if __name__ == '__main__':
     sim_method = None
 
     if args.simulation == 'Attention':
-        data, sim_stats, history = run_attention_simulation(
+        data, sim_stats, history, class_stats = run_attention_simulation(
             parameter_dict,
             a = attention, 
             q = quarters, 
@@ -250,7 +250,7 @@ if __name__ == '__main__':
             pad = pad
         )
     elif args.simulation == 'Calibration':
-        data, sim_stats, history = run_chum_simulation(
+        data, sim_stats, history, class_stats = run_chum_simulation(
             parameter_dict,
             a = attention, q = quarters, r = runs, 
             market=market, 
@@ -267,6 +267,8 @@ if __name__ == '__main__':
     filename = args.save_as + ("-" + args.tag if args.tag != '' else '')
 
     history_df.to_csv(f'{filename}_history.csv')
+
+    class_stats.to_csv(f'{filename}_class_stats.csv')
 
     with open(f'{filename}_sim_stats.txt', 'w+') as f:
         f.write(str(sim_stats))
