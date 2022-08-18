@@ -53,10 +53,10 @@ To run a local simulation:
 docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
 ```
 
-2. Start AMMPS. These instructions assume you have the binary available. In `ammps_sharkfin_container`, the binaries are in `ammps_sharkfin_container/container_contents/ammps_bin` Run with:
+2. Start AMMPS. These instructions assume you have the binary available. In `ammps_sharkfin_container`, the binaries are in `ammps_sharkfin_container/container_contents/ammps_bin` Run from `ammps_sharkfin_container` with:
 
 ```
-dotnet ammps_bin/amm.engine.dll RunConfFromFile ../../ammps_tests/testconf.xlsx working 0 --rabbitMQ-host localhost --rabbitMQ-queue rpc_queue -t true
+dotnet container_contents/ammps_bin/amm.engine.dll RunConfFromFile testconfigs/testconf.xlsx working 0 --rabbitMQ-host localhost --rabbitMQ-queue rpc_queue -t true
 ```
 
 Refer to AMMPS documentation for parameters and instructions on how to generate the Excel config files.
