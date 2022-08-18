@@ -174,20 +174,20 @@ class BasicSimulation(AbstractSimulation):
         data = None
         
         data_dict = {
-            't': range(len(self.market.prices[self.burn_in + 1:])),
-            'prices': self.market.prices[self.burn_in + 1:],
-            'buy': [bs[0] for bs in self.broker.buy_sell_history][self.burn_in:],
-            'sell': [bs[1] for bs in self.broker.buy_sell_history][self.burn_in:],
-            'buy_macro': [bs[0] for bs in self.broker.buy_sell_macro_history][self.burn_in:],
-            'sell_macro': [bs[1] for bs in self.broker.buy_sell_macro_history][self.burn_in:],
+            't': range(len(self.market.prices[self.burn_in_val + 1:])),
+            'prices': self.market.prices[self.burn_in_val + 1:],
+            'buy': [bs[0] for bs in self.broker.buy_sell_history][self.burn_in_val:],
+            'sell': [bs[1] for bs in self.broker.buy_sell_history][self.burn_in_val:],
+            'buy_macro': [bs[0] for bs in self.broker.buy_sell_macro_history][self.burn_in_val:],
+            'sell_macro': [bs[1] for bs in self.broker.buy_sell_macro_history][self.burn_in_val:],
             'owned': self.history['owned_shares'][1:],
             'total_assets': self.history['total_assets'][1:],
             'mean_income': self.history['mean_income_level'][1:],
             'total_consumption': self.history['total_consumption_level'][1:],
-            'permshock_std': self.history['permshock_std'][1:],
-            'ror': self.market.ror_list()[self.burn_in:],
-            'expected_ror': self.fm.expected_ror_list[self.burn_in + 1:],
-            'expected_std': self.fm.expected_std_list[self.burn_in + 1:],
+            #'permshock_std': self.history['permshock_std'][1:],
+            'ror': self.market.ror_list()[self.burn_in_val:],
+            'expected_ror': self.fm.expected_ror_list[self.burn_in_val + 1:],
+            'expected_std': self.fm.expected_std_list[self.burn_in_val + 1:],
         }
 
         try:
@@ -268,7 +268,7 @@ class BasicSimulation(AbstractSimulation):
         if burn_in is not None:
             self.burn_in(burn_in)
 
-        self.burn_in = burn_in if burn_in is not None else 0
+        self.burn_in_val = burn_in if burn_in is not None else 0
 
 
     def simulate(self, quarters=None, start=True, burn_in = None):
@@ -365,19 +365,20 @@ class BasicSimulation(AbstractSimulation):
             * self.pop.dollars_per_hark_money_unit
         )
 
-        permshock_std = np.array(
-            [
-                agent.shocks['PermShk']
-                for agent in self.pop.agents
-                if 'PermShk' in agent.shocks
-            ]
-        ).std()
+        # Incomplete shock records before all agents reach macro-day, causing warnings.
+        #permshock_std = np.array(
+        #    [
+        #        agent.shocks['PermShk']
+        #        for agent in self.pop.agents
+        #        if 'PermShk' in agent.shocks
+        #    ]
+        #).std()
 
         self.history['owned_shares'].append(os)
         self.history['total_assets'].append(tal)
         self.history['mean_income_level'].append(mpl)
         self.history['total_consumption_level'].append(tcl)
-        self.history['permshock_std'].append(permshock_std)
+        #self.history['permshock_std'].append(permshock_std)
         self.history['class_stats'].append(self.pop.class_stats(store=False))
         self.history['total_pop_stats'].append(self.pop.agent_data())
         # self.history['buy_sell'].append(self.broker.buy_sell_history[-1])
@@ -432,7 +433,7 @@ class BasicSimulation(AbstractSimulation):
 
         def class_stat_column_to_dict(clabel):
             df = self.history['class_stats'][-1][['label', clabel]]
-            df.columns = df.columns.droplevel(1)
+            #df.columns = df.columns.droplevel(1)
 
             data= df.set_index('label').to_dict()[clabel]
 
@@ -697,14 +698,14 @@ class CalibrationSimulation(BasicSimulation):
         data = None
 
         data_dict = {
-            't': range(len(self.market.prices) - self.burn_in),
-            'prices': self.market.prices[self.burn_in:],
-            'dividends': self.market.dividends[self.burn_in:],
-            'buy': [None] + [bs[0] for bs in self.broker.buy_sell_history][self.burn_in:],
-            'sell': [None] +  [bs[1] for bs in self.broker.buy_sell_history][self.burn_in:],
-            'ror': [None] + self.market.ror_list()[self.burn_in:],
-            'expected_ror': self.fm.expected_ror_list[self.burn_in:],
-            'expected_std': self.fm.expected_std_list[self.burn_in:],
+            't': range(len(self.market.prices) - self.burn_in_val),
+            'prices': self.market.prices[self.burn_in_val:],
+            'dividends': self.market.dividends[self.burn_in_val:],
+            'buy': [None] + [bs[0] for bs in self.broker.buy_sell_history][self.burn_in_val:],
+            'sell': [None] +  [bs[1] for bs in self.broker.buy_sell_history][self.burn_in_val:],
+            'ror': [None] + self.market.ror_list()[self.burn_in_val:],
+            'expected_ror': self.fm.expected_ror_list[self.burn_in_val:],
+            'expected_std': self.fm.expected_std_list[self.burn_in_val:],
             'market_times': self.history['run_times']
         }
 
