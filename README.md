@@ -53,12 +53,7 @@ To run a local simulation:
 docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
 ```
 
-2. Start AMMPS. If you have access to AMMPS source it can be built from the source directory with:
-```
-dotnet build amm.engine/amm.engine/amm.engine -o amm_binary
-```
-
-Run with:
+2. Start AMMPS. These instructions assume you have the binary available. Run with:
 
 ```
 dotnet ammps_bin/amm.engine.dll RunConfFromFile ../../ammps_tests/testconf.xlsx working 0 --rabbitMQ-host localhost --rabbitMQ-queue rpc_queue -t true
