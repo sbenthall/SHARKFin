@@ -90,7 +90,17 @@ class BasicSimulation(AbstractSimulation):
     ):
         """
         pop - agent population
-        fm - expectation class
+        Fm - expectation class
+
+        TODO: Phase out these above requirements -- only used for subset of simulations
+
+        q - number of quarters
+        r - number of runs per quarter. TODO : Phase this out in favor of more use of 'days_per_quarter'
+
+        market -- the Market class used
+        days_per_quarter -- number of days per quarter
+
+        p1,p2,d1,d2 -- memory function parameters for the financial model. TODO: move to attention simulation only.
 
         """
         #self.agents = pop.agents
@@ -180,14 +190,14 @@ class BasicSimulation(AbstractSimulation):
             'sell': [bs[1] for bs in self.broker.buy_sell_history][self.burn_in_val:],
             'buy_macro': [bs[0] for bs in self.broker.buy_sell_macro_history][self.burn_in_val:],
             'sell_macro': [bs[1] for bs in self.broker.buy_sell_macro_history][self.burn_in_val:],
-            'owned': self.history['owned_shares'][1:],
-            'total_assets': self.history['total_assets'][1:],
-            'mean_income': self.history['mean_income_level'][1:],
-            'total_consumption': self.history['total_consumption_level'][1:],
+            #'owned': self.history['owned_shares'][1:],
+            #'total_assets': self.history['total_assets'][1:],
+            #'mean_income': self.history['mean_income_level'][1:],
+            #'total_consumption': self.history['total_consumption_level'][1:],
             #'permshock_std': self.history['permshock_std'][1:],
             'ror': self.market.ror_list()[self.burn_in_val:],
-            'expected_ror': self.fm.expected_ror_list[self.burn_in_val + 1:],
-            'expected_std': self.fm.expected_std_list[self.burn_in_val + 1:],
+            #'expected_ror': self.fm.expected_ror_list[self.burn_in_val + 1:],
+            #'expected_std': self.fm.expected_std_list[self.burn_in_val + 1:],
         }
 
         try:
@@ -206,58 +216,6 @@ class BasicSimulation(AbstractSimulation):
 
         return data
 
-    def report(self):
-        data = self.data()
-
-        fig, ax = plt.subplots(
-            4,
-            1,
-            sharex='col',
-            # sharey='col',
-            figsize=(12, 16),
-        )
-
-        ax[0].plot(data['total_assets'], alpha=0.5, label='total assets')
-        ax[0].plot(
-            [p * o for (p, o) in zip(data['prices'], data['owned'])],
-            alpha=0.5,
-            label='owned share value',
-        )
-        ax[0].plot(
-            [100 * o for (p, o) in zip(data['prices'], data['owned'])],
-            alpha=0.5,
-            label='owned share quantity * p_0',
-        )
-        ax[0].legend()
-
-        ax[1].plot(data['buy'], alpha=0.5, label='buy')
-        ax[1].plot(data['sell'], alpha=0.5, label='sell')
-        ax[1].legend()
-
-        ax[2].plot(data['ror'], alpha=0.5, label='ror')
-        ax[2].plot(data['expected_ror'], alpha=0.5, label='expected ror')
-        ax[2].legend()
-
-        ax[3].plot(data['prices'], alpha=0.5, label='prices')
-        ax[3].legend()
-
-        ax[0].set_title("Simulation History")
-        ax[0].set_ylabel("Dollars")
-        ax[1].set_xlabel("t")
-
-        plt.show()
-
-    def report_class_stats(self, stat='aLvl', stat_history=None):
-        if stat_history is None:
-            stat_history = self.history['class_stats']
-
-        for d, cs in enumerate(self.history['class_stats']):
-            cs['time'] = d
-
-        data = pd.concat(self.history['class_stats'])
-
-        ax = sns.lineplot(data=data, x='time', y='aLvl_mean', hue='label')
-        ax.set_title("mean aLvl by class subpopulation")
 
     def start_simulation(self, burn_in = None):
         self.start_time = datetime.now()
@@ -631,6 +589,60 @@ class AttentionSimulation(BasicSimulation):
 
         return sim_stats
 
+    def report(self):
+        data = self.data()
+
+        fig, ax = plt.subplots(
+            4,
+            1,
+            sharex='col',
+            # sharey='col',
+            figsize=(12, 16),
+        )
+
+        ax[0].plot(data['total_assets'], alpha=0.5, label='total assets')
+        ax[0].plot(
+            [p * o for (p, o) in zip(data['prices'], data['owned'])],
+            alpha=0.5,
+            label='owned share value',
+        )
+        ax[0].plot(
+            [100 * o for (p, o) in zip(data['prices'], data['owned'])],
+            alpha=0.5,
+            label='owned share quantity * p_0',
+        )
+        ax[0].legend()
+
+        ax[1].plot(data['buy'], alpha=0.5, label='buy')
+        ax[1].plot(data['sell'], alpha=0.5, label='sell')
+        ax[1].legend()
+
+        ax[2].plot(data['ror'], alpha=0.5, label='ror')
+        ax[2].plot(data['expected_ror'], alpha=0.5, label='expected ror')
+        ax[2].legend()
+
+        ax[3].plot(data['prices'], alpha=0.5, label='prices')
+        ax[3].legend()
+
+        ax[0].set_title("Simulation History")
+        ax[0].set_ylabel("Dollars")
+        ax[1].set_xlabel("t")
+
+        plt.show()
+
+    def report_class_stats(self, stat='aLvl', stat_history=None):
+        if stat_history is None:
+            stat_history = self.history['class_stats']
+
+        for d, cs in enumerate(self.history['class_stats']):
+            cs['time'] = d
+
+        data = pd.concat(self.history['class_stats'])
+
+        ax = sns.lineplot(data=data, x='time', y='aLvl_mean', hue='label')
+        ax.set_title("mean aLvl by class subpopulation")
+
+
 
 class CalibrationSimulation(BasicSimulation):
     """
@@ -706,6 +718,96 @@ class CalibrationSimulation(BasicSimulation):
             'ror': [None] + self.market.ror_list()[self.burn_in_val:],
             'expected_ror': self.fm.expected_ror_list[self.burn_in_val:],
             'expected_std': self.fm.expected_std_list[self.burn_in_val:],
+            'market_times': self.history['run_times']
+        }
+
+        try:
+            data = pd.DataFrame.from_dict(data_dict)
+
+        except Exception as e:
+            print(e)
+            print(
+                "Lengths:"
+                + str(
+                    {
+                        key : len(value) for key, value in data_dict.items()
+                    }
+                )
+            )
+
+        return data
+
+
+class SeriesSimulation(BasicSimulation):
+    """
+    A simulation in which the broker executes a predefined series
+    of buy and sell orders, without input from macroeconomic agents.
+
+    Used for testing, calibration, and synthetic data creation.
+    """
+    market = None
+
+    def __init__(self, q=1, r=None, a=None, market=None):
+
+        super().__init__(None, None, q=q, r=r, market=market)
+
+        self.history['run_times'] = []
+
+
+    def simulate(self, start=True, series=[(0, 0)], burn_in = 0):
+        """
+        Workhorse method that runs the simulation.
+        """
+        self.start_time = datetime.now()
+
+        if start:
+            self.start_simulation(burn_in)
+
+        self.track(-1)
+
+        day = burn_in if burn_in is not None else 0
+
+        for order in series:
+            
+            day_start_time = datetime.now()
+            
+            buy = order[0]
+            sell = -orderk[1]
+
+            self.broker.transact(np.array((buy, sell)))
+            buy_sell, ror, price, dividend = self.broker.trade()
+
+            day_end_time = datetime.now()
+            time_delta = day_end_time - day_start_time
+
+            self.track(day+1, time_delta = time_delta)
+
+        self.broker.close()
+
+        self.end_time = datetime.now()
+
+    def track(self, day, time_delta = 0):
+        """
+        Tracks the current state of agent's total assets and owned shares
+        """
+
+        #self.history['buy_sell'].append(self.broker.buy_sell_history[-1])
+        self.history['run_times'].append(time_delta)
+
+    def data(self):
+        """
+        Returns a Pandas DataFrame of the data from the simulation run.
+        """
+        ## DEBUGGING
+        data = None
+
+        data_dict = {
+            't': range(len(self.market.prices) - self.burn_in_val),
+            'prices': self.market.prices[self.burn_in_val:],
+            'dividends': self.market.dividends[self.burn_in_val:],
+            'buy': [None] + [bs[0] for bs in self.broker.buy_sell_history][self.burn_in_val:],
+            'sell': [None] +  [bs[1] for bs in self.broker.buy_sell_history][self.burn_in_val:],
+            'ror': [None] + self.market.ror_list()[self.burn_in_val:],
             'market_times': self.history['run_times']
         }
 
