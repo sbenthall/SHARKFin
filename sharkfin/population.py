@@ -4,15 +4,11 @@ from typing import NewType
 
 import HARK.ConsumptionSaving.ConsIndShockModel as cism
 import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
+import numpy as np
 import pandas as pd
 from HARK.core import AgentType
-from HARK.distribution import (
-    Distribution,
-    IndexDistribution,
-    combine_indep_dstns,
-)
+from HARK.distribution import Distribution, IndexDistribution, combine_indep_dstns
 from HARK.interpolation import LinearInterpOnInterp1D, LinearInterpOnInterp2D
-import numpy as np
 from xarray import DataArray
 
 from sharkfin.utilities import *
@@ -26,7 +22,7 @@ class AgentPopulation:
     parameter_dict: ParameterDict
     t_age: int = None
     agent_class_count: int = None
-    rng : np.random.Generator = None # random number generator
+    rng: np.random.Generator = None  # random number generator
     dollars_per_hark_money_unit: float = 1500
 
     def __post_init__(self):
@@ -109,7 +105,7 @@ class AgentPopulation:
 
         keys = list(self.discrete_distributions.keys())
         for i in range(len(self.discrete_distributions)):
-            param_dict[keys[i]] = DataArray(joint_dist.X[i], dims=("agent"))
+            param_dict[keys[i]] = DataArray(joint_dist.atoms[i], dims=("agent"))
 
         self.infer_counts()
 
@@ -184,17 +180,17 @@ class AgentPopulation:
         pdomca = pd.options.mode.chained_assignment = None
         pd.options.mode.chained_assignment = None  # default='warn'
 
-        agent_data = self.agent_database[['CRRA', 'DiscFac'] + ['agents']]
+        agent_data = self.agent_database[["CRRA", "DiscFac"] + ["agents"]]
 
         data_calls = {
-            'aLvl' : lambda a : a.state_now['aLvl'][0],
-            'mNrm' : lambda a: a.state_now['mNrm'][0],
-            'cNrm' : lambda a: a.controls['cNrm'][0]  if 'cNrm' in a.controls else None,
-            'mNrm_ratio_StE' : lambda a: a.state_now['mNrm'][0] / a.mNrmStE
+            "aLvl": lambda a: a.state_now["aLvl"][0],
+            "mNrm": lambda a: a.state_now["mNrm"][0],
+            "cNrm": lambda a: a.controls["cNrm"][0] if "cNrm" in a.controls else None,
+            "mNrm_ratio_StE": lambda a: a.state_now["mNrm"][0] / a.mNrmStE,
         }
 
         for dc in data_calls:
-            col = agent_data.loc[:,'agents'].apply(data_calls[dc])
+            col = agent_data.loc[:, "agents"].apply(data_calls[dc])
             agent_data[dc] = col
 
         pd.options.mode.chained_assignment = pdomca
@@ -207,15 +203,15 @@ class AgentPopulation:
 
         Currently limited to asset level in the final simulated period (aLvl_T)
         """
-        agent_data = self.agent_data().drop(columns='agents')
+        agent_data = self.agent_data().drop(columns="agents")
 
         cs = (
-            agent_data.groupby(['CRRA', 'DiscFac'] )
+            agent_data.groupby(["CRRA", "DiscFac"])
             .aggregate(["mean", "std"])
             .reset_index()
         )
 
-        cs.columns = ['_'.join(col).strip('_') for col in cs.columns.values]
+        cs.columns = ["_".join(col).strip("_") for col in cs.columns.values]
 
         cs["label"] = round(cs["CRRA"], 2).apply(lambda x: f"CRRA: {x}, ") + round(
             cs["DiscFac"], 2
@@ -231,9 +227,8 @@ class AgentPopulation:
         rng = self.rng if self.rng is not None else np.random.default_rng()
 
         self.agents = [
-            self.agent_class.__class__(
-                seed=rng.integers(0, 2**31 - 1), **agent_dict
-                ) for agent_dict in self.agent_dicts
+            self.agent_class.__class__(seed=rng.integers(0, 2**31 - 1), **agent_dict)
+            for agent_dict in self.agent_dicts
         ]
 
     def create_database(self):
@@ -444,9 +439,7 @@ class AgentPopulation:
 
         return delta
 
-    def update_agent_wealth_capital_gains(
-        self, new_share_price, ror, dividend
-    ):
+    def update_agent_wealth_capital_gains(self, new_share_price, ror, dividend):
         """
         For all agents,
         given the old share price
