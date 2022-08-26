@@ -50,7 +50,7 @@ def test_calibration_simulation():
     r = 1
     market = None
 
-    sim = CalibrationSimulation(pop, FinanceModel, q=q, r=r, market=market)
+    sim = CalibrationSimulation(q=q, r=r, market=market)
     sim.simulate(burn_in=2, buy_sell_shock=(200, 600))
 
     assert sim.broker.buy_sell_history[1] == (0, 0)
