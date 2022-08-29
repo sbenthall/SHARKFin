@@ -198,7 +198,7 @@ class MarketSimulation(AbstractSimulation):
                 # print(f"Q-{quarter}:R-{run}")
 
                 # Basic simulation has an attention rate of 1
-                self.broker.transact(0)
+                self.broker.transact(np.zeros(1))
 
                 buy_sell, ror, price, dividend = self.broker.trade()
                 # print("ror: " + str(ror))
@@ -207,10 +207,6 @@ class MarketSimulation(AbstractSimulation):
 
                 for day_in_run in range(int(self.days_per_run)):
                     updates = 0
-                    for agent in self.pop.agents:
-                        if agent.macro_day == day:
-                            updates = updates + 1
-                            self.broker.transact(0, macro=True)
 
                     if new_run:
                         new_run = False
@@ -226,8 +222,6 @@ class MarketSimulation(AbstractSimulation):
         self.broker.close()
 
         self.end_time = datetime.now()
-
-
 
     def ror_volatility(self):
         """
@@ -470,8 +464,13 @@ class MacroSimulation(MarketSimulation):
             for run in range(self.runs_per_quarter):
                 # print(f"Q-{quarter}:R-{run}")
 
-                # Basic simulation has an attention rate of 1
-                self.broker.transact(self.pop.attend(agent, self.market.prices[-1], self.fm.risky_expectations()))
+                for agent in self.pop.agents:
+                        self.broker.transact(self.pop.attend(
+                            agent,
+                            self.market.prices[-1],
+                            self.fm.risky_expectations()
+                            )
+                        )
 
                 buy_sell, ror, price, dividend = self.broker.trade()
                 # print("ror: " + str(ror))
@@ -492,7 +491,7 @@ class MacroSimulation(MarketSimulation):
                         # putting 0,0 here is a stopgap to make plotting code simpler
                         self.broker.track((0, 0),(0, 0))
 
-                    self.pop.update_agent_wealth_capital_gains(price, ror)
+                    self.pop.update_agent_wealth_capital_gains(price, ror, dividend)
 
                     self.track(day)
 
@@ -913,7 +912,7 @@ class SeriesSimulation(MarketSimulation):
             day_start_time = datetime.now()
             
             buy = order[0]
-            sell = -orderk[1]
+            sell = -orders[1]
 
             self.broker.transact(np.array((buy, sell)))
             buy_sell, ror, price, dividend = self.broker.trade()

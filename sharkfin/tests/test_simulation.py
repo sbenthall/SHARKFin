@@ -10,17 +10,78 @@ from simulate.parameters import (
     continuous_dist_params,
 )
 
-# See #72 #74 - either make this conditional on proper PNL installation
-# or remove if we are deprecating that feature
-#
-# def test_pnl_market():
-#  mock = hpa.MarketPNL()
-#
-#  mock.run_market(buy_sell=(0,0))
-#
-#  price = mock.get_simulation_price()
-#
-#  ror = mock.daily_rate_of_return(buy_sell=(0,0))
+def test_market_simulation():
+    """
+    Sets up and runs a MarketSimulation with no population.
+    """
+
+    # arguments to Calibration simulation
+
+    q = 1
+    r = 60
+    market = None
+
+    sim = MarketSimulation(q=q, r=r, market=market)
+    sim.simulate(burn_in=2)
+
+    data = sim.data()
+
+    assert len(data["prices"]) == 60
+
+def test_macro_simulation():
+    """
+    Sets up and runs an simulation with an agent population.
+    """
+    parameter_dict = agent_population_params | continuous_dist_params
+
+    parameter_dict["AgentCount"] = 1
+
+    pop = AgentPopulation(SequentialPortfolioConsumerType(), parameter_dict, dollars_per_hark_money_unit=2000)
+    pop.approx_distributions(approx_params)
+    pop.parse_params()
+
+    pop.create_distributed_agents()
+    pop.create_database()
+    pop.solve_distributed_agents()
+
+    pop.solve(merge_by=["RiskyAvg", "RiskyStd"])
+
+    # initialize population model
+    pop.init_simulation()
+
+    # arguments to attention simulation
+
+    #a = 0.2
+    q = 1
+    r = 30
+    market = None
+
+    days_per_quarter = 30
+
+    attsim = MacroSimulation(
+        pop,
+        FinanceModel,
+        #a=a,
+        q=q,
+        r=r,
+        market=market,
+        days_per_quarter=days_per_quarter,
+    )
+    attsim.simulate(burn_in=20)
+
+    ## testing for existence of this class stat
+    attsim.pop.class_stats()["mNrm_ratio_StE_mean"]
+
+    attsim.data()["sell_macro"]
+
+    attsim.sim_stats()
+
+    assert attsim.days_per_quarter == days_per_quarter
+    assert attsim.fm.days_per_quarter == days_per_quarter
+
+    data = attsim.data()
+
+    assert len(data["prices"]) == 30
 
 def test_calibration_simulation():
     """
