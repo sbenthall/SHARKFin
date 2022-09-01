@@ -889,7 +889,7 @@ class SeriesSimulation(MarketSimulation):
 
     def __init__(self, q=1, r=None, a=None, market=None):
 
-        super().__init__(None, None, q=q, r=r, market=market)
+        super().__init__(q=q, r=r, market=market)
 
         self.history['run_times'] = []
 
@@ -912,7 +912,7 @@ class SeriesSimulation(MarketSimulation):
             day_start_time = datetime.now()
             
             buy = order[0]
-            sell = -orders[1]
+            sell = -order[1]
 
             self.broker.transact(np.array((buy, sell)))
             buy_sell, ror, price, dividend = self.broker.trade()

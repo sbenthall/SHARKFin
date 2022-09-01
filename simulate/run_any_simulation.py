@@ -144,11 +144,11 @@ def run_chum_simulation(
         rng = rng
         )
 
-    sim = CalibrationSimulation(pop, FinanceModel, a = a, q = q, r = r, market = market)
+    sim = CalibrationSimulation(a = a, q = q, r = r, market = market)
     
     sim.simulate(burn_in=pad, buy_sell_shock=(buy, sell))
 
-    return sim.data(), {}, sim.history, sim.pop.class_stats()
+    return sim.data(), {}, sim.history, pd.DataFrame.from_records({}) #, sim.pop.class_stats()
 
 def env_param(name, default):
     return os.environ[name] if name in os.environ else default
