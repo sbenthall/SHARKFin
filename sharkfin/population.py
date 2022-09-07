@@ -180,7 +180,7 @@ class AgentPopulation:
         pdomca = pd.options.mode.chained_assignment = None
         pd.options.mode.chained_assignment = None  # default='warn'
 
-        agent_data = self.agent_database[["CRRA", "DiscFac"] + ["agents"]]
+        agent_data = self.agent_database[self.ex_ante_hetero_params + ["agents"]]
 
         data_calls = {
             "aLvl": lambda a: a.state_now["aLvl"][0],
@@ -206,7 +206,7 @@ class AgentPopulation:
         agent_data = self.agent_data().drop(columns="agents")
 
         cs = (
-            agent_data.groupby(["CRRA", "DiscFac"])
+            agent_data.groupby(self.ex_ante_hetero_params)
             .aggregate(["mean", "std"])
             .reset_index()
         )
@@ -292,6 +292,7 @@ class AgentPopulation:
         if merge_by is not None:
             self.solution = AgentPopulationSolution(self)
             self.solution.merge_solutions(continuous_states=merge_by)
+            self.ex_ante_hetero_params = self.solution.ex_ante_hetero_params
 
     def attend(self, agent, price, risky_expectations):
         """
@@ -498,6 +499,8 @@ class AgentPopulationSolution:
 
         discrete_params = list(set(self.dist_params) - set(continuous_states))
         discrete_params.sort()
+
+        self.ex_ante_hetero_params = discrete_params
 
         grouped = self.agent_database.groupby(discrete_params)
         solution_database = []
