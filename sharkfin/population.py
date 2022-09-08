@@ -213,9 +213,12 @@ class AgentPopulation:
 
         cs.columns = ["_".join(col).strip("_") for col in cs.columns.values]
 
-        cs["label"] = round(cs["CRRA"], 2).apply(lambda x: f"CRRA: {x}, ") + round(
-            cs["DiscFac"], 2
-        ).apply(lambda x: f"DiscFac: {x}")
+        label = ""
+
+        for param in self.ex_ante_hetero_params:
+            label += round(cs[param], 2).apply(lambda x: f"{param}={x}, ")
+
+        cs["label"] = label.str[:-2]
 
         if store:
             self.stored_class_stats = cs
