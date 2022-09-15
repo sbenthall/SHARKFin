@@ -8,7 +8,11 @@ import numpy as np
 import pandas as pd
 from HARK.core import AgentType
 from HARK.distribution import Distribution, IndexDistribution, combine_indep_dstns
-from HARK.interpolation import LinearInterpOnInterp1D, LinearInterpOnInterp2D
+from HARK.interpolation import (
+    BilinearInterpOnInterp2D,
+    LinearInterpOnInterp1D,
+    LinearInterpOnInterp2D,
+)
 from xarray import DataArray
 
 from sharkfin.utilities import *
@@ -500,6 +504,13 @@ class AgentPopulationSolution:
                     "{} is not an agent-varying parameter.".format(state)
                 )
 
+        if len(continuous_states) == 2:
+            self._merge_solutions_2d(continuous_states)
+        elif len(continuous_states) == 3:
+            self._merge_solutions_3d(continuous_states)
+
+    def _merge_solutions_2d(self, continuous_states):
+
         discrete_params = list(set(self.dist_params) - set(continuous_states))
         discrete_params.sort()
 
@@ -510,37 +521,94 @@ class AgentPopulationSolution:
 
         for name, group in grouped:
             group.sort_values(by=continuous_states)
-            in_grouped = group.groupby("RiskyStd")
+            in_grouped = group.groupby(continuous_states[1])
 
-            std_vals = np.unique(group.RiskyStd)
+            cnt1_vals = np.unique(group[continuous_states[1]])
 
-            cFunc_by_std = []
-            shareFunc_by_std = []
-            for std, in_group in in_grouped:
+            cFunc_by_cnt1 = []
+            shareFunc_by_cnt1 = []
+            for cnt1, in_group in in_grouped:
                 agents = list(in_group.agents)
-                avg = np.array(in_group.RiskyAvg)
+                cnt0 = np.array(in_group[continuous_states[0]])
 
-                cFunc_by_std.append(
+                cFunc_by_cnt1.append(
                     LinearInterpOnInterp1D(
-                        [agent.solution[0].cFuncAdj for agent in agents], avg
+                        [agent.solution[0].cFuncAdj for agent in agents], cnt0
                     )
                 )
 
-                shareFunc_by_std.append(
+                shareFunc_by_cnt1.append(
                     (
                         LinearInterpOnInterp1D(
-                            [agent.solution[0].ShareFuncAdj for agent in agents], avg
+                            [agent.solution[0].ShareFuncAdj for agent in agents], cnt0
                         )
                     )
                 )
 
-            cFunc = LinearInterpOnInterp2D(cFunc_by_std, std_vals)
-            shareFunc = LinearInterpOnInterp2D(shareFunc_by_std, std_vals)
+            cFunc = LinearInterpOnInterp2D(cFunc_by_cnt1, cnt1_vals)
+            shareFunc = LinearInterpOnInterp2D(shareFunc_by_cnt1, cnt1_vals)
 
             solution_database.append(
                 {
                     discrete_params[0]: name[0],
                     discrete_params[1]: name[1],
+                    "cFunc": cFunc,
+                    "shareFunc": shareFunc,
+                }
+            )
+
+        self.solution_database = pd.DataFrame(solution_database)
+
+        self.solution_database = self.solution_database.set_index(discrete_params)
+
+        return self.solution_database
+
+    def _merge_solutions_3d(self, continuous_states):
+
+        discrete_params = list(set(self.dist_params) - set(continuous_states))
+        discrete_params.sort()
+
+        self.ex_ante_hetero_params = discrete_params
+
+        grouped = self.agent_database.groupby(discrete_params)
+        solution_database = []
+
+        for name, group in grouped:
+            group.sort_values(by=continuous_states)
+            in_grouped = group.groupby(continuous_states[1:])
+
+            cnt1_vals = np.unique(group[continuous_states[1]])
+            cnt2_vals = np.unique(group[continuous_states[2]])
+
+            cFunc_by_group = []
+            shareFunc_by_group = []
+            for _, in_group in in_grouped:
+                agents = list(in_group.agents)
+                cnt0 = np.array(in_group[continuous_states[0]])
+
+                cFunc_by_group.append(
+                    LinearInterpOnInterp1D(
+                        [agent.solution[0].cFuncAdj for agent in agents], cnt0
+                    )
+                )
+
+                shareFunc_by_group.append(
+                    (
+                        LinearInterpOnInterp1D(
+                            [agent.solution[0].ShareFuncAdj for agent in agents], cnt0
+                        )
+                    )
+                )
+
+            cFunc = BilinearInterpOnInterp2D(cFunc_by_group, cnt1_vals, cnt2_vals)
+            shareFunc = BilinearInterpOnInterp2D(
+                shareFunc_by_group, cnt1_vals, cnt2_vals
+            )
+
+            solution_database.append(
+                {
+                    discrete_params[0]: name,
+                    # discrete_params[1]: name[1],
                     "cFunc": cFunc,
                     "shareFunc": shareFunc,
                 }
