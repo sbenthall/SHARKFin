@@ -337,7 +337,10 @@ class AgentPopulation:
         pop_solution = self.solution.solution_database
 
         # get solution for agent subgroup
-        functions = pop_solution.loc[agent.CRRA, agent.DiscFac]
+        # functions = pop_solution.loc[agent.CRRA, agent.DiscFac]
+
+        keys = [agent.parameters[key] for key in self.ex_ante_hetero_params]
+        functions = pop_solution.loc[tuple(keys)]
 
         # Using their expectations, construct function depending on
         # perceptions/beliefs about the stock market
