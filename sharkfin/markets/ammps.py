@@ -115,11 +115,17 @@ class ClientRPCMarket(AbstractMarket):
             self.connection.process_data_events()
 
         print('response received')
+        response_dict = json.loads(self.response)
+        response_price = response_dict["ClosingPrice"]
+        self.latest_price = float(response_price)
+        self.prices.append(float(response_price))
 
-        self.latest_price = float(self.response)
-        self.prices.append(float(self.response))
-        
-        return self.latest_price, new_dividend
+        if (response_dict["MarketState"] == "normal"):
+
+            return self.latest_price, new_dividend
+        if (response_dict["MarketState"].startswith("Stopped:")):
+            # Do something to end simulation and log message of "MarketState" field. last_price is going to be 0
+            return self.latest_price, new_dividend
 
     def get_simulation_price(self, buy_sell=(0, 0)):
         return self.latest_price
