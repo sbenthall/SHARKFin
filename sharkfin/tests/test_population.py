@@ -66,3 +66,26 @@ def test_agent_population():
 
     ap.agent_data()
     ap.class_stats()
+
+    # test solutions
+
+    for agent in ap.agents:
+
+        # before assigning master solution
+
+        cFuncAdj = agent.solution[0].cFuncAdj
+        shareFunc = agent.solution[0].ShareFuncAdj
+
+        # after assigning master solution
+
+        ap.assign_solution(agent)
+
+        before = cFuncAdj(10)
+        after = agent.solution[0].cFuncAdj(10)
+
+        assert np.allclose(before, after)
+
+        before = shareFunc(10)
+        after = agent.solution[0].ShareFuncAdj(10)
+
+        assert np.allclose(before, after)
