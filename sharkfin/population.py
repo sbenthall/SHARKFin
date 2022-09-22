@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from functools import partial
-from itertools import product
 from typing import NewType
 
 import HARK.ConsumptionSaving.ConsIndShockModel as cism
@@ -9,7 +8,11 @@ import numpy as np
 import pandas as pd
 from HARK.core import AgentType
 from HARK.distribution import Distribution, IndexDistribution, combine_indep_dstns
-from HARK.interpolation import BilinearInterpOnInterp1D, TrilinearInterpOnInterp1D
+from HARK.interpolation import (
+    BilinearInterpOnInterp2D,
+    LinearInterpOnInterp1D,
+    LinearInterpOnInterp2D,
+)
 from xarray import DataArray
 
 from sharkfin.utilities import *
@@ -521,27 +524,32 @@ class AgentPopulationSolution:
 
         for name, group in grouped:
             group.sort_values(by=continuous_states)
+            in_grouped = group.groupby(continuous_states[1])
 
-            cnt0_vals = np.unique(group[continuous_states[0]])
             cnt1_vals = np.unique(group[continuous_states[1]])
 
-            group = group.set_index(continuous_states)
+            cFunc_by_cnt1 = []
+            shareFunc_by_cnt1 = []
+            for cnt1, in_group in in_grouped:
+                agents = list(in_group.agents)
+                cnt0 = np.array(in_group[continuous_states[0]])
 
-            cfunc_list = [[None] * cnt1_vals.size] * cnt0_vals.size
-            sharefunc_list = [[None] * cnt1_vals.size] * cnt0_vals.size
-
-            for i, j in product(range(cnt0_vals.size), range(cnt1_vals.size)):
-                cfunc_list[i][j] = (
-                    group.loc[cnt0_vals[i], cnt1_vals[j]].agents.solution[0].cFuncAdj
-                )
-                sharefunc_list[i][j] = (
-                    group.loc[cnt0_vals[i], cnt1_vals[j]]
-                    .agents.solution[0]
-                    .ShareFuncAdj
+                cFunc_by_cnt1.append(
+                    LinearInterpOnInterp1D(
+                        [agent.solution[0].cFuncAdj for agent in agents], cnt0
+                    )
                 )
 
-            cFunc = BilinearInterpOnInterp1D(cfunc_list, cnt0_vals, cnt1_vals)
-            shareFunc = BilinearInterpOnInterp1D(sharefunc_list, cnt0_vals, cnt1_vals)
+                shareFunc_by_cnt1.append(
+                    (
+                        LinearInterpOnInterp1D(
+                            [agent.solution[0].ShareFuncAdj for agent in agents], cnt0
+                        )
+                    )
+                )
+
+            cFunc = LinearInterpOnInterp2D(cFunc_by_cnt1, cnt1_vals)
+            shareFunc = LinearInterpOnInterp2D(shareFunc_by_cnt1, cnt1_vals)
 
             solution_database.append(
                 {
@@ -570,37 +578,34 @@ class AgentPopulationSolution:
 
         for name, group in grouped:
             group.sort_values(by=continuous_states)
+            in_grouped = group.groupby(continuous_states[1:])
 
-            cnt0_vals = np.unique(group[continuous_states[0]])
             cnt1_vals = np.unique(group[continuous_states[1]])
             cnt2_vals = np.unique(group[continuous_states[2]])
 
-            group = group.set_index(continuous_states)
+            cFunc_by_group = []
+            shareFunc_by_group = []
+            for _, in_group in in_grouped:
+                agents = list(in_group.agents)
+                cnt0 = np.array(in_group[continuous_states[0]])
 
-            cfunc_list = [[[None] * cnt2_vals.size] * cnt1_vals.size] * cnt0_vals.size
-            sharefunc_list = [
-                [[None] * cnt2_vals.size] * cnt1_vals.size
-            ] * cnt0_vals.size
-
-            for i, j, k in product(
-                range(cnt0_vals.size), range(cnt1_vals.size), range(cnt2_vals.size)
-            ):
-                cfunc_list[i][j][k] = (
-                    group.loc[cnt0_vals[i], cnt1_vals[j], cnt2_vals[k]]
-                    .agents.solution[0]
-                    .cFuncAdj
-                )
-                sharefunc_list[i][j][k] = (
-                    group.loc[cnt0_vals[i], cnt1_vals[j], cnt2_vals[k]]
-                    .agents.solution[0]
-                    .ShareFuncAdj
+                cFunc_by_group.append(
+                    LinearInterpOnInterp1D(
+                        [agent.solution[0].cFuncAdj for agent in agents], cnt0
+                    )
                 )
 
-            cFunc = TrilinearInterpOnInterp1D(
-                cfunc_list, cnt0_vals, cnt1_vals, cnt2_vals
-            )
-            shareFunc = TrilinearInterpOnInterp1D(
-                sharefunc_list, cnt0_vals, cnt1_vals, cnt2_vals
+                shareFunc_by_group.append(
+                    (
+                        LinearInterpOnInterp1D(
+                            [agent.solution[0].ShareFuncAdj for agent in agents], cnt0
+                        )
+                    )
+                )
+
+            cFunc = BilinearInterpOnInterp2D(cFunc_by_group, cnt1_vals, cnt2_vals)
+            shareFunc = BilinearInterpOnInterp2D(
+                shareFunc_by_group, cnt1_vals, cnt2_vals
             )
 
             solution_database.append(
