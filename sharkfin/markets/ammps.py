@@ -120,12 +120,16 @@ class ClientRPCMarket(AbstractMarket):
         self.latest_price = float(response_price)
         self.prices.append(float(response_price))
 
-        if (response_dict["MarketState"] == "normal"):
+        if (response_dict["MarketState"] == "Normal"):
 
             return self.latest_price, new_dividend
         if (response_dict["MarketState"].startswith("Stopped:")):
             # Do something to end simulation and log message of "MarketState" field. last_price is going to be 0
-            return self.latest_price, new_dividend
+            # Above we check if the `MarketState` field begins with "Stopped:" but the string will also contain a
+            # message appended to the string, containing a reason for stopping. This can be passed upstream for logging.
+            # An example could be "Stopped: got negative prices" or similar.
+            message = response_dict["MarketState"] 
+            return self.latest_price, new_dividend # pass message upstream
 
     def get_simulation_price(self, buy_sell=(0, 0)):
         return self.latest_price
