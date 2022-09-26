@@ -705,6 +705,14 @@ class AttentionSimulation(MacroSimulation):
                 buy_sell, ror, price, dividend = self.broker.trade()
                 # print("ror: " + str(ror))
 
+                try:
+                    buy_sell, ror, price, dividend = self.broker.trade()
+
+                except MarketFailureError as e:
+                    print("Ending simulation")
+                    self.error_message = str(e)
+                    break
+
                 new_run = True
 
                 for day_in_run in range(int(self.days_per_run)):
