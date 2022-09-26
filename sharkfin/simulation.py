@@ -8,6 +8,7 @@ import seaborn as sns
 from statistics import mean
 from scipy import stats
 from sharkfin.markets import MockMarket
+from sharkfin.markets.ammps import MarketFailureError ## TODO: Move this error to higher level module
 from sharkfin.broker import Broker
 import sharkfin.stylized_facts as stylized_facts
 
@@ -83,6 +84,9 @@ class MarketSimulation(AbstractSimulation):
     ## saving the time of simulation start and end
     start_time = None
     end_time = None
+
+    # A holder for an error message
+    error_message = None
 
     def __init__(
         self, q=1, r=None, market=None, days_per_quarter = 60
@@ -269,10 +273,7 @@ class MarketSimulation(AbstractSimulation):
 
         sim_stats = {}
 
-        bs_stats = self.buy_sell_stats()
-        sim_stats.update(bs_stats)
-
-        sim_stats.update(self.fm.asset_price_stats())
+        sim_stats['error_message'] = self.error_message
      
         sim_stats['q'] = self.quarters_per_simulation
         sim_stats['r'] = self.runs_per_quarter
@@ -280,19 +281,25 @@ class MarketSimulation(AbstractSimulation):
         sim_stats['market_class'] = self.broker.market.__class__
         sim_stats['market_seeds'] = self.broker.market.seeds # seed list should be a requirement for any market class.
 
-        sim_stats['ror_volatility'] = self.ror_volatility()
-        sim_stats['ror_mean'] = self.ror_mean()
+        try:
+            sim_stats['ror_volatility'] = self.ror_volatility()
+            sim_stats['ror_mean'] = self.ror_mean()
+        except:
+            pass
 
         sim_stats['dividend_growth_rate'] = self.market.dividend_growth_rate
         sim_stats['dividend_std'] = self.market.dividend_std
 
         sim_stats['seconds'] = (self.end_time - self.start_time).seconds
 
-        # stylized facts
-        sim_stats['log_return_autocorrelation'] = stylized_facts.DW_test(
-            np.array([r for r in self.market.log_return_list()])) - 2
-        sim_stats['log_return_squared_autocorrelation'] = stylized_facts.DW_test(
-            np.array([r ** 2 for r in self.market.log_return_list()])) - 2
+        try:
+            # stylized facts
+            sim_stats['log_return_autocorrelation'] = stylized_facts.DW_test(
+                np.array([r for r in self.market.log_return_list()])) - 2
+            sim_stats['log_return_squared_autocorrelation'] = stylized_facts.DW_test(
+                np.array([r ** 2 for r in self.market.log_return_list()])) - 2
+        except:
+            pass
 
         return sim_stats
 
@@ -593,6 +600,12 @@ class MacroSimulation(MarketSimulation):
         total_pop_aLvl_mean = total_pop_aLvl.mean()
         total_pop_aLvl_std = total_pop_aLvl.std()
 
+
+        bs_stats = self.buy_sell_stats()
+        sim_stats.update(bs_stats)
+
+        sim_stats.update(self.fm.asset_price_stats())
+
         sim_stats['total_population_aLvl_mean'] = total_pop_aLvl_mean
         sim_stats['total_population_aLvl_std'] = total_pop_aLvl_std
 
@@ -824,17 +837,24 @@ class CalibrationSimulation(MarketSimulation):
         buy = buy_sell_shock[0]
         sell = -buy_sell_shock[1]
 
-        self.broker.transact(np.array((buy, sell)))
-        buy_sell, ror, price, dividend = self.broker.trade()
+        try:
+            self.broker.transact(np.array((buy, sell)))
+            buy_sell, ror, price, dividend = self.broker.trade()
 
-        end_time = datetime.now()
-        time_delta = end_time - start_time
+            end_time = datetime.now()
+            time_delta = end_time - start_time
 
-        self.track(day+1, time_delta = time_delta)
+            self.track(day+1, time_delta = time_delta)
 
-        self.broker.close()
+            self.broker.close()
 
-        self.end_time = datetime.now()
+            self.end_time = datetime.now()
+        except MarketFailureError as e:
+            print("Ending simulation")
+            self.end_time = datetime.now()
+            self.error_message = str(e)
+
+
 
     def track(self, day, time_delta = 0):
         """

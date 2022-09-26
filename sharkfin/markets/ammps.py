@@ -7,6 +7,9 @@ import uuid
 import os
 import time
 
+class MarketFailureError(Exception):
+    pass
+
 
 class ClientRPCMarket(AbstractMarket):
 
@@ -125,10 +128,11 @@ class ClientRPCMarket(AbstractMarket):
         self.latest_price = self.response['ClosingPrice']
         self.prices.append(float(self.response['ClosingPrice']))
 
-        if 'MarketState' in self.response and self.response['MarketState'] == 'Stopped':
+        if 'MarketState' in self.response and self.response['MarketState'].startswith('Stopped'):
             print("The market stopped! Do something!")
+            self.close_connection()
 
-            raise Exception("The Market has stopped!")
+            raise MarketFailureError(f"AMMPS Market Failure: {self.response['MarketState']}")
         
         return self.latest_price, new_dividend
 
@@ -173,5 +177,8 @@ class ClientRPCMarket(AbstractMarket):
 
     def close_market(self):
         self.publish({'seed': 0, 'bl': 0, 'sl': 0, 'dividend' : 0, 'end_simulation': True})
+        self.close_connetion()
+
+    def close_connection(self):
         self.channel.queue_delete(self.callback_queue)
         self.connection.close()
