@@ -88,7 +88,13 @@ class ClientRPCMarket(AbstractMarket):
 
     def on_response(self, ch, method, props, body):
         if self.corr_id == props.correlation_id:
-            self.response = body
+            try:
+                ## If the body is just a number, it's the closing price.
+                ## This is an option that will be deprecated one day
+                self.response = {"ClosingPrice" : float(body)}
+            except ValueError:
+                ## Moving forward, the body should be JSON.
+                self.response = json.loads(body)
 
     def run_market(self, buy_sell=(0, 0)):
 
@@ -116,8 +122,13 @@ class ClientRPCMarket(AbstractMarket):
 
         print('response received')
 
-        self.latest_price = float(self.response)
-        self.prices.append(float(self.response))
+        self.latest_price = self.response['ClosingPrice']
+        self.prices.append(float(self.response['ClosingPrice']))
+
+        if 'MarketState' in self.response and self.response['MarketState'] == 'Stopped':
+            print("The market stopped! Do something!")
+
+            raise Exception("The Market has stopped!")
         
         return self.latest_price, new_dividend
 
