@@ -411,8 +411,8 @@ class MacroSimulation(MarketSimulation):
             'mean_income': self.history['mean_income_level'][1:],
             'total_consumption': self.history['total_consumption_level'][1:],
             #'permshock_std': self.history['permshock_std'][1:],
-            'expected_ror': self.fm.expected_ror_list[self.burn_in_val + 1:],
-            'expected_std': self.fm.expected_std_list[self.burn_in_val + 1:],
+            'expected_ror': self.fm.expected_ror_list[self.burn_in_val+1:],
+            'expected_std': self.fm.expected_std_list[self.burn_in_val+1:],
         }
 
         try:
@@ -701,9 +701,6 @@ class AttentionSimulation(MacroSimulation):
                             self.fm.risky_expectations()
                             )
                         )
-
-                buy_sell, ror, price, dividend = self.broker.trade()
-                # print("ror: " + str(ror))
 
                 try:
                     buy_sell, ror, price, dividend = self.broker.trade()
