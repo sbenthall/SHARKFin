@@ -177,8 +177,13 @@ class ClientRPCMarket(AbstractMarket):
 
     def close_market(self):
         self.publish({'seed': 0, 'bl': 0, 'sl': 0, 'dividend' : 0, 'end_simulation': True})
-        self.close_connetion()
+        self.close_connection()
 
     def close_connection(self):
         self.channel.queue_delete(self.callback_queue)
-        self.connection.close()
+        
+        try:
+            self.connection.close()
+        except Exception as e:
+            print("Connetion is already closed?")
+            print(e)
