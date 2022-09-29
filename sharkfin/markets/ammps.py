@@ -123,7 +123,7 @@ class ClientRPCMarket(AbstractMarket):
             time.sleep(4)
             self.connection.process_data_events()
 
-        print('response received')
+        print(f'response received:{self.response}')
 
         self.latest_price = self.response['ClosingPrice']
         self.prices.append(float(self.response['ClosingPrice']))

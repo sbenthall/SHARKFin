@@ -741,6 +741,13 @@ class AttentionSimulation(MacroSimulation):
                     self.fm.calculate_risky_expectations()
 
                     day = day + 1
+            else: ## Super obscure syntax choice to break out of nested loop
+                print("Normal day")
+                continue ## TODO: remove/revise 'runs' functionality
+
+            print("Market stoped")
+            self.end_time = datetime.now()
+            return
 
         self.broker.close()
 
