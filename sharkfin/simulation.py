@@ -246,23 +246,37 @@ class MarketSimulation(AbstractSimulation):
         bs_stats = {}
         buy_limits, sell_limits = list(zip(*self.broker.buy_sell_history))
 
-        bs_stats['max_buy_limit'] = max(buy_limits)
-        bs_stats['max_sell_limit'] = max(sell_limits)
+        try:
+            bs_stats['max_buy_limit'] = max(buy_limits)
+            bs_stats['max_sell_limit'] = max(sell_limits)
 
-        bs_stats['idx_max_buy_limit'] = np.argmax(buy_limits)
-        bs_stats['idx_max_sell_limit'] = np.argmax(sell_limits)
+            bs_stats['idx_max_buy_limit'] = np.argmax(buy_limits)
+            bs_stats['idx_max_sell_limit'] = np.argmax(sell_limits)
+        except Exception as e:
+            print("Failure to compute max or idx_max of buy/sell limits")
+            print(e)
 
-        bs_stats['mean_buy_limit'] = np.mean(buy_limits)
-        bs_stats['mean_sell_limit'] = np.mean(sell_limits)
 
-        bs_stats['std_buy_limit'] = np.std(buy_limits)
-        bs_stats['std_sell_limit'] = np.std(sell_limits)
+        try:
+            bs_stats['mean_buy_limit'] = np.mean(buy_limits)
+            bs_stats['mean_sell_limit'] = np.mean(sell_limits)
 
-        bs_stats['kurtosis_buy_limit'] = stats.kurtosis(buy_limits)
-        bs_stats['kurtosis_sell_limit'] = stats.kurtosis(sell_limits)
+            bs_stats['std_buy_limit'] = np.std(buy_limits)
+            bs_stats['std_sell_limit'] = np.std(sell_limits)
+        except Exception as e:
+            print("Failure to compute mean or std of buy/sell limits")
+            print(e)
 
-        bs_stats['skew_buy_limit'] = stats.skew(buy_limits)
-        bs_stats['skew_sell_limit'] = stats.skew(sell_limits)
+        try:
+            bs_stats['kurtosis_buy_limit'] = stats.kurtosis(buy_limits)
+            bs_stats['kurtosis_sell_limit'] = stats.kurtosis(sell_limits)
+
+            bs_stats['skew_buy_limit'] = stats.skew(buy_limits)
+            bs_stats['skew_sell_limit'] = stats.skew(sell_limits)
+
+        except Exception as e:
+            print("Failure to compute kurtosis or skew of buy/sell limits")
+            print(e)
 
         return bs_stats
 
