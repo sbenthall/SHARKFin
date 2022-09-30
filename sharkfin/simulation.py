@@ -759,7 +759,7 @@ class AttentionSimulation(MacroSimulation):
                 print("Normal day")
                 continue ## TODO: remove/revise 'runs' functionality
 
-            print("Market stoped")
+            print("Market stopped")
             self.end_time = datetime.now()
             return
 
