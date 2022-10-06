@@ -64,7 +64,7 @@ class AbstractMarket(ABC):
         pass
 
     @abstractmethod
-    def daily_rate_of_return(self, seed: int, buy_sell: Tuple[int, int]):
+    def daily_rate_of_price_return(self, seed: int, buy_sell: Tuple[int, int]):
         """
         Just the ROR of the price, not including the dividend.
         """
@@ -213,7 +213,7 @@ class MockMarket(AbstractMarket):
 
         return new_price, new_dividend
 
-    def get_simulation_price(self, seed=0, buy_sell=(0, 0)):
+    def get_simulation_price(self, buy_sell=(0, 0)):
         """
         Get the price from the simulation run.
 
@@ -222,7 +222,7 @@ class MockMarket(AbstractMarket):
 
         return self.prices[-1]
 
-    def daily_rate_of_return(self, seed=None, buy_sell=None):
+    def daily_rate_of_price_return(self, seed=None, buy_sell=None):
 
         if seed is None:
             seed = self.last_seed
@@ -230,7 +230,7 @@ class MockMarket(AbstractMarket):
         if buy_sell is None:
             buy_sell = self.last_buy_sell
 
-        last_sim_price = self.get_simulation_price(seed=seed, buy_sell=buy_sell)
+        last_sim_price = self.get_simulation_price(buy_sell=buy_sell)
 
         #if last_sim_price is None:
         #   last_sim_price = self.default_sim_price

@@ -9,6 +9,7 @@ import pandas as pd
 from HARK.core import AgentType
 from HARK.distribution import Distribution, IndexDistribution, combine_indep_dstns
 from HARK.interpolation import LinearInterpOnInterp1D, LinearInterpOnInterp2D
+from pprint import pprint
 from xarray import DataArray
 
 from sharkfin.utilities import *
@@ -439,7 +440,7 @@ class AgentPopulation:
 
         return delta
 
-    def update_agent_wealth_capital_gains(self, new_share_price, ror, dividend):
+    def update_agent_wealth_capital_gains(self, new_share_price, pror, dividend):
         """
         For all agents,
         given the old share price
@@ -449,7 +450,7 @@ class AgentPopulation:
         for the most recent round of capital gains.
         """
 
-        old_share_price = new_share_price / (1 + ror)
+        old_share_price = new_share_price / (1 + pror)
 
         for agent in self.agents:
             old_raw = agent.shares * old_share_price
@@ -471,6 +472,14 @@ class AgentPopulation:
                     f"ERROR: Agent with CRRA {agent.parameters['CRRA']}"
                     + "has negative aNrm after capital gains update."
                 )
+                pprint({
+                    'aNrm' : agent.state_now["aNrm"],
+                    'shares' : agent.shares,
+                    'pLvl' : agent.state_now['pLvl'],
+                    'delta_aNrm' : delta_aNrm,
+                    'dividend' : dividend,
+                    'ror' : ror
+                })
                 print("Setting normalize assets and shares to 0.")
                 agent.state_now["aNrm"][(agent.state_now["aNrm"] < 0)] = 0.0
                 ## TODO: This change in shares needs to be registered with the Broker.

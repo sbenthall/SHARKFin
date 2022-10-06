@@ -139,29 +139,6 @@ class ClientRPCMarket(AbstractMarket):
     def get_simulation_price(self, buy_sell=(0, 0)):
         return self.latest_price
 
-    def daily_rate_of_return(self, buy_sell=None):
-        # same as PNL class. Should this be put in the abstract base class?
-        # need different scaling for AMMPS vs PNL, this needs to be changed.
-
-        if buy_sell is None:
-            buy_sell = self.last_buy_sell
-
-        last_sim_price = self.get_simulation_price(buy_sell=buy_sell)
-
-        if last_sim_price is None:
-            last_sim_price = self.default_sim_price
-
-        # ror = (last_sim_price * self.simulation_price_scale - 100) / 100
-        ror = (self.latest_price - self.prices[-2])/self.prices[-2]
-
-        # adjust to calibrated NetLogo to S&P500
-        # do we need to calibrate AMMPS to S&P as well?
-
-        # modularize calibration 
-        # ror = self.sp500_std * (ror - self.netlogo_ror) / self.netlogo_std + self.sp500_ror
-
-        return ror
-
     def publish(self, data):
         self.corr_id = str(uuid.uuid4())
         self.channel.basic_publish(

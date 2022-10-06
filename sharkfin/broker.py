@@ -80,7 +80,7 @@ class Broker:
         self.buy_orders_macro = 0
         self.sell_orders_macro = 0
 
-        return buy_sell, self.market.daily_rate_of_return(), price, dividend
+        return buy_sell, self.market.daily_rate_of_price_return(), price, dividend
 
     def close(self):
         self.market.close_market()

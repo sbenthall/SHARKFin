@@ -717,7 +717,7 @@ class AttentionSimulation(MacroSimulation):
                         )
 
                 try:
-                    buy_sell, ror, price, dividend = self.broker.trade()
+                    buy_sell, pror, price, dividend = self.broker.trade()
 
                 except MarketFailureError as e:
                     print("Ending simulation")
@@ -745,7 +745,7 @@ class AttentionSimulation(MacroSimulation):
 
                     # print(f"Q-{quarter}:D-{day}. {updates} macro-updates.")
 
-                    self.pop.update_agent_wealth_capital_gains(price, ror, dividend)
+                    self.pop.update_agent_wealth_capital_gains(price, pror, dividend)
 
                     self.track(day)
 
