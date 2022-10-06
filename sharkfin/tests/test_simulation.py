@@ -169,11 +169,16 @@ def test_attention_simulation():
         r=r,
         market=market,
         days_per_quarter=days_per_quarter,
+        fm_args = {
+            'p1' : 0.5
+        }
     )
     attsim.simulate(burn_in=20)
 
     ## testing for existence of this class stat
     attsim.pop.class_stats()["mNrm_ratio_StE_mean"]
+
+    assert attsim.fm.p1 == 0.5
 
     attsim.data()["sell_macro"]
 

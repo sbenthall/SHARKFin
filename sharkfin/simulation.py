@@ -344,10 +344,13 @@ class MacroSimulation(MarketSimulation):
 
     def __init__(
         self, pop, Fm, q=1, r=None, market=None, days_per_quarter = 60,
-        p1 = 0.1,
-        p2 = 0.1,
-        d1 = 60,
-        d2 = 60 
+        fm_args = {
+            'p1' : 0.1,
+            'p2' : 0.1,
+            'delta_t1' : 60,
+            'delta_t2' : 60 
+        }
+
     ):
         """
         pop - agent population
@@ -371,11 +374,8 @@ class MacroSimulation(MarketSimulation):
 
         self.fm = Fm(
             self.market,
-            p1 = p1,
-            p2 = p2,
-            delta_t1 = d1,
-            delta_t2 = d2,
-            days_per_quarter = self.days_per_quarter
+            days_per_quarter = self.days_per_quarter,
+            **fm_args
             )
         self.fm.calculate_risky_expectations()
 
@@ -657,9 +657,9 @@ class AttentionSimulation(MacroSimulation):
     ## upping this to make more agents engaged in trade
     attention_rate = None
 
-    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, days_per_quarter = 60, rng = None):
+    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, days_per_quarter = 60, rng = None, fm_args = None):
 
-        super().__init__(pop, fm, q=q, r=r, market=market, days_per_quarter = days_per_quarter)
+        super().__init__(pop, fm, q=q, r=r, market=market, days_per_quarter = days_per_quarter, fm_args = fm_args)
 
         self.rng = rng if rng is not None else np.random.default_rng()
 

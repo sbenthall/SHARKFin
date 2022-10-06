@@ -117,7 +117,13 @@ def run_attention_simulation(
         )
 
     sim = AttentionSimulation(
-        pop, FinanceModel, a = a, q = q, r = r, market = market, rng = rng)
+        pop, FinanceModel, a = a, q = q, r = r, market = market, rng = rng,
+        fm_args = {
+            'p1' : p1,
+            'p2' : p2,
+            'delta_t1' : d1,
+            'delta_t2' : d2
+        })
     
     sim.simulate(burn_in = pad)
 
@@ -274,7 +280,7 @@ if __name__ == '__main__':
     try:
         class_stats.to_csv(f'{filename}_class_stats.csv')
     except:
-            print("No usable class stats")
+        print("No usable class stats")
 
     with open(f'{filename}_sim_stats.txt', 'w+') as f:
         f.write(str(sim_stats))
@@ -285,3 +291,4 @@ if __name__ == '__main__':
         print("No usable daily data")
 
 
+    print("Ending the run_any_simulation.py script")

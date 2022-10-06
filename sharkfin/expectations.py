@@ -75,7 +75,7 @@ class FinanceModel(AbstractExpectations):
 
     # Expectation calculation parameters
     p1 = 0.1
-    delta_t1 = 30
+    delta_t1 = 60
 
     a = -math.log(p1) / delta_t1
 
