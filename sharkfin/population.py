@@ -311,12 +311,17 @@ class AgentPopulation:
         agent.assign_parameters(**risky_expectations)
         self.assign_solution(agent)
 
-        d_shares = self.compute_share_demand(agent, price)
+        target_shares = self.compute_share_demand(agent, price)
 
-        delta_shares = d_shares - agent.shares
+        delta_shares = target_shares - agent.shares
 
         # NOTE: This mutates the agent
-        agent.shares = d_shares
+        agent.shares = target_shares
+
+        if agent.shares < 0:
+            #import pdb; pdb.set_trace()
+            print(f"ERROR: Agent has negative shares after attention.")
+
         return delta_shares
 
     def assign_solution(self, agent):
@@ -371,6 +376,9 @@ class AgentPopulation:
         # ShareFunc takes normalized market assets as argument
         risky_share = agent.solution[0].ShareFuncAdj(asset_normalized)
 
+        if risky_share < 0:
+            print("ERROR: Agent has negative risky share")
+
         # denormalize the risky share. See https://github.com/econ-ark/HARK/issues/986
         risky_asset_wealth = (
             risky_share
@@ -382,7 +390,10 @@ class AgentPopulation:
         shares = risky_asset_wealth / price
 
         if (np.isnan(shares)).any():
-            print("ERROR: Agent has nan shares")
+            print("ERROR: Agent desires nan shares")
+
+        if shares < 0:
+            print("ERROR: Agent has negative share target")
 
         return shares
 
@@ -478,7 +489,7 @@ class AgentPopulation:
                     'pLvl' : agent.state_now['pLvl'],
                     'delta_aNrm' : delta_aNrm,
                     'dividend' : dividend,
-                    'ror' : ror
+                    'pror' : pror
                 })
                 print("Setting normalize assets and shares to 0.")
                 agent.state_now["aNrm"][(agent.state_now["aNrm"] < 0)] = 0.0
