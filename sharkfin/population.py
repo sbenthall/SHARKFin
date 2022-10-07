@@ -367,19 +367,15 @@ class AgentPopulation:
             assets to compute a share number
         """
 
-        # this should be part of the initial parameters
-        # agent.assign_parameters(AdjustPrb=1.0)
+        asset_normalized = agent.state_now["aNrm"]
 
-        # do not need to solve the agents every period, since we have
-        # population solution
-        # agent.solve()
+        if asset_normalized < 0:
+            print(f"ERROR: Agent has negative assets after compute demand.")
 
-        cNrm = agent.controls["cNrm"] if "cNrm" in agent.controls else 0
-        asset_normalized = agent.state_now["aNrm"] + cNrm
-        # breakpoint()
-
-        # ShareFunc takes normalized market assets as argument
-        risky_share = agent.solution[0].ShareFuncAdj(asset_normalized)
+        # ShareFunc takes normalized market resources as argument
+        # SequentialShareFunc takes normalized assets as argument
+        risky_share = agent.solution[0].SequentialShareFuncAdj(asset_normalized)
+        # risky_share = np.clip(risky_share, 0, 1)
 
         if risky_share < 0:
             print("Warning: Agent has negative risky share. Setting to 0. Need to fix solution!")
