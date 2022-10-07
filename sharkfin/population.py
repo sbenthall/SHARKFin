@@ -339,13 +339,18 @@ class AgentPopulation:
 
         # Using their expectations, construct function depending on
         # perceptions/beliefs about the stock market
+
+        cFuncAdj = partial(functions["cFuncAdj"], y=agent.RiskyAvg, z=agent.RiskyStd)
         ShareFuncAdj = partial(
-            functions["shareFunc"], y=agent.RiskyAvg, z=agent.RiskyStd
+            functions["ShareFuncAdj"], y=agent.RiskyAvg, z=agent.RiskyStd
         )
-        cFuncAdj = partial(functions["cFunc"], y=agent.RiskyAvg, z=agent.RiskyStd)
+        SequentialShareFuncAdj = partial(
+            functions["SequentialShareFuncAdj"], y=agent.RiskyAvg, z=agent.RiskyStd
+        )
 
         agent.solution[0].ShareFuncAdj = ShareFuncAdj
         agent.solution[0].cFuncAdj = cFuncAdj
+        agent.solution[0].SequentialShareFuncAdj = SequentialShareFuncAdj
 
     def compute_share_demand(self, agent, price):
         """
