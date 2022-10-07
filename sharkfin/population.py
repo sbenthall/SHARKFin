@@ -528,19 +528,20 @@ class AgentPopulationSolution:
 
             std_vals = np.unique(group.RiskyStd)
 
-            cFunc_by_std = []
-            shareFunc_by_std = []
+            cFuncAdj_by_std = []
+            ShareFuncAdj_by_std = []
+            SequentialShareFuncAdj_by_std = []
             for std, in_group in in_grouped:
                 agents = list(in_group.agents)
                 avg = np.array(in_group.RiskyAvg)
 
-                cFunc_by_std.append(
+                cFuncAdj_by_std.append(
                     LinearInterpOnInterp1D(
                         [agent.solution[0].cFuncAdj for agent in agents], avg
                     )
                 )
 
-                shareFunc_by_std.append(
+                ShareFuncAdj_by_std.append(
                     (
                         LinearInterpOnInterp1D(
                             [agent.solution[0].ShareFuncAdj for agent in agents], avg
@@ -548,15 +549,26 @@ class AgentPopulationSolution:
                     )
                 )
 
-            cFunc = LinearInterpOnInterp2D(cFunc_by_std, std_vals)
-            shareFunc = LinearInterpOnInterp2D(shareFunc_by_std, std_vals)
+                SequentialShareFuncAdj_by_std.append(
+                    LinearInterpOnInterp1D(
+                        [agent.solution[0].SequentialShareFuncAdj for agent in agents],
+                        avg,
+                    )
+                )
+
+            cFuncAdj = LinearInterpOnInterp2D(cFuncAdj_by_std, std_vals)
+            ShareFuncAdj = LinearInterpOnInterp2D(ShareFuncAdj_by_std, std_vals)
+            SequentialShareFuncAdj = LinearInterpOnInterp2D(
+                SequentialShareFuncAdj_by_std, std_vals
+            )
 
             solution_database.append(
                 {
                     discrete_params[0]: name[0],
                     discrete_params[1]: name[1],
-                    "cFunc": cFunc,
-                    "shareFunc": shareFunc,
+                    "cFuncAdj": cFuncAdj,
+                    "ShareFuncAdj": ShareFuncAdj,
+                    "SequentialShareFuncAdj": SequentialShareFuncAdj,
                 }
             )
 
