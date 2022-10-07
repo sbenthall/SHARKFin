@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from functools import partial
+from pprint import pprint
 from typing import NewType
 
 import HARK.ConsumptionSaving.ConsIndShockModel as cism
@@ -9,7 +10,6 @@ import pandas as pd
 from HARK.core import AgentType
 from HARK.distribution import Distribution, IndexDistribution, combine_indep_dstns
 from HARK.interpolation import LinearInterpOnInterp1D, LinearInterpOnInterp2D
-from pprint import pprint
 from xarray import DataArray
 
 from sharkfin.utilities import *
@@ -319,13 +319,12 @@ class AgentPopulation:
         agent.shares = target_shares
 
         if agent.shares < 0:
-            #import pdb; pdb.set_trace()
             print(f"ERROR: Agent has negative shares after attention.")
 
         return delta_shares
 
     def assign_solution(self, agent):
-        """_summary_
+        """
         Assign the respective solution to the agent using the master solution and
         the agent's perceptions of the market.
         """
@@ -501,14 +500,16 @@ class AgentPopulation:
                     f"ERROR: Agent with CRRA {agent.parameters['CRRA']}"
                     + "has negative aNrm after capital gains update."
                 )
-                pprint({
-                    'aNrm' : agent.state_now["aNrm"],
-                    'shares' : agent.shares,
-                    'pLvl' : agent.state_now['pLvl'],
-                    'delta_aNrm' : delta_aNrm,
-                    'dividend' : dividend,
-                    'pror' : pror
-                })
+                pprint(
+                    {
+                        "aNrm": agent.state_now["aNrm"],
+                        "shares": agent.shares,
+                        "pLvl": agent.state_now["pLvl"],
+                        "delta_aNrm": delta_aNrm,
+                        "dividend": dividend,
+                        "pror": pror,
+                    }
+                )
                 print("Setting normalize assets and shares to 0.")
                 agent.state_now["aNrm"][(agent.state_now["aNrm"] < 0)] = 0.0
                 ## TODO: This change in shares needs to be registered with the Broker.
