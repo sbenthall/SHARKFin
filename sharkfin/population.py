@@ -378,12 +378,18 @@ class AgentPopulation:
         # risky_share = np.clip(risky_share, 0, 1)
 
         if risky_share < 0:
-            print("Warning: Agent has negative risky share. Setting to 0. Need to fix solution!")
-            risky_share = 0
+            print(
+                "Warning: Agent has negative risky share. Setting to 0. Need to fix solution!"
+            )
+            print(f"RiskyAvg: {agent.RiskyAvg}, RiskyStd: {agent.RiskyStd}")
+            risky_share = 0.0
 
         if risky_share > 1:
-            print("Warning: Agent has risky share > 1.0. Setting to 1. Need to fix solution!")
-            risky_share = 1
+            print(
+                "Warning: Agent has risky share > 1.0. Setting to 1. Need to fix solution!"
+            )
+            print(f"RiskyAvg: {agent.RiskyAvg}, RiskyStd: {agent.RiskyStd}")
+            risky_share = 1.0
 
         # denormalize the risky share. See https://github.com/econ-ark/HARK/issues/986
         risky_asset_wealth = (
@@ -435,6 +441,17 @@ class AgentPopulation:
         # realization of market returns and asset growth
         agent.assign_parameters(**macro_risky_params)
         agent.simulate(sim_periods=1)
+
+        if agent.state_now["aNrm"] < 0:
+            print("ERROR: Agent has negative assets after macro update.")
+
+        if agent.controls["Share"] < 0:
+            print("ERROR: Agent has negative risky share after macro update.")
+            print(true_risky_expectations)
+
+        if agent.controls["Share"] > 1:
+            print("ERROR: Agent has share > 1 after macro update.")
+            print(true_risky_expectations)
 
         ## put back the expectations that include capital gains now
         agent.assign_parameters(**true_risky_expectations)
