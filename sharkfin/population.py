@@ -377,7 +377,12 @@ class AgentPopulation:
         risky_share = agent.solution[0].ShareFuncAdj(asset_normalized)
 
         if risky_share < 0:
-            print("ERROR: Agent has negative risky share")
+            print("Warning: Agent has negative risky share. Setting to 0. Need to fix solution!")
+            risky_share = 0
+
+        if risky_share > 1:
+            print("Warning: Agent has risky share > 1.0. Setting to 1. Need to fix solution!")
+            risky_share = 1
 
         # denormalize the risky share. See https://github.com/econ-ark/HARK/issues/986
         risky_asset_wealth = (
@@ -409,17 +414,12 @@ class AgentPopulation:
         to finance consumption; must be passed to a broker.
         """
 
-        # agent.assign_parameters(AdjustPrb = 0.0)
-        # agent.solve()
-
-        ## For risky asset gains in the simulated quarter,
-        ## use only the dividend.
         true_risky_expectations = {
             "RiskyAvg": agent.parameters["RiskyAvg"],
             "RiskyStd": agent.parameters["RiskyStd"],
         }
 
-        # assing solution based on agent's true expectations
+        # assigning solution based on agent's true expectations
         # the true agent's expectations should already be assigned
         self.assign_solution(agent)
 
