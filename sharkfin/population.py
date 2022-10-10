@@ -378,8 +378,8 @@ class AgentPopulation:
         if asset_normalized < 0:
             print(f"ERROR: Agent has negative assets after compute demand.")
 
-        # ShareFunc takes normalized market resources as argument
-        # SequentialShareFunc takes normalized assets as argument
+        # ShareFuncAdj takes normalized market resources as argument
+        # SequentialShareFuncAdj takes normalized assets as argument
         risky_share = agent.solution[0].SequentialShareFuncAdj(asset_normalized)
         # risky_share = np.clip(risky_share, 0, 1)
 
@@ -565,22 +565,35 @@ class AgentPopulationSolution:
 
             group = group.set_index(continuous_states)
 
-            cFunc_interpolators = []
-            ShareFunc_interpolators = []
+            cFuncAdj_interpolators = []
+            ShareFuncAdj_interpolators = []
+            SequentialShareFuncAdj_interpolators = []
             for cnt0 in cnt0_vals:
-                temp_cFunc = []
-                temp_ShareFunc = []
+                temp_cFuncAdj = []
+                temp_ShareFuncAdj = []
+                temp_SequentialShareFuncAdj = []
                 for cnt1 in cnt1_vals:
-                    temp_cFunc.append(group.loc[cnt0, cnt1].agents.solution[0].cFuncAdj)
-                    temp_ShareFunc.append(
+                    temp_cFuncAdj.append(
+                        group.loc[cnt0, cnt1].agents.solution[0].cFuncAdj
+                    )
+                    temp_ShareFuncAdj.append(
                         group.loc[cnt0, cnt1].agents.solution[0].ShareFuncAdj
                     )
-                cFunc_interpolators.append(temp_cFunc)
-                ShareFunc_interpolators.append(temp_ShareFunc)
+                    temp_SequentialShareFuncAdj.append(
+                        group.loc[cnt0, cnt1].agents.solution[0].SequentialShareFuncAdj
+                    )
+                cFuncAdj_interpolators.append(temp_cFuncAdj)
+                ShareFuncAdj_interpolators.append(temp_ShareFuncAdj)
+                SequentialShareFuncAdj_interpolators.append(temp_SequentialShareFuncAdj)
 
-            cFunc = BilinearInterpOnInterp1D(cFunc_interpolators, cnt0_vals, cnt1_vals)
-            shareFunc = BilinearInterpOnInterp1D(
-                ShareFunc_interpolators, cnt0_vals, cnt1_vals
+            cFuncAdj = BilinearInterpOnInterp1D(
+                cFuncAdj_interpolators, cnt0_vals, cnt1_vals
+            )
+            ShareFuncAdj = BilinearInterpOnInterp1D(
+                ShareFuncAdj_interpolators, cnt0_vals, cnt1_vals
+            )
+            SequentialShareFuncAdj = BilinearInterpOnInterp1D(
+                SequentialShareFuncAdj_interpolators, cnt0_vals, cnt1_vals
             )
 
             solution_database.append(
@@ -618,39 +631,55 @@ class AgentPopulationSolution:
 
             group = group.set_index(continuous_states)
 
-            cFunc_interpolators = []
-            ShareFunc_interpolators = []
+            cFuncAdj_interpolators = []
+            ShareFuncAdj_interpolators = []
+            SequentialShareFuncAdj_interpolators = []
             for cnt0 in cnt0_vals:
-                temp0_cFunc = []
-                temp0_ShareFunc = []
+                temp0_cFuncAdj = []
+                temp0_ShareFuncAdj = []
+                temp0_SequentialShareFuncAdj = []
                 for cnt1 in cnt1_vals:
-                    temp1_cFunc = []
-                    temp1_ShareFunc = []
+                    temp1_cFuncAdj = []
+                    temp1_ShareFuncAdj = []
+                    temp1_SequentialShareFuncAdj = []
                     for cnt2 in cnt2_vals:
-                        temp1_cFunc.append(
+                        temp1_cFuncAdj.append(
                             group.loc[cnt0, cnt1, cnt2].agents.solution[0].cFuncAdj
                         )
-                        temp1_ShareFunc.append(
+                        temp1_ShareFuncAdj.append(
                             group.loc[cnt0, cnt1, cnt2].agents.solution[0].ShareFuncAdj
                         )
-                    temp0_cFunc.append(temp1_cFunc)
-                    temp0_ShareFunc.append(temp1_ShareFunc)
-                cFunc_interpolators.append(temp0_cFunc)
-                ShareFunc_interpolators.append(temp0_ShareFunc)
+                        temp1_SequentialShareFuncAdj.append(
+                            group.loc[cnt0, cnt1, cnt2]
+                            .agents.solution[0]
+                            .SequentialShareFuncAdj
+                        )
+                    temp0_cFuncAdj.append(temp1_cFuncAdj)
+                    temp0_ShareFuncAdj.append(temp1_ShareFuncAdj)
+                    temp0_SequentialShareFuncAdj.append(temp1_SequentialShareFuncAdj)
+                cFuncAdj_interpolators.append(temp0_cFuncAdj)
+                ShareFuncAdj_interpolators.append(temp0_ShareFuncAdj)
+                SequentialShareFuncAdj_interpolators.append(
+                    temp0_SequentialShareFuncAdj
+                )
 
-            cFunc = TrilinearInterpOnInterp1D(
-                cFunc_interpolators, cnt0_vals, cnt1_vals, cnt2_vals
+            cFuncAdj = TrilinearInterpOnInterp1D(
+                cFuncAdj_interpolators, cnt0_vals, cnt1_vals, cnt2_vals
             )
-            shareFunc = TrilinearInterpOnInterp1D(
-                ShareFunc_interpolators, cnt0_vals, cnt1_vals, cnt2_vals
+            ShareFuncAdj = TrilinearInterpOnInterp1D(
+                ShareFuncAdj_interpolators, cnt0_vals, cnt1_vals, cnt2_vals
+            )
+            SequentialShareFuncAdj = TrilinearInterpOnInterp1D(
+                SequentialShareFuncAdj_interpolators, cnt0_vals, cnt1_vals, cnt2_vals
             )
 
             solution_database.append(
                 {
                     discrete_params[0]: name,
                     # discrete_params[1]: name[1],
-                    "cFunc": cFunc,
-                    "shareFunc": shareFunc,
+                    "cFuncAdj": cFuncAdj,
+                    "ShareFuncAdj": ShareFuncAdj,
+                    "SequentialShareFuncAdj": SequentialShareFuncAdj,
                 }
             )
 
