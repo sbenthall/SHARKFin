@@ -8,6 +8,7 @@ import seaborn as sns
 from statistics import mean
 from scipy import stats
 from sharkfin.markets import MockMarket
+from sharkfin.markets.ammps import MarketFailureError ## TODO: Move this error to higher level module
 from sharkfin.broker import Broker
 import sharkfin.stylized_facts as stylized_facts
 
@@ -83,6 +84,9 @@ class MarketSimulation(AbstractSimulation):
     ## saving the time of simulation start and end
     start_time = None
     end_time = None
+
+    # A holder for an error message
+    error_message = None
 
     def __init__(
         self, q=1, r=None, market=None, days_per_quarter = 60
@@ -242,23 +246,37 @@ class MarketSimulation(AbstractSimulation):
         bs_stats = {}
         buy_limits, sell_limits = list(zip(*self.broker.buy_sell_history))
 
-        bs_stats['max_buy_limit'] = max(buy_limits)
-        bs_stats['max_sell_limit'] = max(sell_limits)
+        try:
+            bs_stats['max_buy_limit'] = max(buy_limits)
+            bs_stats['max_sell_limit'] = max(sell_limits)
 
-        bs_stats['idx_max_buy_limit'] = np.argmax(buy_limits)
-        bs_stats['idx_max_sell_limit'] = np.argmax(sell_limits)
+            bs_stats['idx_max_buy_limit'] = np.argmax(buy_limits)
+            bs_stats['idx_max_sell_limit'] = np.argmax(sell_limits)
+        except Exception as e:
+            print("Failure to compute max or idx_max of buy/sell limits")
+            print(e)
 
-        bs_stats['mean_buy_limit'] = np.mean(buy_limits)
-        bs_stats['mean_sell_limit'] = np.mean(sell_limits)
 
-        bs_stats['std_buy_limit'] = np.std(buy_limits)
-        bs_stats['std_sell_limit'] = np.std(sell_limits)
+        try:
+            bs_stats['mean_buy_limit'] = np.mean(buy_limits)
+            bs_stats['mean_sell_limit'] = np.mean(sell_limits)
 
-        bs_stats['kurtosis_buy_limit'] = stats.kurtosis(buy_limits)
-        bs_stats['kurtosis_sell_limit'] = stats.kurtosis(sell_limits)
+            bs_stats['std_buy_limit'] = np.std(buy_limits)
+            bs_stats['std_sell_limit'] = np.std(sell_limits)
+        except Exception as e:
+            print("Failure to compute mean or std of buy/sell limits")
+            print(e)
 
-        bs_stats['skew_buy_limit'] = stats.skew(buy_limits)
-        bs_stats['skew_sell_limit'] = stats.skew(sell_limits)
+        try:
+            bs_stats['kurtosis_buy_limit'] = stats.kurtosis(buy_limits)
+            bs_stats['kurtosis_sell_limit'] = stats.kurtosis(sell_limits)
+
+            bs_stats['skew_buy_limit'] = stats.skew(buy_limits)
+            bs_stats['skew_sell_limit'] = stats.skew(sell_limits)
+
+        except Exception as e:
+            print("Failure to compute kurtosis or skew of buy/sell limits")
+            print(e)
 
         return bs_stats
 
@@ -269,10 +287,7 @@ class MarketSimulation(AbstractSimulation):
 
         sim_stats = {}
 
-        bs_stats = self.buy_sell_stats()
-        sim_stats.update(bs_stats)
-
-        sim_stats.update(self.fm.asset_price_stats())
+        sim_stats['error_message'] = self.error_message
      
         sim_stats['q'] = self.quarters_per_simulation
         sim_stats['r'] = self.runs_per_quarter
@@ -280,19 +295,25 @@ class MarketSimulation(AbstractSimulation):
         sim_stats['market_class'] = self.broker.market.__class__
         sim_stats['market_seeds'] = self.broker.market.seeds # seed list should be a requirement for any market class.
 
-        sim_stats['ror_volatility'] = self.ror_volatility()
-        sim_stats['ror_mean'] = self.ror_mean()
+        try:
+            sim_stats['ror_volatility'] = self.ror_volatility()
+            sim_stats['ror_mean'] = self.ror_mean()
+        except:
+            pass
 
         sim_stats['dividend_growth_rate'] = self.market.dividend_growth_rate
         sim_stats['dividend_std'] = self.market.dividend_std
 
         sim_stats['seconds'] = (self.end_time - self.start_time).seconds
 
-        # stylized facts
-        sim_stats['log_return_autocorrelation'] = stylized_facts.DW_test(
-            np.array([r for r in self.market.log_return_list()])) - 2
-        sim_stats['log_return_squared_autocorrelation'] = stylized_facts.DW_test(
-            np.array([r ** 2 for r in self.market.log_return_list()])) - 2
+        try:
+            # stylized facts
+            sim_stats['log_return_autocorrelation'] = stylized_facts.DW_test(
+                np.array([r for r in self.market.log_return_list()])) - 2
+            sim_stats['log_return_squared_autocorrelation'] = stylized_facts.DW_test(
+                np.array([r ** 2 for r in self.market.log_return_list()])) - 2
+        except:
+            pass
 
         return sim_stats
 
@@ -323,10 +344,13 @@ class MacroSimulation(MarketSimulation):
 
     def __init__(
         self, pop, Fm, q=1, r=None, market=None, days_per_quarter = 60,
-        p1 = 0.1,
-        p2 = 0.1,
-        d1 = 60,
-        d2 = 60 
+        fm_args = {
+            'p1' : 0.1,
+            'p2' : 0.1,
+            'delta_t1' : 60,
+            'delta_t2' : 60 
+        }
+
     ):
         """
         pop - agent population
@@ -350,11 +374,8 @@ class MacroSimulation(MarketSimulation):
 
         self.fm = Fm(
             self.market,
-            p1 = p1,
-            p2 = p2,
-            delta_t1 = d1,
-            delta_t2 = d2,
-            days_per_quarter = self.days_per_quarter
+            days_per_quarter = self.days_per_quarter,
+            **fm_args
             )
         self.fm.calculate_risky_expectations()
 
@@ -404,8 +425,8 @@ class MacroSimulation(MarketSimulation):
             'mean_income': self.history['mean_income_level'][1:],
             'total_consumption': self.history['total_consumption_level'][1:],
             #'permshock_std': self.history['permshock_std'][1:],
-            'expected_ror': self.fm.expected_ror_list[self.burn_in_val + 1:],
-            'expected_std': self.fm.expected_std_list[self.burn_in_val + 1:],
+            'expected_ror': self.fm.expected_ror_list[self.burn_in_val+1:],
+            'expected_std': self.fm.expected_std_list[self.burn_in_val+1:],
         }
 
         try:
@@ -593,6 +614,12 @@ class MacroSimulation(MarketSimulation):
         total_pop_aLvl_mean = total_pop_aLvl.mean()
         total_pop_aLvl_std = total_pop_aLvl.std()
 
+
+        bs_stats = self.buy_sell_stats()
+        sim_stats.update(bs_stats)
+
+        sim_stats.update(self.fm.asset_price_stats())
+
         sim_stats['total_population_aLvl_mean'] = total_pop_aLvl_mean
         sim_stats['total_population_aLvl_std'] = total_pop_aLvl_std
 
@@ -630,9 +657,9 @@ class AttentionSimulation(MacroSimulation):
     ## upping this to make more agents engaged in trade
     attention_rate = None
 
-    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, days_per_quarter = 60, rng = None):
+    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, days_per_quarter = 60, rng = None, fm_args = None):
 
-        super().__init__(pop, fm, q=q, r=r, market=market, days_per_quarter = days_per_quarter)
+        super().__init__(pop, fm, q=q, r=r, market=market, days_per_quarter = days_per_quarter, fm_args = fm_args)
 
         self.rng = rng if rng is not None else np.random.default_rng()
 
@@ -689,8 +716,13 @@ class AttentionSimulation(MacroSimulation):
                             )
                         )
 
-                buy_sell, ror, price, dividend = self.broker.trade()
-                # print("ror: " + str(ror))
+                try:
+                    buy_sell, pror, price, dividend = self.broker.trade()
+
+                except MarketFailureError as e:
+                    print("Ending simulation")
+                    self.error_message = str(e)
+                    break
 
                 new_run = True
 
@@ -713,7 +745,7 @@ class AttentionSimulation(MacroSimulation):
 
                     # print(f"Q-{quarter}:D-{day}. {updates} macro-updates.")
 
-                    self.pop.update_agent_wealth_capital_gains(price, ror, dividend)
+                    self.pop.update_agent_wealth_capital_gains(price, pror, dividend)
 
                     self.track(day)
 
@@ -723,6 +755,13 @@ class AttentionSimulation(MacroSimulation):
                     self.fm.calculate_risky_expectations()
 
                     day = day + 1
+            else: ## Super obscure syntax choice to break out of nested loop
+                print("Normal day")
+                continue ## TODO: remove/revise 'runs' functionality
+
+            print("Market stopped")
+            self.end_time = datetime.now()
+            return
 
         self.broker.close()
 
@@ -824,17 +863,24 @@ class CalibrationSimulation(MarketSimulation):
         buy = buy_sell_shock[0]
         sell = -buy_sell_shock[1]
 
-        self.broker.transact(np.array((buy, sell)))
-        buy_sell, ror, price, dividend = self.broker.trade()
+        try:
+            self.broker.transact(np.array((buy, sell)))
+            buy_sell, ror, price, dividend = self.broker.trade()
 
-        end_time = datetime.now()
-        time_delta = end_time - start_time
+            end_time = datetime.now()
+            time_delta = end_time - start_time
 
-        self.track(day+1, time_delta = time_delta)
+            self.track(day+1, time_delta = time_delta)
 
-        self.broker.close()
+            self.broker.close()
 
-        self.end_time = datetime.now()
+            self.end_time = datetime.now()
+        except MarketFailureError as e:
+            print("Ending simulation")
+            self.end_time = datetime.now()
+            self.error_message = str(e)
+
+
 
     def track(self, day, time_delta = 0):
         """

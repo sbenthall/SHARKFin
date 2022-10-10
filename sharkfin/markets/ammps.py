@@ -7,6 +7,9 @@ import uuid
 import os
 import time
 
+class MarketFailureError(Exception):
+    pass
+
 
 class ClientRPCMarket(AbstractMarket):
 
@@ -88,7 +91,13 @@ class ClientRPCMarket(AbstractMarket):
 
     def on_response(self, ch, method, props, body):
         if self.corr_id == props.correlation_id:
-            self.response = body
+            try:
+                ## If the body is just a number, it's the closing price.
+                ## This is an option that will be deprecated one day
+                self.response = {"ClosingPrice" : float(body)}
+            except ValueError:
+                ## Moving forward, the body should be JSON.
+                self.response = json.loads(body)
 
     def run_market(self, buy_sell=(0, 0)):
 
@@ -114,38 +123,21 @@ class ClientRPCMarket(AbstractMarket):
             time.sleep(4)
             self.connection.process_data_events()
 
-        print('response received')
+        print(f'response received:{self.response}')
 
-        self.latest_price = float(self.response)
-        self.prices.append(float(self.response))
+        self.latest_price = self.response['ClosingPrice']
+        self.prices.append(float(self.response['ClosingPrice']))
+
+        if 'MarketState' in self.response and self.response['MarketState'].startswith('Stopped'):
+            print("The market stopped! Do something!")
+            self.close_connection()
+
+            raise MarketFailureError(f"AMMPS Market Failure: {self.response['MarketState']}")
         
         return self.latest_price, new_dividend
 
     def get_simulation_price(self, buy_sell=(0, 0)):
         return self.latest_price
-
-    def daily_rate_of_return(self, buy_sell=None):
-        # same as PNL class. Should this be put in the abstract base class?
-        # need different scaling for AMMPS vs PNL, this needs to be changed.
-
-        if buy_sell is None:
-            buy_sell = self.last_buy_sell
-
-        last_sim_price = self.get_simulation_price(buy_sell=buy_sell)
-
-        if last_sim_price is None:
-            last_sim_price = self.default_sim_price
-
-        # ror = (last_sim_price * self.simulation_price_scale - 100) / 100
-        ror = (self.latest_price - self.prices[-2])/self.prices[-2]
-
-        # adjust to calibrated NetLogo to S&P500
-        # do we need to calibrate AMMPS to S&P as well?
-
-        # modularize calibration 
-        # ror = self.sp500_std * (ror - self.netlogo_ror) / self.netlogo_std + self.sp500_ror
-
-        return ror
 
     def publish(self, data):
         self.corr_id = str(uuid.uuid4())
@@ -162,5 +154,13 @@ class ClientRPCMarket(AbstractMarket):
 
     def close_market(self):
         self.publish({'seed': 0, 'bl': 0, 'sl': 0, 'dividend' : 0, 'end_simulation': True})
+        self.close_connection()
+
+    def close_connection(self):
         self.channel.queue_delete(self.callback_queue)
-        self.connection.close()
+        
+        try:
+            self.connection.close()
+        except Exception as e:
+            print("Connetion is already closed?")
+            print(e)

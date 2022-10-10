@@ -24,7 +24,7 @@ class TestMockMarket(unittest.TestCase):
 
         price = market.get_simulation_price()
 
-        ror = market.daily_rate_of_return(buy_sell=(0,0))
+        ror = market.daily_rate_of_price_return()
 
         assert len(market.prices) == len(market.dividends)
 

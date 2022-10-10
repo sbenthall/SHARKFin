@@ -117,7 +117,13 @@ def run_attention_simulation(
         )
 
     sim = AttentionSimulation(
-        pop, FinanceModel, a = a, q = q, r = r, market = market, rng = rng)
+        pop, FinanceModel, a = a, q = q, r = r, market = market, rng = rng,
+        fm_args = {
+            'p1' : p1,
+            'p2' : p2,
+            'delta_t1' : d1,
+            'delta_t2' : d2
+        })
     
     sim.simulate(burn_in = pad)
 
@@ -148,7 +154,7 @@ def run_chum_simulation(
     
     sim.simulate(burn_in=pad, buy_sell_shock=(buy, sell))
 
-    return sim.data(), {}, sim.history, pd.DataFrame.from_records({}) #, sim.pop.class_stats()
+    return sim.data(), sim.sim_stats(), sim.history, pd.DataFrame.from_records({}) #, sim.pop.class_stats()
 
 def env_param(name, default):
     return os.environ[name] if name in os.environ else default
@@ -266,13 +272,23 @@ if __name__ == '__main__':
 
     filename = args.save_as + ("-" + args.tag if args.tag != '' else '')
 
-    history_df.to_csv(f'{filename}_history.csv')
+    try:
+        history_df.to_csv(f'{filename}_history.csv')
+    except:
+        print("No usable history")
 
-    class_stats.to_csv(f'{filename}_class_stats.csv')
+    try:
+        class_stats.to_csv(f'{filename}_class_stats.csv')
+    except:
+        print("No usable class stats")
 
     with open(f'{filename}_sim_stats.txt', 'w+') as f:
         f.write(str(sim_stats))
 
-    data.to_csv(f'{filename}_data.csv')
+    try:
+        data.to_csv(f'{filename}_data.csv')
+    except:
+        print("No usable daily data")
 
 
+    print("Ending the run_any_simulation.py script")
