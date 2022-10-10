@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from functools import partial
+from pprint import pprint
 from typing import NewType
 
 import HARK.ConsumptionSaving.ConsIndShockModel as cism
@@ -9,7 +10,6 @@ import pandas as pd
 from HARK.core import AgentType
 from HARK.distribution import Distribution, IndexDistribution, combine_indep_dstns
 from HARK.interpolation import LinearInterpOnInterp1D, LinearInterpOnInterp2D
-from pprint import pprint
 from xarray import DataArray
 
 from sharkfin.utilities import *
@@ -319,13 +319,12 @@ class AgentPopulation:
         agent.shares = target_shares
 
         if agent.shares < 0:
-            #import pdb; pdb.set_trace()
             print(f"ERROR: Agent has negative shares after attention.")
 
         return delta_shares
 
     def assign_solution(self, agent):
-        """_summary_
+        """
         Assign the respective solution to the agent using the master solution and
         the agent's perceptions of the market.
         """
@@ -339,13 +338,18 @@ class AgentPopulation:
 
         # Using their expectations, construct function depending on
         # perceptions/beliefs about the stock market
+
+        cFuncAdj = partial(functions["cFuncAdj"], y=agent.RiskyAvg, z=agent.RiskyStd)
         ShareFuncAdj = partial(
-            functions["shareFunc"], y=agent.RiskyAvg, z=agent.RiskyStd
+            functions["ShareFuncAdj"], y=agent.RiskyAvg, z=agent.RiskyStd
         )
-        cFuncAdj = partial(functions["cFunc"], y=agent.RiskyAvg, z=agent.RiskyStd)
+        SequentialShareFuncAdj = partial(
+            functions["SequentialShareFuncAdj"], y=agent.RiskyAvg, z=agent.RiskyStd
+        )
 
         agent.solution[0].ShareFuncAdj = ShareFuncAdj
         agent.solution[0].cFuncAdj = cFuncAdj
+        agent.solution[0].SequentialShareFuncAdj = SequentialShareFuncAdj
 
     def compute_share_demand(self, agent, price):
         """
@@ -362,27 +366,29 @@ class AgentPopulation:
             assets to compute a share number
         """
 
-        # this should be part of the initial parameters
-        # agent.assign_parameters(AdjustPrb=1.0)
+        asset_normalized = agent.state_now["aNrm"]
 
-        # do not need to solve the agents every period, since we have
-        # population solution
-        # agent.solve()
+        if asset_normalized < 0:
+            print(f"ERROR: Agent has negative assets after compute demand.")
 
-        cNrm = agent.controls["cNrm"] if "cNrm" in agent.controls else 0
-        asset_normalized = agent.state_now["aNrm"] + cNrm
-        # breakpoint()
-
-        # ShareFunc takes normalized market assets as argument
-        risky_share = agent.solution[0].ShareFuncAdj(asset_normalized)
+        # ShareFunc takes normalized market resources as argument
+        # SequentialShareFunc takes normalized assets as argument
+        risky_share = agent.solution[0].SequentialShareFuncAdj(asset_normalized)
+        # risky_share = np.clip(risky_share, 0, 1)
 
         if risky_share < 0:
-            print("Warning: Agent has negative risky share. Setting to 0. Need to fix solution!")
-            risky_share = 0
+            print(
+                "Warning: Agent has negative risky share. Setting to 0. Need to fix solution!"
+            )
+            print(f"RiskyAvg: {agent.RiskyAvg}, RiskyStd: {agent.RiskyStd}")
+            risky_share = 0.0
 
         if risky_share > 1:
-            print("Warning: Agent has risky share > 1.0. Setting to 1. Need to fix solution!")
-            risky_share = 1
+            print(
+                "Warning: Agent has risky share > 1.0. Setting to 1. Need to fix solution!"
+            )
+            print(f"RiskyAvg: {agent.RiskyAvg}, RiskyStd: {agent.RiskyStd}")
+            risky_share = 1.0
 
         # denormalize the risky share. See https://github.com/econ-ark/HARK/issues/986
         risky_asset_wealth = (
@@ -435,6 +441,17 @@ class AgentPopulation:
         agent.assign_parameters(**macro_risky_params)
         agent.simulate(sim_periods=1)
 
+        if agent.state_now["aNrm"] < 0:
+            print("ERROR: Agent has negative assets after macro update.")
+
+        if agent.controls["Share"] < 0:
+            print("ERROR: Agent has negative risky share after macro update.")
+            print(true_risky_expectations)
+
+        if agent.controls["Share"] > 1:
+            print("ERROR: Agent has share > 1 after macro update.")
+            print(true_risky_expectations)
+
         ## put back the expectations that include capital gains now
         agent.assign_parameters(**true_risky_expectations)
 
@@ -483,14 +500,16 @@ class AgentPopulation:
                     f"ERROR: Agent with CRRA {agent.parameters['CRRA']}"
                     + "has negative aNrm after capital gains update."
                 )
-                pprint({
-                    'aNrm' : agent.state_now["aNrm"],
-                    'shares' : agent.shares,
-                    'pLvl' : agent.state_now['pLvl'],
-                    'delta_aNrm' : delta_aNrm,
-                    'dividend' : dividend,
-                    'pror' : pror
-                })
+                pprint(
+                    {
+                        "aNrm": agent.state_now["aNrm"],
+                        "shares": agent.shares,
+                        "pLvl": agent.state_now["pLvl"],
+                        "delta_aNrm": delta_aNrm,
+                        "dividend": dividend,
+                        "pror": pror,
+                    }
+                )
                 print("Setting normalize assets and shares to 0.")
                 agent.state_now["aNrm"][(agent.state_now["aNrm"] < 0)] = 0.0
                 ## TODO: This change in shares needs to be registered with the Broker.
@@ -528,19 +547,20 @@ class AgentPopulationSolution:
 
             std_vals = np.unique(group.RiskyStd)
 
-            cFunc_by_std = []
-            shareFunc_by_std = []
+            cFuncAdj_by_std = []
+            ShareFuncAdj_by_std = []
+            SequentialShareFuncAdj_by_std = []
             for std, in_group in in_grouped:
                 agents = list(in_group.agents)
                 avg = np.array(in_group.RiskyAvg)
 
-                cFunc_by_std.append(
+                cFuncAdj_by_std.append(
                     LinearInterpOnInterp1D(
                         [agent.solution[0].cFuncAdj for agent in agents], avg
                     )
                 )
 
-                shareFunc_by_std.append(
+                ShareFuncAdj_by_std.append(
                     (
                         LinearInterpOnInterp1D(
                             [agent.solution[0].ShareFuncAdj for agent in agents], avg
@@ -548,15 +568,26 @@ class AgentPopulationSolution:
                     )
                 )
 
-            cFunc = LinearInterpOnInterp2D(cFunc_by_std, std_vals)
-            shareFunc = LinearInterpOnInterp2D(shareFunc_by_std, std_vals)
+                SequentialShareFuncAdj_by_std.append(
+                    LinearInterpOnInterp1D(
+                        [agent.solution[0].SequentialShareFuncAdj for agent in agents],
+                        avg,
+                    )
+                )
+
+            cFuncAdj = LinearInterpOnInterp2D(cFuncAdj_by_std, std_vals)
+            ShareFuncAdj = LinearInterpOnInterp2D(ShareFuncAdj_by_std, std_vals)
+            SequentialShareFuncAdj = LinearInterpOnInterp2D(
+                SequentialShareFuncAdj_by_std, std_vals
+            )
 
             solution_database.append(
                 {
                     discrete_params[0]: name[0],
                     discrete_params[1]: name[1],
-                    "cFunc": cFunc,
-                    "shareFunc": shareFunc,
+                    "cFuncAdj": cFuncAdj,
+                    "ShareFuncAdj": ShareFuncAdj,
+                    "SequentialShareFuncAdj": SequentialShareFuncAdj,
                 }
             )
 
