@@ -1,13 +1,11 @@
+import numpy as np
 from HARK.ConsumptionSaving.ConsPortfolioModel import SequentialPortfolioConsumerType
-
 from sharkfin.population import AgentPopulation, AgentPopulationSolution
 from simulate.parameters import (
     agent_population_params,
-    continuous_dist_params,
     approx_params,
+    continuous_dist_params,
 )
-
-import numpy as np
 
 parameter_dict = agent_population_params | continuous_dist_params
 
@@ -20,7 +18,11 @@ def test_agent_population():
     # Initializing an Agent Population
 
     # Step 1 - create agent population with initial parameters
-    ap = AgentPopulation(SequentialPortfolioConsumerType(), parameter_dict, rng = np.random.default_rng(seed))
+    ap = AgentPopulation(
+        SequentialPortfolioConsumerType(),
+        parameter_dict,
+        rng=np.random.default_rng(seed),
+    )
     # ADD PRINT LINE AFTER EVERY STEP
     print("created agent population")
 
@@ -49,7 +51,7 @@ def test_agent_population():
     print("initialized simulation")
 
     # Step 8 - create master solution as attribute of population
-    # ap.solve(["RiskyAvg", "RiskyStd"])
+    ap.solve(["RiskyAvg", "RiskyStd"])
 
     # Creating Master Solution for agent Population separately
 
@@ -59,7 +61,31 @@ def test_agent_population():
 
     # Step 2. provide parameters that will become state variables
     solution.merge_solutions(["RiskyAvg", "RiskyStd"])
+    solution.merge_solutions(["CRRA", "RiskyAvg", "RiskyStd"])
     print("merged solutions")
 
     ap.agent_data()
     ap.class_stats()
+
+    # test solutions
+
+    for agent in ap.agents:
+
+        # before assigning master solution
+
+        cFuncAdj = agent.solution[0].cFuncAdj
+        shareFunc = agent.solution[0].ShareFuncAdj
+
+        # after assigning master solution
+
+        ap.assign_solution(agent)
+
+        before = cFuncAdj(10)
+        after = agent.solution[0].cFuncAdj(10)
+
+        assert np.allclose(before, after)
+
+        before = shareFunc(10)
+        after = agent.solution[0].ShareFuncAdj(10)
+
+        assert np.allclose(before, after)

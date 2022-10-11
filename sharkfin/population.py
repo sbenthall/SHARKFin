@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from HARK.core import AgentType
 from HARK.distribution import Distribution, IndexDistribution, combine_indep_dstns
-from HARK.interpolation import LinearInterpOnInterp1D, LinearInterpOnInterp2D
+from HARK.interpolation import BilinearInterpOnInterp1D, TrilinearInterpOnInterp1D
 from xarray import DataArray
 
 from sharkfin.utilities import *
@@ -181,7 +181,7 @@ class AgentPopulation:
         pdomca = pd.options.mode.chained_assignment = None
         pd.options.mode.chained_assignment = None  # default='warn'
 
-        agent_data = self.agent_database[["CRRA", "DiscFac"] + ["agents"]]
+        agent_data = self.agent_database[self.ex_ante_hetero_params + ["agents"]]
 
         data_calls = {
             "aLvl": lambda a: a.state_now["aLvl"][0],
@@ -207,16 +207,19 @@ class AgentPopulation:
         agent_data = self.agent_data().drop(columns="agents")
 
         cs = (
-            agent_data.groupby(["CRRA", "DiscFac"])
+            agent_data.groupby(self.ex_ante_hetero_params)
             .aggregate(["mean", "std"])
             .reset_index()
         )
 
         cs.columns = ["_".join(col).strip("_") for col in cs.columns.values]
 
-        cs["label"] = round(cs["CRRA"], 2).apply(lambda x: f"CRRA: {x}, ") + round(
-            cs["DiscFac"], 2
-        ).apply(lambda x: f"DiscFac: {x}")
+        label = ""
+
+        for param in self.ex_ante_hetero_params:
+            label += round(cs[param], 2).apply(lambda x: f"{param}={x}, ")
+
+        cs["label"] = label.str[:-2]
 
         if store:
             self.stored_class_stats = cs
@@ -293,6 +296,7 @@ class AgentPopulation:
         if merge_by is not None:
             self.solution = AgentPopulationSolution(self)
             self.solution.merge_solutions(continuous_states=merge_by)
+            self.ex_ante_hetero_params = self.solution.ex_ante_hetero_params
 
     def attend(self, agent, price, risky_expectations):
         """
@@ -334,7 +338,10 @@ class AgentPopulation:
         pop_solution = self.solution.solution_database
 
         # get solution for agent subgroup
-        functions = pop_solution.loc[agent.CRRA, agent.DiscFac]
+        # functions = pop_solution.loc[agent.CRRA, agent.DiscFac]
+
+        keys = [agent.parameters[key] for key in self.ex_ante_hetero_params]
+        functions = pop_solution.loc[tuple(keys)]
 
         # Using their expectations, construct function depending on
         # perceptions/beliefs about the stock market
@@ -371,8 +378,8 @@ class AgentPopulation:
         if asset_normalized < 0:
             print(f"ERROR: Agent has negative assets after compute demand.")
 
-        # ShareFunc takes normalized market resources as argument
-        # SequentialShareFunc takes normalized assets as argument
+        # ShareFuncAdj takes normalized market resources as argument
+        # SequentialShareFuncAdj takes normalized assets as argument
         risky_share = agent.solution[0].SequentialShareFuncAdj(asset_normalized)
         # risky_share = np.clip(risky_share, 0, 1)
 
@@ -535,56 +542,141 @@ class AgentPopulationSolution:
                     "{} is not an agent-varying parameter.".format(state)
                 )
 
+        if len(continuous_states) == 2:
+            self._merge_solutions_2d(continuous_states)
+        elif len(continuous_states) == 3:
+            self._merge_solutions_3d(continuous_states)
+
+    def _merge_solutions_2d(self, continuous_states):
+
         discrete_params = list(set(self.dist_params) - set(continuous_states))
         discrete_params.sort()
+
+        self.ex_ante_hetero_params = discrete_params
 
         grouped = self.agent_database.groupby(discrete_params)
         solution_database = []
 
         for name, group in grouped:
             group.sort_values(by=continuous_states)
-            in_grouped = group.groupby("RiskyStd")
 
-            std_vals = np.unique(group.RiskyStd)
+            cnt0_vals = np.unique(group[continuous_states[0]])
+            cnt1_vals = np.unique(group[continuous_states[1]])
 
-            cFuncAdj_by_std = []
-            ShareFuncAdj_by_std = []
-            SequentialShareFuncAdj_by_std = []
-            for std, in_group in in_grouped:
-                agents = list(in_group.agents)
-                avg = np.array(in_group.RiskyAvg)
+            group = group.set_index(continuous_states)
 
-                cFuncAdj_by_std.append(
-                    LinearInterpOnInterp1D(
-                        [agent.solution[0].cFuncAdj for agent in agents], avg
+            cFuncAdj_interpolators = []
+            ShareFuncAdj_interpolators = []
+            SequentialShareFuncAdj_interpolators = []
+            for cnt0 in cnt0_vals:
+                temp_cFuncAdj = []
+                temp_ShareFuncAdj = []
+                temp_SequentialShareFuncAdj = []
+                for cnt1 in cnt1_vals:
+                    temp_cFuncAdj.append(
+                        group.loc[cnt0, cnt1].agents.solution[0].cFuncAdj
                     )
-                )
-
-                ShareFuncAdj_by_std.append(
-                    (
-                        LinearInterpOnInterp1D(
-                            [agent.solution[0].ShareFuncAdj for agent in agents], avg
-                        )
+                    temp_ShareFuncAdj.append(
+                        group.loc[cnt0, cnt1].agents.solution[0].ShareFuncAdj
                     )
-                )
-
-                SequentialShareFuncAdj_by_std.append(
-                    LinearInterpOnInterp1D(
-                        [agent.solution[0].SequentialShareFuncAdj for agent in agents],
-                        avg,
+                    temp_SequentialShareFuncAdj.append(
+                        group.loc[cnt0, cnt1].agents.solution[0].SequentialShareFuncAdj
                     )
-                )
+                cFuncAdj_interpolators.append(temp_cFuncAdj)
+                ShareFuncAdj_interpolators.append(temp_ShareFuncAdj)
+                SequentialShareFuncAdj_interpolators.append(temp_SequentialShareFuncAdj)
 
-            cFuncAdj = LinearInterpOnInterp2D(cFuncAdj_by_std, std_vals)
-            ShareFuncAdj = LinearInterpOnInterp2D(ShareFuncAdj_by_std, std_vals)
-            SequentialShareFuncAdj = LinearInterpOnInterp2D(
-                SequentialShareFuncAdj_by_std, std_vals
+            cFuncAdj = BilinearInterpOnInterp1D(
+                cFuncAdj_interpolators, cnt0_vals, cnt1_vals
+            )
+            ShareFuncAdj = BilinearInterpOnInterp1D(
+                ShareFuncAdj_interpolators, cnt0_vals, cnt1_vals
+            )
+            SequentialShareFuncAdj = BilinearInterpOnInterp1D(
+                SequentialShareFuncAdj_interpolators, cnt0_vals, cnt1_vals
             )
 
             solution_database.append(
                 {
                     discrete_params[0]: name[0],
                     discrete_params[1]: name[1],
+                    "cFuncAdj": cFuncAdj,
+                    "ShareFuncAdj": ShareFuncAdj,
+                    "SequentialShareFuncAdj": SequentialShareFuncAdj,
+                }
+            )
+
+        self.solution_database = pd.DataFrame(solution_database)
+
+        self.solution_database = self.solution_database.set_index(discrete_params)
+
+        return self.solution_database
+
+    def _merge_solutions_3d(self, continuous_states):
+
+        discrete_params = list(set(self.dist_params) - set(continuous_states))
+        discrete_params.sort()
+
+        self.ex_ante_hetero_params = discrete_params
+
+        grouped = self.agent_database.groupby(discrete_params)
+        solution_database = []
+
+        for name, group in grouped:
+            group.sort_values(by=continuous_states)
+
+            cnt0_vals = np.unique(group[continuous_states[0]])
+            cnt1_vals = np.unique(group[continuous_states[1]])
+            cnt2_vals = np.unique(group[continuous_states[2]])
+
+            group = group.set_index(continuous_states)
+
+            cFuncAdj_interpolators = []
+            ShareFuncAdj_interpolators = []
+            SequentialShareFuncAdj_interpolators = []
+            for cnt0 in cnt0_vals:
+                temp0_cFuncAdj = []
+                temp0_ShareFuncAdj = []
+                temp0_SequentialShareFuncAdj = []
+                for cnt1 in cnt1_vals:
+                    temp1_cFuncAdj = []
+                    temp1_ShareFuncAdj = []
+                    temp1_SequentialShareFuncAdj = []
+                    for cnt2 in cnt2_vals:
+                        temp1_cFuncAdj.append(
+                            group.loc[cnt0, cnt1, cnt2].agents.solution[0].cFuncAdj
+                        )
+                        temp1_ShareFuncAdj.append(
+                            group.loc[cnt0, cnt1, cnt2].agents.solution[0].ShareFuncAdj
+                        )
+                        temp1_SequentialShareFuncAdj.append(
+                            group.loc[cnt0, cnt1, cnt2]
+                            .agents.solution[0]
+                            .SequentialShareFuncAdj
+                        )
+                    temp0_cFuncAdj.append(temp1_cFuncAdj)
+                    temp0_ShareFuncAdj.append(temp1_ShareFuncAdj)
+                    temp0_SequentialShareFuncAdj.append(temp1_SequentialShareFuncAdj)
+                cFuncAdj_interpolators.append(temp0_cFuncAdj)
+                ShareFuncAdj_interpolators.append(temp0_ShareFuncAdj)
+                SequentialShareFuncAdj_interpolators.append(
+                    temp0_SequentialShareFuncAdj
+                )
+
+            cFuncAdj = TrilinearInterpOnInterp1D(
+                cFuncAdj_interpolators, cnt0_vals, cnt1_vals, cnt2_vals
+            )
+            ShareFuncAdj = TrilinearInterpOnInterp1D(
+                ShareFuncAdj_interpolators, cnt0_vals, cnt1_vals, cnt2_vals
+            )
+            SequentialShareFuncAdj = TrilinearInterpOnInterp1D(
+                SequentialShareFuncAdj_interpolators, cnt0_vals, cnt1_vals, cnt2_vals
+            )
+
+            solution_database.append(
+                {
+                    discrete_params[0]: name,
+                    # discrete_params[1]: name[1],
                     "cFuncAdj": cFuncAdj,
                     "ShareFuncAdj": ShareFuncAdj,
                     "SequentialShareFuncAdj": SequentialShareFuncAdj,
