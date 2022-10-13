@@ -280,6 +280,26 @@ class MarketSimulation(AbstractSimulation):
 
         return bs_stats
 
+    def status_code_from_message(self, message):
+        """
+        Convert a string message into a status code.
+        TODO: Make this into something configed by an external YAML file.
+        """
+
+        if message == '0' or message is None: #OK
+            return '0'
+        if "Hit market maker price range" in message:
+            'AMMPS Market Failure: Stopped: Hit market maker price range, shutting market down. ABC MarketMaker Best Ask and Best Bid is outside range 270 , -4 at 2018-01-04 15:45:36.898144'
+            return '1'
+        if "Error in received data" in message:
+            'AMMPS Market Failure: Stopped: Error in received data:bl: 112897069, sl: 106621157084379922432, dividend: 0.09595866952746691, end_simulation: false Value was either too large or too small for an Int64.'
+            return '-2'
+        if "Simulated final day but did not receive signal to end" in message:
+            'AMMPS Market Failure: Stopped: Simulated final day but did not receive signal to end'
+            return '3'
+        else:
+            return '4'
+
     def sim_stats(self):
         """
         Compute statistics over the simulation history.
@@ -288,12 +308,13 @@ class MarketSimulation(AbstractSimulation):
         sim_stats = {}
 
         sim_stats['error_message'] = self.error_message
+
+        sim_stats['status_code'] = self.status_code_from_message(self.error_message)
      
         sim_stats['q'] = self.quarters_per_simulation
         sim_stats['r'] = self.runs_per_quarter
 
         sim_stats['market_class'] = self.broker.market.__class__
-        sim_stats['market_seeds'] = self.broker.market.seeds # seed list should be a requirement for any market class.
 
         try:
             sim_stats['ror_volatility'] = self.ror_volatility()
@@ -653,15 +674,21 @@ class AttentionSimulation(MacroSimulation):
     market: Market
 
     """
+    seed = None
 
     ## upping this to make more agents engaged in trade
     attention_rate = None
 
-    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, days_per_quarter = 60, rng = None, fm_args = None):
+    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, days_per_quarter = 60, rng = None, seed = None, fm_args = None):
 
         super().__init__(pop, fm, q=q, r=r, market=market, days_per_quarter = days_per_quarter, fm_args = fm_args)
 
         self.rng = rng if rng is not None else np.random.default_rng()
+
+        if seed:
+            self.seed = seed
+        elif hasattr(rng, 'seed'):
+            self.seed = rng.seed
 
         # TODO: Make this more variable.
         if a is not None:
@@ -773,6 +800,9 @@ class AttentionSimulation(MacroSimulation):
 
         sim_stats['attention'] = self.attention_rate
 
+        if self.seed is not None:
+            sim_stats['seed'] = self.seed
+        
         return sim_stats
 
     def report(self):

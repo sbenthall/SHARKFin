@@ -105,7 +105,8 @@ def run_attention_simulation(
     d1 = 60,
     d2 = 60,
     rng = None,
-    pad = None
+    pad = None,
+    seed = None
     ):
 
     # initialize population
@@ -117,7 +118,7 @@ def run_attention_simulation(
         )
 
     sim = AttentionSimulation(
-        pop, FinanceModel, a = a, q = q, r = r, market = market, rng = rng,
+        pop, FinanceModel, a = a, q = q, r = r, market = market, rng = rng, seed = seed,
         fm_args = {
             'p1' : p1,
             'p2' : p2,
@@ -140,7 +141,9 @@ def run_chum_simulation(
     dphm=1500,
     buy=0,
     sell=0,
-    pad=30):
+    pad=30,
+    seed = None
+    ):
 
     # initialize population
     pop = build_population(
@@ -154,7 +157,10 @@ def run_chum_simulation(
     
     sim.simulate(burn_in=pad, buy_sell_shock=(buy, sell))
 
-    return sim.data(), sim.sim_stats(), sim.history, pd.DataFrame.from_records({}) #, sim.pop.class_stats()
+    sim_stats = sim.sim_stats()
+    sim_stats['seed'] = seed
+
+    return sim.data(), sim_stats, sim.history, pd.DataFrame.from_records({}) #, sim.pop.class_stats()
 
 def env_param(name, default):
     return os.environ[name] if name in os.environ else default
@@ -253,7 +259,8 @@ if __name__ == '__main__':
             d1 = d1,
             d2 = d2,
             rng = rng,
-            pad = pad
+            pad = pad,
+            seed = seed
         )
     elif args.simulation == 'Calibration':
         data, sim_stats, history, class_stats = run_chum_simulation(
@@ -263,7 +270,8 @@ if __name__ == '__main__':
             dphm=dphm, 
             buy= buysize, 
             sell= sellsize, 
-            pad= pad
+            pad= pad,
+            seed = seed
             )
     else:
         print(f"No known --simulation {args.simulation}. Valid options include: Attention, Calibration")
@@ -283,6 +291,7 @@ if __name__ == '__main__':
         print("No usable class stats")
 
     with open(f'{filename}_sim_stats.txt', 'w+') as f:
+        sim_stats['filename'] = filename
         f.write(str(sim_stats))
 
     try:
