@@ -725,6 +725,9 @@ class AttentionSimulation(MacroSimulation):
             quarters = self.quarters_per_simulation
 
         # Main loop
+        days = 0
+        last_day = False
+        days_to_simulate = quarters*self.runs_per_quarter
         for quarter in range(quarters):
             print(f"Q-{quarter}")
 
@@ -744,7 +747,9 @@ class AttentionSimulation(MacroSimulation):
                         )
 
                 try:
-                    buy_sell, pror, price, dividend = self.broker.trade()
+                    if (days == days_to_simulate-1):
+                        last_day = True
+                    buy_sell, pror, price, dividend = self.broker.trade(last_day)
 
                 except MarketFailureError as e:
                     print("Ending simulation")
@@ -782,6 +787,7 @@ class AttentionSimulation(MacroSimulation):
                     self.fm.calculate_risky_expectations()
 
                     day = day + 1
+                    days += 1
             else: ## Super obscure syntax choice to break out of nested loop
                 print("Normal day")
                 continue ## TODO: remove/revise 'runs' functionality

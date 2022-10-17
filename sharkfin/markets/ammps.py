@@ -99,19 +99,33 @@ class ClientRPCMarket(AbstractMarket):
                 ## Moving forward, the body should be JSON.
                 self.response = json.loads(body)
 
-    def run_market(self, buy_sell=(0, 0)):
+    def make_message_for_market(self, buy,sell,new_dividend, final_day):
+        if (final_day):
+            data = {
+                'bl': buy,
+                'sl': sell,
+                'dividend' : new_dividend,
+                'end_simulation': True
+                }
+        else:
+            data = {
+                'bl': buy,
+                'sl': sell,
+                'dividend' : new_dividend,
+                'end_simulation': False
+                }
+
+
+        return data
+
+    def run_market(self, buy_sell=(0, 0), final_day = False):
 
         self.last_buy_sell = buy_sell
 
         new_dividend = self.next_dividend()
         self.dividends.append(new_dividend)
 
-        data = {
-            'bl': buy_sell[0],
-            'sl': buy_sell[1],
-            'dividend' : new_dividend,
-            'end_simulation': False
-            }
+        data = self.make_message_for_market(buy_sell[0],buy_sell[1],new_dividend,final_day)
 
         self.response = None
 
@@ -133,7 +147,10 @@ class ClientRPCMarket(AbstractMarket):
             self.close_connection()
 
             raise MarketFailureError(f"AMMPS Market Failure: {self.response['MarketState']}")
-        
+
+        if (final_day):
+            self.close_connection()
+
         return self.latest_price, new_dividend
 
     def get_simulation_price(self, buy_sell=(0, 0)):
@@ -153,8 +170,9 @@ class ClientRPCMarket(AbstractMarket):
 
 
     def close_market(self):
-        self.publish({'seed': 0, 'bl': 0, 'sl': 0, 'dividend' : 0, 'end_simulation': True})
-        self.close_connection()
+        return
+        #self.publish({'seed': 0, 'bl': 0, 'sl': 0, 'dividend' : 0, 'end_simulation': True})
+        #self.close_connection()
 
     def close_connection(self):
         self.channel.queue_delete(self.callback_queue)

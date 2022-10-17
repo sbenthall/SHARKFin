@@ -50,7 +50,7 @@ class AbstractMarket(ABC):
         pass
 
     @abstractmethod
-    def run_market(self) -> tuple([float, float]):
+    def run_market(self, final_day = False) -> tuple([float, float]):
         """
         Runs the market for one day and returns the price.
         """
