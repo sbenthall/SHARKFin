@@ -85,6 +85,9 @@ class MarketSimulation(AbstractSimulation):
     start_time = None
     end_time = None
 
+    ## day that the simulation ends.
+    end_day = None
+
     # A holder for an error message
     error_message = None
 
@@ -189,6 +192,8 @@ class MarketSimulation(AbstractSimulation):
         
         self.track(-1)
 
+        day = 0
+
         if quarters is None:
             quarters = self.quarters_per_simulation
 
@@ -196,7 +201,7 @@ class MarketSimulation(AbstractSimulation):
         for quarter in range(quarters):
             print(f"Q-{quarter}")
 
-            day = 0
+            day_in_quarter = 0
 
             for run in range(self.runs_per_quarter):
                 # print(f"Q-{quarter}:R-{run}")
@@ -222,10 +227,12 @@ class MarketSimulation(AbstractSimulation):
                     self.track(day)
 
                     day = day + 1
+                    day_in_quarter = day_in_quarter + 1
 
         self.broker.close()
 
         self.end_time = datetime.now()
+        self.end_day = day
 
     def ror_volatility(self):
         """
@@ -326,6 +333,7 @@ class MarketSimulation(AbstractSimulation):
         sim_stats['dividend_std'] = self.market.dividend_std
 
         sim_stats['seconds'] = (self.end_time - self.start_time).seconds
+        sim_stats['end_day'] = self.end_day
 
         try:
             # stylized facts
@@ -547,6 +555,7 @@ class MacroSimulation(MarketSimulation):
         self.broker.close()
 
         self.end_time = datetime.now()
+        self.end_day = day
 
     def track(self, day, time_delta = 0):
         """
@@ -724,11 +733,14 @@ class AttentionSimulation(MacroSimulation):
         if quarters is None:
             quarters = self.quarters_per_simulation
 
+
+        day = 0
+
         # Main loop
         for quarter in range(quarters):
             print(f"Q-{quarter}")
 
-            day = 0
+            day_of_quarter = 0
 
             for run in range(self.runs_per_quarter):
                 # print(f"Q-{quarter}:R-{run}")
@@ -756,7 +768,7 @@ class AttentionSimulation(MacroSimulation):
                 for day_in_run in range(int(self.days_per_run)):
                     updates = 0
                     for agent in self.pop.agents:
-                        if agent.macro_day == day:
+                        if agent.macro_day == day_of_quarter:
                             updates = updates + 1
                             self.broker.transact(self.pop.macro_update(agent, price), macro=True)
 
@@ -782,17 +794,21 @@ class AttentionSimulation(MacroSimulation):
                     self.fm.calculate_risky_expectations()
 
                     day = day + 1
+                    day_of_quarter = day_of_quarter + 1
+
             else: ## Super obscure syntax choice to break out of nested loop
                 print("Normal day")
                 continue ## TODO: remove/revise 'runs' functionality
 
             print("Market stopped")
             self.end_time = datetime.now()
+            self.end_day = day
             return
 
         self.broker.close()
 
         self.end_time = datetime.now()
+        self.end_day = day
 
     def sim_stats(self):
 
@@ -905,12 +921,13 @@ class CalibrationSimulation(MarketSimulation):
             self.broker.close()
 
             self.end_time = datetime.now()
+            self.end_day = day
+
         except MarketFailureError as e:
             print("Ending simulation")
             self.end_time = datetime.now()
+            self.end_day = day
             self.error_message = str(e)
-
-
 
     def track(self, day, time_delta = 0):
         """
@@ -998,9 +1015,12 @@ class SeriesSimulation(MarketSimulation):
 
             self.track(day+1, time_delta = time_delta)
 
+            day = day + 1
+
         self.broker.close()
 
         self.end_time = datetime.now()
+        self.end_day = day
 
     def track(self, day, time_delta = 0):
         """

@@ -182,10 +182,12 @@ def test_attention_simulation():
 
     attsim.data()["sell_macro"]
 
-    attsim.sim_stats()
+    sim_stats = attsim.sim_stats()
 
     assert attsim.days_per_quarter == days_per_quarter
     assert attsim.fm.days_per_quarter == days_per_quarter
+
+    assert sim_stats['end_day'] == 30
 
     data = attsim.data()
 
