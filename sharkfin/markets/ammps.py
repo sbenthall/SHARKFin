@@ -125,16 +125,21 @@ class ClientRPCMarket(AbstractMarket):
 
         print(f'response received:{self.response}')
 
-        self.latest_price = self.response['ClosingPrice']
-        self.prices.append(float(self.response['ClosingPrice']))
-
         if 'MarketState' in self.response and self.response['MarketState'].startswith('Stopped'):
             print("The market stopped! Do something!")
             self.close_connection()
 
+            self.latest_price = np.nan
+            self.prices.append(np.nan)
+
             raise MarketFailureError(f"AMMPS Market Failure: {self.response['MarketState']}")
+
+        else:
+
+            self.latest_price = self.response['ClosingPrice']
+            self.prices.append(float(self.response['ClosingPrice']))
         
-        return self.latest_price, new_dividend
+            return self.latest_price, new_dividend
 
     def get_simulation_price(self, buy_sell=(0, 0)):
         return self.latest_price
