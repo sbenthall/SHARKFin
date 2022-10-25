@@ -65,7 +65,7 @@ Refer to AMMPS documentation for parameters and instructions on how to generate 
 3. Run SHARKFin
 
 ```
-python run_whiteshark.py OUTPUT_PREFIX
+python simulate/run_any_simulation.py --simulation Attention OUTPUT_PREFIX
 ```
 
 ## NetLogo Installation
