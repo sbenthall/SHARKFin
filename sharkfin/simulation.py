@@ -147,6 +147,8 @@ class MarketSimulation(AbstractSimulation):
             'ror': self.market.ror_list()[self.burn_in_val:],
         }
 
+        print(f"Ran for {len(data_dict['t'])} days")
+
         try:
             data = pd.DataFrame.from_dict(data_dict)
 
@@ -263,7 +265,6 @@ class MarketSimulation(AbstractSimulation):
             print("Failure to compute max or idx_max of buy/sell limits")
             print(e)
 
-
         try:
             bs_stats['mean_buy_limit'] = np.mean(buy_limits)
             bs_stats['mean_sell_limit'] = np.mean(sell_limits)
@@ -326,8 +327,9 @@ class MarketSimulation(AbstractSimulation):
         try:
             sim_stats['ror_volatility'] = self.ror_volatility()
             sim_stats['ror_mean'] = self.ror_mean()
-        except:
-            pass
+        except Exception as e:
+            print("Problem computing ror statistics")
+            print(e)
 
         sim_stats['dividend_growth_rate'] = self.market.dividend_growth_rate
         sim_stats['dividend_std'] = self.market.dividend_std
@@ -336,13 +338,16 @@ class MarketSimulation(AbstractSimulation):
         sim_stats['end_day'] = self.end_day
 
         try:
+            clean_log_returns = [r for r in self.market.log_return_list() if not np.isnan(r)]
+
             # stylized facts
             sim_stats['log_return_autocorrelation'] = stylized_facts.DW_test(
-                np.array([r for r in self.market.log_return_list()])) - 2
+                np.array([r for r in clean_log_returns])) - 2
             sim_stats['log_return_squared_autocorrelation'] = stylized_facts.DW_test(
-                np.array([r ** 2 for r in self.market.log_return_list()])) - 2
-        except:
-            pass
+                np.array([r ** 2 for r in clean_log_returns])) - 2
+        except Exception as e:
+            print("Problem computing stylized facts")
+            print(e)
 
         return sim_stats
 

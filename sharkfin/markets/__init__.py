@@ -124,7 +124,6 @@ class AbstractMarket(ABC):
         Log returns are defined as the log(price_t+1 / price_t).
 
         --- These should not _include_ the dividend because the price _reflects_ the dividend
-
         """
         return [np.log((self.prices[i+1]  + self.dividends[i + 1]) / self.prices[i]) for i in range(len(self.prices) - 1)]
 
