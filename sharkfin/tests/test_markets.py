@@ -39,3 +39,25 @@ class TestRPCMarket(unittest.TestCase):
 
         except Exception as e:
             print(e)
+
+
+class TestMarketErrors(unittest.TestCase):
+
+    def test_stopped_market(self):
+
+        market = MockMarket(dividend_growth_rate = 1.000628, dividend_std = 0.011988)
+
+        market.run_market()
+        market.run_market(buy_sell=(10,10))
+        market.run_market(buy_sell=(50,0))
+
+        # This is the intervention:
+
+        market.dividends.append(market.next_dividend())
+        market.latest_price = np.nan
+        market.prices.append(np.nan)
+
+        price = market.get_simulation_price()
+        ror = market.daily_rate_of_price_return()
+        ror_list = market.ror_list()
+
