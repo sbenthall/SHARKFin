@@ -10,6 +10,8 @@ from simulate.parameters import (
 )
 import numpy as np
 
+from pytest import approx
+
 def build_population(agent_type, parameters, rng = None, dphm = 2000):
     pop = AgentPopulation(agent_type(), parameters, rng = rng, dollars_per_hark_money_unit = dphm)
     pop.approx_distributions(approx_params)
@@ -192,3 +194,15 @@ def test_attention_simulation():
     data = attsim.data()
 
     assert len(data["prices"]) == 30
+
+    ### Test the market failure case:
+    ror_mean_1 = attsim.ror_mean()
+
+    ## mutating these values as if the market had failed.
+    attsim.market.prices[-1] = np.nan
+
+    ror_mean_2 = attsim.ror_mean()
+
+    assert ror_mean_1 == approx(ror_mean_2)
+
+
