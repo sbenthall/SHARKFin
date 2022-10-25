@@ -450,17 +450,23 @@ class MacroSimulation(MarketSimulation):
         Returns a Pandas DataFrame of the data from the simulation run.
         """
         data = MarketSimulation.data(self)
-        
+
+
+
+        ## Total hacks to fix a weird bug:
+        ## - Depending on whether the market chose in Mock or RPC, we get getting different lengths of broker macro history
+        days_ran = len(data['t'])
+
         data_dict = {
-            'buy_macro': [bs[0] for bs in self.broker.buy_sell_macro_history][self.burn_in_val:],
-            'sell_macro': [bs[1] for bs in self.broker.buy_sell_macro_history][self.burn_in_val:],
-            'owned': self.history['owned_shares'][1:],
-            'total_assets': self.history['total_assets'][1:],
-            'mean_income': self.history['mean_income_level'][1:],
-            'total_consumption': self.history['total_consumption_level'][1:],
+            'buy_macro': [bs[0] for bs in self.broker.buy_sell_macro_history][-days_ran:],
+            'sell_macro': [bs[1] for bs in self.broker.buy_sell_macro_history][-days_ran:],
+            'owned': self.history['owned_shares'][-days_ran:],
+            'total_assets': self.history['total_assets'][-days_ran:],
+            'mean_income': self.history['mean_income_level'][-days_ran:],
+            'total_consumption': self.history['total_consumption_level'][-days_ran:],
             #'permshock_std': self.history['permshock_std'][1:],
-            'expected_ror': self.fm.expected_ror_list[self.burn_in_val+1:],
-            'expected_std': self.fm.expected_std_list[self.burn_in_val+1:],
+            'expected_ror': self.fm.expected_ror_list[-days_ran:],
+            'expected_std': self.fm.expected_std_list[-days_ran:],
         }
 
         try:
