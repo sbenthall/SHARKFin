@@ -9,3 +9,5 @@ pytest
 pika
 pyyaml
 seaborn
+sklearn
+xarray

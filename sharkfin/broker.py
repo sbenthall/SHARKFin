@@ -54,7 +54,7 @@ class Broker:
         self.buy_sell_macro_history.append(buy_sell_macro)
 
 
-    def trade(self, seed=None):
+    def trade(self):
         """
         Broker executes the trade on the financial market and then updates
         their record of the current asset price.
@@ -71,7 +71,7 @@ class Broker:
 
         # print("Buy/Sell Limit: " + str(buy_sell))
 
-        price = self.market.run_market(buy_sell=buy_sell, seed=seed)
+        price, dividend = self.market.run_market(buy_sell=buy_sell)
 
         # clear the local limits
         self.buy_limit = 0
@@ -80,7 +80,7 @@ class Broker:
         self.buy_orders_macro = 0
         self.sell_orders_macro = 0
 
-        return buy_sell, self.market.daily_rate_of_return(), price
+        return buy_sell, self.market.daily_rate_of_price_return(), price, dividend
 
     def close(self):
         self.market.close_market()

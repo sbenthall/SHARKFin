@@ -35,7 +35,9 @@ TBD
 
 ## Native Python Market Installation
 
-TBD
+SHARKFin comes with a simple native Python market class, the MockMarket.
+
+The MockMarket has a dividend value that follows a lognormal random walk, and a constant price-to-dividend ratio.
 
 ## AMMPS Installation
 
@@ -51,15 +53,10 @@ To run a local simulation:
 docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
 ```
 
-2. Start AMMPS. If you have access to AMMPS source it can be built from the source directory with:
-```
-dotnet build amm.engine/amm.engine/amm.engine -o amm_binary
-```
-
-Run with:
+2. Start AMMPS. These instructions assume you have the binary available. In `ammps_sharkfin_container`, the binaries are in `ammps_sharkfin_container/container_contents/ammps_bin` Run from `ammps_sharkfin_container` with:
 
 ```
-dotnet ammps_bin/amm.engine.dll RunConfFromFile ../../ammps_tests/testconf.xlsx working 0 --rabbitMQ-host localhost --rabbitMQ-queue rpc_queue -t true
+dotnet container_contents/ammps_bin/amm.engine.dll RunConfFromFile testconfigs/testconf.xlsx working 0 --rabbitMQ-host localhost --rabbitMQ-queue rpc_queue -t true
 ```
 
 Refer to AMMPS documentation for parameters and instructions on how to generate the Excel config files.
@@ -68,7 +65,7 @@ Refer to AMMPS documentation for parameters and instructions on how to generate 
 3. Run SHARKFin
 
 ```
-python test_chum.py OUTPUT_PREFIX
+python simulate/run_any_simulation.py --simulation Attention OUTPUT_PREFIX
 ```
 
 ## NetLogo Installation
