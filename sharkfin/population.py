@@ -688,3 +688,37 @@ class AgentPopulationSolution:
         self.solution_database = self.solution_database.set_index(discrete_params)
 
         return self.solution_database
+
+
+class PortfolioSharkFinAgentType(cpm.SequentialPortfolioConsumerType):
+    """
+    SHARKFin agent class extends HARK's SequentialPortfolioConsumerType class
+    with SHARK features. In particular, it takes an external solution in the
+    simulation step. This external solution can come from interpolated
+    population solutions.
+    """
+
+    def get_Rfree(self):
+        """
+        Calculates realized return factor for each agent, using the attributes Rfree,
+        RiskyNow, and ShareNow.  This method is a bit of a misnomer, as the return
+        factor is not riskless, but would more accurately be labeled as Rport.  However,
+        this method makes the portfolio model compatible with its parent class.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        Rport : np.array
+            Array of size AgentCount with each simulated agent's realized portfolio
+            return factor.  Will be used by get_states() to calculate mNrmNow, where it
+            will be mislabeled as "Rfree".
+        """
+
+        Rfree = np.asarray(self.Rfree)
+        RfreeNow = Rfree[self.t_cycle - 1]
+
+        Rport = self.RiskyAvg * np.ones_like(RfreeNow)
+        return Rport
