@@ -303,8 +303,6 @@ if __name__ == '__main__':
     except:
         print("No usable class stats")
 
-
-    import pdb; pdb.set_trace()
     with open(f'{filename}_sim_stats.txt', 'w+') as f:
         sim_stats['filename'] = filename
         f.write(json.dumps(sim_stats, cls=NpEncoder))
