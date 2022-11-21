@@ -44,7 +44,7 @@ def test_market_simulation():
     sim = MarketSimulation(q=q, r=r, market=market)
     sim.simulate(burn_in=2)
 
-    data = sim.data()
+    data = sim.daily_data()
 
     assert len(data["prices"]) == 60
 
@@ -64,7 +64,7 @@ def test_calibration_simulation():
 
     assert sim.broker.buy_sell_history[1] == (0, 0)
     # assert(len(sim.history['buy_sell']) == 3) # need the padded day
-    data = sim.data()
+    data = sim.daily_data()
 
     assert len(data["prices"]) == 2
 
@@ -84,7 +84,7 @@ def test_series_simulation():
 
     assert sim.broker.buy_sell_history[2] == (10000, 0)
     # assert(len(sim.history['buy_sell']) == 3) # need the padded day
-    data = sim.data()
+    data = sim.daily_data()
 
     assert len(data["prices"]) == 9
 
@@ -128,14 +128,14 @@ def test_macro_simulation():
     ## testing for existence of this class stat
     attsim.pop.class_stats()["mNrm_ratio_StE_mean"]
 
-    attsim.data()["sell_macro"]
+    attsim.daily_data()["sell_macro"]
 
     attsim.sim_stats()
 
     assert attsim.days_per_quarter == days_per_quarter
     assert attsim.fm.days_per_quarter == days_per_quarter
 
-    data = attsim.data()
+    data = attsim.daily_data()
 
     assert len(data["prices"]) == 30
 
@@ -182,7 +182,7 @@ def test_attention_simulation():
 
     assert attsim.fm.p1 == 0.5
 
-    attsim.data()["sell_macro"]
+    attsim.daily_data()["sell_macro"]
 
     sim_stats = attsim.sim_stats()
 
@@ -191,7 +191,7 @@ def test_attention_simulation():
 
     assert sim_stats['end_day'] == 30
 
-    data = attsim.data()
+    data = attsim.daily_data()
 
     assert len(data["prices"]) == 30
 

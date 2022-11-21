@@ -141,7 +141,7 @@ def run_attention_simulation(
     
     sim.simulate(burn_in = pad)
 
-    return sim.data(), sim.sim_stats(), sim.history, sim.pop.class_stats()
+    return sim.daily_data(), sim.sim_stats(), sim.history, sim.pop.class_stats()
 
 
 def run_chum_simulation(
@@ -173,7 +173,7 @@ def run_chum_simulation(
     sim_stats = sim.sim_stats()
     sim_stats['seed'] = seed
 
-    return sim.data(), sim_stats, sim.history, pd.DataFrame.from_records({}) #, sim.pop.class_stats()
+    return sim.daily_data(), sim_stats, sim.history, pd.DataFrame.from_records({}) #, sim.pop.class_stats()
 
 def env_param(name, default):
     return os.environ[name] if name in os.environ else default
