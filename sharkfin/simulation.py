@@ -322,7 +322,7 @@ class MarketSimulation(AbstractSimulation):
         sim_stats['q'] = self.quarters_per_simulation
         sim_stats['r'] = self.runs_per_quarter
 
-        sim_stats['market_class'] = self.broker.market.__class__
+        sim_stats['market_class'] = str(self.broker.market.__class__)
 
         try:
             sim_stats['ror_volatility'] = self.ror_volatility()
@@ -628,7 +628,7 @@ class MacroSimulation(MarketSimulation):
 
             data= df.set_index('label').to_dict()[clabel]
 
-            return {(clabel, k): v for k, v in data.items()}
+            return {str((clabel, k)): v for k, v in data.items()}
 
         # All the try blocks here are confusing, bad code that should be fixed somehow.
         try:

@@ -13,6 +13,7 @@ from simulate.parameters import (
     continuous_dist_params,
 )
 
+import json
 from math import exp
 import numpy as np
 import os
@@ -23,6 +24,18 @@ from sharkfin.markets.ammps import ClientRPCMarket
 from sharkfin.population import AgentPopulation
 from sharkfin.simulation import AttentionSimulation, CalibrationSimulation
 from sharkfin.expectations import FinanceModel
+
+
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NpEncoder, self).default(obj)
+
 
 parser = argparse.ArgumentParser()
 ## TODO: Grid parameters?
@@ -290,9 +303,11 @@ if __name__ == '__main__':
     except:
         print("No usable class stats")
 
+
+    import pdb; pdb.set_trace()
     with open(f'{filename}_sim_stats.txt', 'w+') as f:
         sim_stats['filename'] = filename
-        f.write(str(sim_stats))
+        f.write(json.dumps(sim_stats, cls=NpEncoder))
 
     try:
         data.to_csv(f'{filename}_data.csv')
