@@ -20,9 +20,9 @@ class AbstractSimulation(ABC):
     '''
 
     @abstractmethod
-    def data(self):
+    def daily_data(self):
         """
-        Returns a Pandas DataFrame of the data from the simulation run.
+        Returns a Pandas DataFrame of the daily data from the simulation run.
         """
         pass
     
@@ -131,7 +131,7 @@ class MarketSimulation(AbstractSimulation):
 
             buy_sell, ror, price, dividend = self.broker.trade()
 
-    def data(self):
+    def daily_data(self):
         """
         Returns a Pandas DataFrame of the data from the simulation run.
         """
@@ -241,7 +241,7 @@ class MarketSimulation(AbstractSimulation):
         Returns the volatility of the rate of return.
         Must be run after a simulation.
         """
-        return self.data()['ror'].dropna().std()
+        return self.daily_data()['ror'].dropna().std()
 
     def ror_mean(self):
         """
@@ -249,7 +249,7 @@ class MarketSimulation(AbstractSimulation):
         Must be run after a simulation
         """
 
-        return self.data()['ror'].dropna().mean()
+        return self.daily_data()['ror'].dropna().mean()
 
     def buy_sell_stats(self):
         bs_stats = {}
@@ -445,13 +445,11 @@ class MacroSimulation(MarketSimulation):
 
             self.fm.calculate_risky_expectations()
 
-    def data(self):
+    def daily_data(self):
         """
         Returns a Pandas DataFrame of the data from the simulation run.
         """
-        data = MarketSimulation.data(self)
-
-
+        data = MarketSimulation.daily_data(self)
 
         ## Total hacks to fix a weird bug:
         ## - Depending on whether the market chose in Mock or RPC, we get getting different lengths of broker macro history
@@ -832,48 +830,6 @@ class AttentionSimulation(MacroSimulation):
         
         return sim_stats
 
-    def report(self):
-        ## TODO: Move to separate module, and use that module in the notebooks.
-        data = self.data()
-
-        fig, ax = plt.subplots(
-            4,
-            1,
-            sharex='col',
-            # sharey='col',
-            figsize=(12, 16),
-        )
-
-        ax[0].plot(data['total_assets'], alpha=0.5, label='total assets')
-        ax[0].plot(
-            [p * o for (p, o) in zip(data['prices'], data['owned'])],
-            alpha=0.5,
-            label='owned share value',
-        )
-        ax[0].plot(
-            [100 * o for (p, o) in zip(data['prices'], data['owned'])],
-            alpha=0.5,
-            label='owned share quantity * p_0',
-        )
-        ax[0].legend()
-
-        ax[1].plot(data['buy'], alpha=0.5, label='buy')
-        ax[1].plot(data['sell'], alpha=0.5, label='sell')
-        ax[1].legend()
-
-        ax[2].plot(data['ror'], alpha=0.5, label='ror')
-        ax[2].plot(data['expected_ror'], alpha=0.5, label='expected ror')
-        ax[2].legend()
-
-        ax[3].plot(data['prices'], alpha=0.5, label='prices')
-        ax[3].legend()
-
-        ax[0].set_title("Simulation History")
-        ax[0].set_ylabel("Dollars")
-        ax[1].set_xlabel("t")
-
-        plt.show()
-
     def report_class_stats(self, stat='aLvl', stat_history=None):
         if stat_history is None:
             stat_history = self.history['class_stats']
@@ -948,7 +904,7 @@ class CalibrationSimulation(MarketSimulation):
         #self.history['buy_sell'].append(self.broker.buy_sell_history[-1])
         self.history['run_times'].append(time_delta)
 
-    def data(self):
+    def daily_data(self):
         """
         Returns a Pandas DataFrame of the data from the simulation run.
         """
@@ -1041,7 +997,7 @@ class SeriesSimulation(MarketSimulation):
         #self.history['buy_sell'].append(self.broker.buy_sell_history[-1])
         self.history['run_times'].append(time_delta)
 
-    def data(self):
+    def daily_data(self):
         """
         Returns a Pandas DataFrame of the data from the simulation run.
         """
@@ -1073,3 +1029,50 @@ class SeriesSimulation(MarketSimulation):
             )
 
         return data
+
+"""
+For visualizing the data from a simulation
+"""
+
+def visualize_simulation_data(data):
+    plt.rcParams.update({
+        "text.usetex": False,
+        "font.family": "serif",
+        "font.serif": ["Palatino"],
+    })
+
+
+    fig, ax = plt.subplots(4,
+        sharex='col',
+        figsize=(14,16),
+    )
+
+    ax[0].plot(data['total_assets'], alpha=0.5, label='Total owned share')
+    ax[0].plot([p * o for (p,o) in zip(data['prices'], data['owned'])], alpha=0.5, label='Owned share value')
+    ax[0].plot([100 * o for (p,o) in zip(data['prices'], data['owned'])], alpha=0.5, label='Owned share quantity * price at time 0')
+    ax[0].legend()
+
+    ax[1].plot(data['buy'], alpha=0.5, label='Buy limit')
+    ax[1].plot(-data['sell'], alpha=0.5, label='Sell limit')
+    ax[1].plot(data['buy_macro'], alpha=0.5, label='Buy orders from macro updates')
+    ax[1].plot(-data['sell_macro'], alpha=0.5, label='Sell orders from macro updates')
+    ax[1].legend()
+
+    ax[2].plot(data['ror'], alpha=0.5, label='Market rate-of-return')
+    ax[2].plot(data['expected_ror'], alpha=0.5, label='Expected ror')
+    ax[2].plot(np.zeros(data['expected_ror'].shape), alpha=0.5)
+    ax[2].legend()
+
+    ax[3].plot(data['prices'], alpha=0.5, label='Price of asset')
+    ax[3].legend()
+
+    ax[0].set_title("Simulation History")
+    ax[0].set_ylabel("Dollars")
+    ax[1].set_ylabel("Shares")
+    ax[2].set_ylabel("Rate of change")
+    ax[3].set_ylabel("Dollars")
+    ax[3].set_xlabel("Time in Days")
+
+    plt.tight_layout()
+    plt.savefig("asset_bubble_run_long.png")
+    plt.show()
