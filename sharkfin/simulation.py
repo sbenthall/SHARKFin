@@ -335,16 +335,19 @@ class MarketSimulation(AbstractSimulation):
         sim_stats['dividend_std'] = self.market.dividend_std
 
         sim_stats['seconds'] = (self.end_time - self.start_time).seconds
-        sim_stats['end_day'] = self.end_day
+        sim_stats['end_da y'] = self.end_day
 
         try:
             clean_log_returns = [r for r in self.market.log_return_list() if not np.isnan(r)]
 
             # stylized facts
-            sim_stats['log_return_autocorrelation'] = stylized_facts.DW_test(
+            sim_stats['log_return_autocorrelation_DW'] = stylized_facts.DW_test(
                 np.array([r for r in clean_log_returns])) - 2
-            sim_stats['log_return_squared_autocorrelation'] = stylized_facts.DW_test(
+            sim_stats['log_return_squared_autocorrelation_DW'] = stylized_facts.DW_test(
                 np.array([r ** 2 for r in clean_log_returns])) - 2
+
+            # TODO: Include less confusing autocorrelation values
+            # Maybe https://www.statsmodels.org/stable/generated/statsmodels.tsa.stattools.acf.html
         except Exception as e:
             print("Problem computing stylized facts")
             print(e)
