@@ -6,6 +6,20 @@ from abc import ABC, abstractmethod
 import numpy as np
 from typing import Tuple
 
+from HARK.distribution import Lognormal
+import math
+from scipy.stats import lognorm, ks_1samp
+
+def scipy_stats_lognorm_from_mean_std(mean, std):
+    hark_lognorm = Lognormal.from_mean_std(mean, std)
+
+    dist = lognorm(
+        s = hark_lognorm.sigma,
+        scale = math.exp(hark_lognorm.mu)
+    )
+
+    return dist
+
 class AbstractExpectations(ABC):
     '''
     Abstract class from which Expectations should inherit
@@ -62,8 +76,6 @@ class UsualExpectations(AbstractExpectations):
     This class still performs basic bookkeeping functions
     to fit the simulation interface.
     """
-    # Empirical data -- to be replaced with fields
-    # to pass in during initialization.
     daily_ror = 0.000628
     daily_std = 0.011988
 
@@ -133,8 +145,7 @@ class UsualExpectations(AbstractExpectations):
     def risky_expectations(self):
         """
         Return quarterly expectations for the risky asset.
-        These are the average and standard deviation for the asset
-        including both capital gains and dividends.
+        These will be constant.
         """
         # expected capital gains quarterly
         ex_cg_q_ror = ror_quarterly(self.expected_ror_list[-1], self.days_per_quarter)
@@ -312,3 +323,88 @@ class FinanceModel(AbstractExpectations):
 
         self.expected_ror_list = []
         self.expected_std_list = []
+
+
+class AdaptiveExpectations(FinanceModel):
+    """
+    An expectations model that reports either the UsualExpectations
+    or the expectations based on the chartist FinanceModel with probability
+    dependent on the goodness of fit of the UsualExpectations to
+    price data.
+    """
+    # USUAL expectation daily ROR and STD
+    daily_ror = 0.000628
+    daily_std = 0.011988
+
+    # acceptance threshold for using 'usual' expectations.
+    zeta = 0.0
+
+    market = None
+
+    def __init__(
+        self,
+        market,
+        days_per_quarter = None,
+        options = {
+            'daily_ror' : 0.000628,
+            'daily_std' : 0.011988,
+            'p1' : None,
+            'p2' : None,
+            'delta_t1' : None,
+            'delta_t2' : None,
+            'zeta' : 0.5
+            }
+    ):
+
+        super().__init__(market=market, days_per_quarter = days_per_quarter, options = options)
+
+        if 'daily_ror' in options:
+            self.daily_ror = options['daily_ror']
+        if 'daily_std' in options:
+            self.daily_std = options['daily_std']
+
+        if 'zeta' in options:
+            self.zeta = options['zeta']
+
+    def risky_expectations(self):
+        """
+        Return quarterly expectations for the risky asset.
+        
+        Stochastically determine whether to use the USUAL expectations, 
+        or the STRANGE expectations resulting from the FinanceModel, based
+        on the goodness-of-fit of the USUAL expectations and the zeta threshold
+        parameter.
+        """
+
+        usual_ror = self.daily_ror
+        usual_std = self.daily_std
+
+        strange_ror = self.expected_ror_list[-1]
+        strange_std = self.expected_std_list[-1]
+        
+        usual_dist = scipy_stats_lognorm_from_mean_std(1 + usual_ror, usual_std)
+        strange_dist = scipy_stats_lognorm_from_mean_std(1 + strange_ror, strange_std)
+
+        try:
+            # weird hard-coded value that does influence the zeta / p threshold.
+            ksd = ks_1samp(strange_dist.rvs(100), usual_dist.cdf)
+        except Exception as e:
+            print(f"strange_ror: {strange_ror}, strange_std: {strange_std}")
+            print(strange_dist.kwds)
+            print(e)
+            raise e
+
+        if ksd.pvalue > self.zeta:
+            ror = usual_ror
+            std = usual_std
+        else:
+            ror = strange_ror
+            std = strange_std
+
+        # expected capital gains quarterly
+        ex_cg_q_ror = ror_quarterly( ror , self.days_per_quarter)
+        ex_cg_q_std = sig_quarterly( std , self.days_per_quarter)
+
+        market_risky_params = {'RiskyAvg': 1 + ex_cg_q_ror, 'RiskyStd': ex_cg_q_std}
+
+        return market_risky_params

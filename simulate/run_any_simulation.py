@@ -23,7 +23,7 @@ from sharkfin.markets import MockMarket
 from sharkfin.markets.ammps import ClientRPCMarket
 from sharkfin.population import AgentPopulation
 from sharkfin.simulation import AttentionSimulation, CalibrationSimulation
-from sharkfin.expectations import FinanceModel, UsualExpectations
+from sharkfin.expectations import AdaptiveExpectations, FinanceModel, UsualExpectations
 
 
 class NpEncoder(json.JSONEncoder):
@@ -72,7 +72,10 @@ parser.add_argument('-q', '--queue', help='RabbitMQ: name of rabbitmq queue', de
 parser.add_argument('-r', '--rhost', help='RabbitMQ: rabbitmq server location', default='localhost')
 
 # Expectations module
-parser.add_argument('--expectations', help='Expectations: name of Expectations class. Options: FinanceModel, UsualExpectations', default = "FinanceModel")
+parser.add_argument('--expectations',
+    help='Expectations: name of Expectations class. Options: FinanceModel, UsualExpectations, AdaptiveExpectations',
+    default = "FinanceModel"
+    )
 
 # Memory-based FinanceModel arguments
 parser.add_argument('--p1', help='FinanceModel: memory parameter p1', default=0.1)
@@ -269,6 +272,8 @@ if __name__ == '__main__':
         expectations_class = FinanceModel
     elif expectations_class_name == "UsualExpectations":
         expectations_class = UsualExpectations
+    elif expectations_class_name == "AdaptiveExpectations":
+        expectations_class = AdaptiveExpectations
     else:
         print(f"{expectations_class_name} is not a known Expectations class. Using UsualExpectations.")
         expectations_class = UsualExpectations
