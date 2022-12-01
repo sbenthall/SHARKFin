@@ -28,7 +28,7 @@ class AbstractExpectations(ABC):
         Compute the quarterly expectations for the risky asset based on historical return rates.
 
         In this implementation there are a number of references to:
-          - paramters that are out of scope
+          - parameters that are out of scope
           - data structures that are out of scope
 
         These should be bundled together somehow.
@@ -53,6 +53,108 @@ class AbstractExpectations(ABC):
         Reset the data stores back to original value.
         """
         pass
+
+class UsualExpectations(AbstractExpectations):
+    """
+    The "usual" expectations of the market.
+    Beliefs about the risky asset are constant.
+
+    This class still performs basic bookkeeping functions
+    to fit the simulation interface.
+    """
+    # Empirical data -- to be replaced with fields
+    # to pass in during initialization.
+    daily_ror = 0.000628
+    daily_std = 0.011988
+
+    # Simulation parameter
+    days_per_quarter = 60
+
+    # Data structures. These will change over time.
+    starting_price = 100 # USE FROM MARKET
+
+    expected_ror_list = None
+    expected_std_list = None
+
+    market = None
+
+    def __init__(
+        self,
+        market,
+        days_per_quarter = None,
+        options = {'daily_ror' : 0.000628, 'daily_std' : 0.011988}
+    ):
+
+        self.market = market
+
+        if days_per_quarter:
+            self.days_per_quarter = days_per_quarter
+
+        self.prices = [self.starting_price]
+
+        if 'daily_ror' in options:
+            self.daily_ror = options['daily_ror']
+        if 'daily_std' in options:
+            self.daily_std = options['daily_std']
+
+        # self.ror_list = []
+        self.expected_ror_list = []
+        self.expected_std_list = []
+
+        self.options = options
+
+    def asset_price_stats(self):
+        """
+        Get statistics on the price of the asset for final reporting.
+        TODO: CHANGE SIM TO GET THESE FROM MARKET AND REMOVE
+        """
+        return self.market.asset_price_stats()
+
+    def calculate_risky_expectations(self):
+        """
+        Just repeats the constant belief parameters.
+
+        NOTE: This MUTATES the 'expected_ror_list' and so in current design
+        has to be called on a schedule... this should be fixed.
+        """
+
+        expected_ror = self.daily_ror
+        self.expected_ror_list.append(expected_ror)
+
+        expected_std = self.daily_std
+        self.expected_std_list.append(expected_std)
+
+    def rap(self):
+        """
+        Returns the current risky asset price. MOVE TO MARKET
+        """
+        return self.market.prices[-1]
+
+    def risky_expectations(self):
+        """
+        Return quarterly expectations for the risky asset.
+        These are the average and standard deviation for the asset
+        including both capital gains and dividends.
+        """
+        # expected capital gains quarterly
+        ex_cg_q_ror = ror_quarterly(self.expected_ror_list[-1], self.days_per_quarter)
+        ex_cg_q_std = sig_quarterly(self.expected_std_list[-1], self.days_per_quarter)
+
+        market_risky_params = {'RiskyAvg': 1 + ex_cg_q_ror, 'RiskyStd': ex_cg_q_std}
+
+        return market_risky_params
+
+    def reset(self):
+        """
+        Reset the data stores back to original value.
+        """
+        self.prices = [100]
+        #self.ror_list = []
+        ## TODO: Reset the market?!
+
+        self.expected_ror_list = []
+        self.expected_std_list = []
+
 
 class FinanceModel(AbstractExpectations):
     """
@@ -97,26 +199,27 @@ class FinanceModel(AbstractExpectations):
     def __init__(
         self,
         market,
-        p1=None,
-        p2=None,
-        delta_t1=None,
-        delta_t2=None,
-        days_per_quarter = None
+        days_per_quarter = None,
+        options = {
+            'p1' : None,
+            'p2' : None,
+            'delta_t1' : None,
+            'delta_t2' : None,
+        }
     ):
-
         self.market = market
 
-        if p1:
-            self.p1 = p1
+        if 'p1' in options:
+            self.p1 = options["p1"]
 
-        if p2:
-            self.p2 = p2
+        if 'p2' in options:
+            self.p2 = options["p2"]
 
-        if delta_t1:
-            self.delta_t1 = delta_t1
+        if 'delta_t1' in options:
+            self.delta_t1 = options["delta_t1"]
 
-        if delta_t2:
-            self.delta_t2 = delta_t2
+        if 'delta_t2' in options:
+            self.delta_t2 = options["delta_t2"]
 
         if days_per_quarter:
             self.days_per_quarter = days_per_quarter
@@ -125,6 +228,8 @@ class FinanceModel(AbstractExpectations):
         # self.ror_list = []
         self.expected_ror_list = []
         self.expected_std_list = []
+
+        self.options = options
 
     def asset_price_stats(self):
         """

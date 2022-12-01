@@ -409,7 +409,7 @@ class MacroSimulation(MarketSimulation):
         self.fm = Fm(
             self.market,
             days_per_quarter = self.days_per_quarter,
-            **fm_args
+            options = fm_args
             )
         self.fm.calculate_risky_expectations()
 
@@ -662,10 +662,7 @@ class MacroSimulation(MarketSimulation):
         sim_stats['total_population_aLvl_mean'] = total_pop_aLvl_mean
         sim_stats['total_population_aLvl_std'] = total_pop_aLvl_std
 
-        sim_stats['p1'] = self.fm.p1
-        sim_stats['p2'] = self.fm.p2
-        sim_stats['delta_t1'] = self.fm.delta_t1
-        sim_stats['delta_t2'] = self.fm.delta_t2
+        sim_stats.update(self.fm.options)
         sim_stats['dollars_per_hark_money_unit'] = self.pop.dollars_per_hark_money_unit
         
         return sim_stats
