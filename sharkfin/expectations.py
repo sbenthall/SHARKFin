@@ -387,7 +387,7 @@ class AdaptiveExpectations(FinanceModel):
 
         try:
             # weird hard-coded value that does influence the zeta / p threshold.
-            ksd = ks_1samp(strange_dist.rvs(100), usual_dist.cdf)
+            ksd = ks_1samp(strange_dist.rvs(10), usual_dist.cdf)
         except Exception as e:
             print(f"strange_ror: {strange_ror}, strange_std: {strange_std}")
             print(strange_dist.kwds)
@@ -395,9 +395,11 @@ class AdaptiveExpectations(FinanceModel):
             raise e
 
         if ksd.pvalue > self.zeta:
+            print(f"USUAL: p: {ksd.pvalue} > zeta = {self.zeta}")
             ror = usual_ror
             std = usual_std
         else:
+            print(f"STRANGE: p: {ksd.pvalue} <= zeta = {self.zeta}")
             ror = strange_ror
             std = strange_std
 
