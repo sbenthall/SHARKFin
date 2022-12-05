@@ -335,7 +335,7 @@ class MarketSimulation(AbstractSimulation):
         sim_stats['dividend_std'] = self.market.dividend_std
 
         sim_stats['seconds'] = (self.end_time - self.start_time).seconds
-        sim_stats['end_da y'] = self.end_day
+        sim_stats['end_day'] = self.end_day
 
         try:
             clean_log_returns = [r for r in self.market.log_return_list() if not np.isnan(r)]
