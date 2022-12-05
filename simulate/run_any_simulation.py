@@ -83,6 +83,9 @@ parser.add_argument('--p2', help='FinanceModel: memory parameter p2', default=0.
 parser.add_argument('--d1', help='FinanceModel: memory parameter d1', default=60)
 parser.add_argument('--d2', help='FinanceModel: memory parameter d2', default=60)
 
+# AdaptiveExpectations parameters
+parser.add_argument('--zeta', help='AdaptiveExpectations: sensitivity parameter. 0.0 <= zeta <= 1.0', default=0.5)
+
 # Chum parameters
 parser.add_argument('--buysize', help='Chum: buy size to shock', default=0)
 parser.add_argument('--sellsize', help='Chum: sell size to shock', default=0)
@@ -124,6 +127,7 @@ def run_attention_simulation(
     p2 = 0.1,
     d1 = 60,
     d2 = 60,
+    zeta = 0.5,
     rng = None,
     pad = None,
     seed = None
@@ -143,7 +147,8 @@ def run_attention_simulation(
             'p1' : p1,
             'p2' : p2,
             'delta_t1' : d1,
-            'delta_t2' : d2
+            'delta_t2' : d2,
+            'zeta' : zeta
         })
     
     sim.simulate(burn_in = pad)
@@ -211,6 +216,9 @@ if __name__ == '__main__':
     d1 = float(args.d1)
     d2 = float(args.d2)
 
+    # AdaptiveExpectations argument
+    zeta = float(args.zeta)
+
     # Specific to RabbitMQ AMMPS Market 
     host = args.rhost
     queue = args.queue
@@ -238,6 +246,7 @@ if __name__ == '__main__':
         p2,
         d1,
         d2,
+        zeta,
         buysize,
         sellsize,
         pad
@@ -293,6 +302,7 @@ if __name__ == '__main__':
             p2 = p2,
             d1 = d1,
             d2 = d2,
+            zeta = zeta,
             rng = rng,
             pad = pad,
             seed = seed
