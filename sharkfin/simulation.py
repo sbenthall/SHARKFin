@@ -341,10 +341,13 @@ class MarketSimulation(AbstractSimulation):
             clean_log_returns = [r for r in self.market.log_return_list() if not np.isnan(r)]
 
             # stylized facts
-            sim_stats['log_return_autocorrelation'] = stylized_facts.DW_test(
+            sim_stats['log_return_autocorrelation_DW'] = stylized_facts.DW_test(
                 np.array([r for r in clean_log_returns])) - 2
-            sim_stats['log_return_squared_autocorrelation'] = stylized_facts.DW_test(
+            sim_stats['log_return_squared_autocorrelation_DW'] = stylized_facts.DW_test(
                 np.array([r ** 2 for r in clean_log_returns])) - 2
+
+            # TODO: Include less confusing autocorrelation values
+            # Maybe https://www.statsmodels.org/stable/generated/statsmodels.tsa.stattools.acf.html
         except Exception as e:
             print("Problem computing stylized facts")
             print(e)
@@ -409,7 +412,7 @@ class MacroSimulation(MarketSimulation):
         self.fm = Fm(
             self.market,
             days_per_quarter = self.days_per_quarter,
-            **fm_args
+            options = fm_args
             )
         self.fm.calculate_risky_expectations()
 
@@ -662,10 +665,7 @@ class MacroSimulation(MarketSimulation):
         sim_stats['total_population_aLvl_mean'] = total_pop_aLvl_mean
         sim_stats['total_population_aLvl_std'] = total_pop_aLvl_std
 
-        sim_stats['p1'] = self.fm.p1
-        sim_stats['p2'] = self.fm.p2
-        sim_stats['delta_t1'] = self.fm.delta_t1
-        sim_stats['delta_t2'] = self.fm.delta_t2
+        sim_stats.update(self.fm.options)
         sim_stats['dollars_per_hark_money_unit'] = self.pop.dollars_per_hark_money_unit
         
         return sim_stats

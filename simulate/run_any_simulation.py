@@ -23,7 +23,7 @@ from sharkfin.markets import MockMarket
 from sharkfin.markets.ammps import ClientRPCMarket
 from sharkfin.population import AgentPopulation
 from sharkfin.simulation import AttentionSimulation, CalibrationSimulation
-from sharkfin.expectations import FinanceModel
+from sharkfin.expectations import AdaptiveExpectations, FinanceModel, UsualExpectations
 
 
 class NpEncoder(json.JSONEncoder):
@@ -71,11 +71,20 @@ parser.add_argument('--dividend_std', help='Market: daily standard deviation fo 
 parser.add_argument('-q', '--queue', help='RabbitMQ: name of rabbitmq queue', default='rpc_queue')
 parser.add_argument('-r', '--rhost', help='RabbitMQ: rabbitmq server location', default='localhost')
 
+# Expectations module
+parser.add_argument('--expectations',
+    help='Expectations: name of Expectations class. Options: FinanceModel, UsualExpectations, AdaptiveExpectations',
+    default = "FinanceModel"
+    )
+
 # Memory-based FinanceModel arguments
 parser.add_argument('--p1', help='FinanceModel: memory parameter p1', default=0.1)
 parser.add_argument('--p2', help='FinanceModel: memory parameter p2', default=0.1)
 parser.add_argument('--d1', help='FinanceModel: memory parameter d1', default=60)
 parser.add_argument('--d2', help='FinanceModel: memory parameter d2', default=60)
+
+# AdaptiveExpectations parameters
+parser.add_argument('--zeta', help='AdaptiveExpectations: sensitivity parameter. 0.0 <= zeta <= 1.0', default=0.5)
 
 # Chum parameters
 parser.add_argument('--buysize', help='Chum: buy size to shock', default=0)
@@ -112,11 +121,13 @@ def run_attention_simulation(
     q = None,
     r = 1,
     market = None,
+    fm = None,
     dphm = 1500,
     p1 = 0.1,
     p2 = 0.1,
     d1 = 60,
     d2 = 60,
+    zeta = 0.5,
     rng = None,
     pad = None,
     seed = None
@@ -131,12 +142,13 @@ def run_attention_simulation(
         )
 
     sim = AttentionSimulation(
-        pop, FinanceModel, a = a, q = q, r = r, market = market, rng = rng, seed = seed,
+        pop, fm, a = a, q = q, r = r, market = market, rng = rng, seed = seed,
         fm_args = {
             'p1' : p1,
             'p2' : p2,
             'delta_t1' : d1,
-            'delta_t2' : d2
+            'delta_t2' : d2,
+            'zeta' : zeta
         })
     
     sim.simulate(burn_in = pad)
@@ -190,6 +202,7 @@ if __name__ == '__main__':
 
     # General market arguments
     market_class_name = str(args.market)
+    expectations_class_name = str(args.expectations)
     dividend_growth_rate = float(args.dividend_growth_rate)
     dividend_std = float(args.dividend_std)
 
@@ -202,6 +215,9 @@ if __name__ == '__main__':
     p2 = float(args.p2)
     d1 = float(args.d1)
     d2 = float(args.d2)
+
+    # AdaptiveExpectations argument
+    zeta = float(args.zeta)
 
     # Specific to RabbitMQ AMMPS Market 
     host = args.rhost
@@ -221,6 +237,7 @@ if __name__ == '__main__':
         quarters,
         runs,
         market_class_name,
+        expectations_class_name,
         dividend_growth_rate,
         dividend_std,
         attention,
@@ -229,6 +246,7 @@ if __name__ == '__main__':
         p2,
         d1,
         d2,
+        zeta,
         buysize,
         sellsize,
         pad
@@ -252,10 +270,22 @@ if __name__ == '__main__':
         market_args['queue_name'] = queue
         market_args['host'] = host
     else:
-        print(f"{market_class_name} is not a know market class. Using MockMarket.")
+        print(f"{market_class_name} is not a known market class. Using MockMarket.")
         market_class = MockMarket
 
     market = market_class(**market_args)
+
+    expectations_class = None
+
+    if expectations_class_name == "FinanceModel":
+        expectations_class = FinanceModel
+    elif expectations_class_name == "UsualExpectations":
+        expectations_class = UsualExpectations
+    elif expectations_class_name == "AdaptiveExpectations":
+        expectations_class = AdaptiveExpectations
+    else:
+        print(f"{expectations_class_name} is not a known Expectations class. Using UsualExpectations.")
+        expectations_class = UsualExpectations
 
     sim_method = None
 
@@ -266,11 +296,13 @@ if __name__ == '__main__':
             q = quarters, 
             r= runs,
             market = market,
+            fm = expectations_class,
             dphm = dphm,
             p1 = p1,
             p2 = p2,
             d1 = d1,
             d2 = d2,
+            zeta = zeta,
             rng = rng,
             pad = pad,
             seed = seed
