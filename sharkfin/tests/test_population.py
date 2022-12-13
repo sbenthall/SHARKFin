@@ -2,15 +2,10 @@ import numpy as np
 from HARK.ConsumptionSaving.ConsPortfolioModel import SequentialPortfolioConsumerType
 from sharkfin.population import AgentPopulation, AgentPopulationSolution
 from simulate.parameters import (
-    agent_population_params,
-    approx_params,
-    continuous_dist_params,
+    WHITESHARK
 )
 
-parameter_dict = agent_population_params | continuous_dist_params
-
-parameter_dict["AgentCount"] = 1
-
+parameter_dict = WHITESHARK
 
 def test_agent_population():
 
@@ -27,7 +22,7 @@ def test_agent_population():
     print("created agent population")
 
     # Step 2 - provide approximation parameters
-    ap.approx_distributions(approx_params)
+    ap.approx_distributions(WHITESHARK['approx_params'])
     print("approximated continuous distributions")
 
     # Step 3 - parse all parameters to create distributed agent parameter dictionaries

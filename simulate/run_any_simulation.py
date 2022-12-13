@@ -7,10 +7,11 @@ from HARK.Calibration.Income.IncomeTools import (
      sabelhaus_song_var_profile,
 )
 from HARK.ConsumptionSaving.ConsPortfolioModel import SequentialPortfolioConsumerType
+
 from simulate.parameters import (
-    agent_population_params,
-    approx_params,
-    continuous_dist_params,
+    build_population,
+    LUCAS0,
+    WHITESHARK
 )
 
 import json
@@ -64,6 +65,9 @@ parser.add_argument('--market', help='Market: name of Market class', default = "
 # Choose which simulation
 parser.add_argument('--simulation', help='Which simulation. Options: Attention, Calibration', default = "Attention")
 
+# Choose which population
+parser.add_argument('--population', help='Which simulation. Options: WHITESHARK, LUCAS0', default = "LUCAS0")
+
 parser.add_argument('--dividend_growth_rate', help='Market: daily average growth rate of the dividend', default = 1.000628)
 parser.add_argument('--dividend_std', help='Market: daily standard deviation fo the dividend', default = 0.011988)
 
@@ -93,27 +97,6 @@ parser.add_argument('--pad', help='Nmber of days to burn in the market', default
 
 
 timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
-
-### Configuring the agent population
-
-parameter_dict = agent_population_params | continuous_dist_params
-parameter_dict["AgentCount"] = 1
-
-def build_population(agent_type, parameters, rng = None, dphm = 1500):
-    pop = AgentPopulation(agent_type(), parameters, rng = rng, dollars_per_hark_money_unit = dphm)
-    pop.approx_distributions(approx_params)
-    pop.parse_params()
-
-    pop.create_distributed_agents()
-    pop.create_database()
-    pop.solve_distributed_agents()
-
-    pop.solve(merge_by=["RiskyAvg", "RiskyStd"])
-
-    # initialize population model
-    pop.init_simulation()
-
-    return pop
 
 def run_attention_simulation(
     agent_parameters,
@@ -202,6 +185,9 @@ if __name__ == '__main__':
 
     # General market arguments
     market_class_name = str(args.market)
+
+    population_name = str(args.population)
+
     expectations_class_name = str(args.expectations)
     dividend_growth_rate = float(args.dividend_growth_rate)
     dividend_std = float(args.dividend_std)
@@ -238,6 +224,7 @@ if __name__ == '__main__':
         runs,
         market_class_name,
         expectations_class_name,
+        population_name,
         dividend_growth_rate,
         dividend_std,
         attention,
@@ -288,6 +275,13 @@ if __name__ == '__main__':
         expectations_class = UsualExpectations
 
     sim_method = None
+
+    if population_name == 'WHITESHARK':
+        parameter_dict = WHITESHARK
+    elif population_name == 'LUCAS0':
+        parameter_dict = LUCAS0
+    else:
+        raise Exception(f"No valid population named! Got {population_name}. Panic!")
 
     if args.simulation == 'Attention':
         data, sim_stats, history, class_stats = run_attention_simulation(
