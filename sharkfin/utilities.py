@@ -114,7 +114,42 @@ def combine_lognormal_rates(ror1, std1, ror2, std2):
 
     return ror3, sigma3
 
+##### Lucas Pricing Equations
 
 
-        
 
+def price_dividend_ratio_random_walk(DiscFac, CRRA, dividend_std):
+    ## From Equation 21 from the C. Carroll Lucas asset pricing notes:
+    ## http://www.econ2.jhu.edu/people/ccarroll/public/lecturenotes/AssetPricing/LucasAssetPrice.pdf
+
+    ## theta is discount rate (derived from discount factor)
+    theta = 1 / DiscFac - 1
+
+    ## Need to get the standard deviation of the underlying normal distribution
+    div_psi_ror = 1
+    # target variance of the price distribution with no broker impact
+    div_psi_std = dividend_std
+
+    # mean of underlying normal distribution
+    exp_ror = np.log((div_psi_ror ** 2) / np.sqrt(div_psi_ror ** 2 + div_psi_std ** 2))
+    # standard deviation of underlying distribution
+    exp_std = np.sqrt(np.log(1 + div_psi_std ** 2 / div_psi_ror ** 2))
+
+    return 1.0 / (theta - (0.5 * CRRA * (1 - CRRA) * (exp_std ** 2)))
+
+
+"""
+TODO
+
+def lucas_expected_rate_of_return():
+
+    pdr # price-dividend ratio
+
+    d_growth_rate # dividend mean rate of return
+    d_std # dividend standard deviation
+
+    p_growth_rate = pdr * d_growth_rate #?
+    p_std = pdr * d_std #?
+
+    ror = ((d_1 + p_1)   / p_0)
+"""
