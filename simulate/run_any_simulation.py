@@ -20,11 +20,12 @@ import numpy as np
 import os
 import pandas as pd
 
+from sharkfin.expectations import AdaptiveExpectations, FinanceModel, UsualExpectations
 from sharkfin.markets import MockMarket
 from sharkfin.markets.ammps import ClientRPCMarket
 from sharkfin.population import AgentPopulation
 from sharkfin.simulation import AttentionSimulation, CalibrationSimulation
-from sharkfin.expectations import AdaptiveExpectations, FinanceModel, UsualExpectations
+from sharkfin.utilities import price_dividend_ratio_random_walk
 
 
 class NpEncoder(json.JSONEncoder):
@@ -67,6 +68,8 @@ parser.add_argument('--simulation', help='Which simulation. Options: Attention, 
 
 # Choose which population
 parser.add_argument('--population', help='Which simulation. Options: WHITESHARK, LUCAS0', default = "LUCAS0")
+parser.add_argument('--pop_CRRA', help='Mean population CRRA. Used for MockMarket and LUCAS0 population.', default = "5")
+parser.add_argument('--pop_DiscFac', help='Mean population CRRA. Used for MockMarket and LUCAS0 population.', default = "0.96")
 
 parser.add_argument('--dividend_growth_rate', help='Market: daily average growth rate of the dividend', default = 1.000628)
 parser.add_argument('--dividend_std', help='Market: daily standard deviation fo the dividend', default = 0.011988)
@@ -187,6 +190,8 @@ if __name__ == '__main__':
     market_class_name = str(args.market)
 
     population_name = str(args.population)
+    pop_CRRA = float(args.pop_CRRA)
+    pop_DiscFac = float(args.pop_DiscFac)
 
     expectations_class_name = str(args.expectations)
     dividend_growth_rate = float(args.dividend_growth_rate)
@@ -225,6 +230,8 @@ if __name__ == '__main__':
         market_class_name,
         expectations_class_name,
         population_name,
+        pop_CRRA,
+        pop_DiscFac,
         dividend_growth_rate,
         dividend_std,
         attention,
@@ -245,7 +252,12 @@ if __name__ == '__main__':
     market_args = {
         'dividend_growth_rate' : dividend_growth_rate,
         'dividend_std' : dividend_std,
-        'rng' : rng
+        'rng' : rng,
+        'price_to_dividend_ratio' : price_dividend_ratio_random_walk(
+            pop_DiscFac,
+            pop_CRRA,
+            dividend_std
+            )
     }
 
     market_class = None
@@ -280,6 +292,8 @@ if __name__ == '__main__':
         parameter_dict = WHITESHARK
     elif population_name == 'LUCAS0':
         parameter_dict = LUCAS0
+        parameter_dict['DiscFac'] = pop_DiscFac,
+        parameter_dict['CRRA'] = pop_CRRA
     else:
         raise Exception(f"No valid population named! Got {population_name}. Panic!")
 

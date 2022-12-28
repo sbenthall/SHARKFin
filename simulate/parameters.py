@@ -71,6 +71,9 @@ WHITESHARK = whiteshark_parameter_dict
 # LUCAS0 POPULATION
 #############################
 
+
+### TODO: Population generators that take parameters like CRRA, DisCFac
+
 lucas0_agent_population_params = {
     "aNrmInitStd": 0.0,
     "LivPrb": 0.98**0.25,
@@ -79,8 +82,8 @@ lucas0_agent_population_params = {
     "pLvlInitStd": 0.0,
     "Rfree": 1.0,
     # Scaling from annual to quarterly
-    "TranShkStd": 0,
-    "PermShkStd": 0,
+    "TranShkStd": [0],
+    "PermShkStd": [0],
     ###
     "CRRA" : 5,
     "DiscFac" : 0.96,
@@ -90,4 +93,4 @@ lucas0_parameter_dict = lucas0_agent_population_params
 lucas0_parameter_dict["AgentCount"] = 10 # TODO: What should this be?
 
 
-LUCAS0 = whiteshark_parameter_dict
+LUCAS0 = lucas0_parameter_dict
