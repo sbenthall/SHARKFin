@@ -1,5 +1,6 @@
 from sharkfin.markets import MockMarket
 from sharkfin.markets.ammps import ClientRPCMarket
+from sharkfin.utilities import price_dividend_ratio_random_walk
 import unittest
 
 
@@ -45,7 +46,15 @@ class TestMarketErrors(unittest.TestCase):
 
     def test_stopped_market(self):
 
-        market = MockMarket(dividend_growth_rate = 1.000628, dividend_std = 0.011988)
+        dividend_std = 0.011988
+
+        pdr = price_dividend_ratio_random_walk(0.95, 5, dividend_std)
+
+        market = MockMarket(
+            dividend_growth_rate = 1.000628,
+            dividend_std = 0.011988,
+            price_to_dividend_ratio=pdr
+            )
 
         market.run_market()
         market.run_market(buy_sell=(10,10))

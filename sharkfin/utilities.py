@@ -135,7 +135,7 @@ def price_dividend_ratio_random_walk(DiscFac, CRRA, dividend_std):
     # standard deviation of underlying distribution
     exp_std = np.sqrt(np.log(1 + div_psi_std ** 2 / div_psi_ror ** 2))
 
-    return 1.0 / (theta - (0.5 * CRRA * (1 - CRRA) * (exp_std ** 2)))
+    return 1.0 / (theta - (0.5 * CRRA * (CRRA - 1) * (exp_std ** 2)))
 
 
 """
