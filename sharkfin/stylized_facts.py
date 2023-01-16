@@ -52,7 +52,10 @@ def DW_test(x): # Durbin Watson test
     """
     DW_test(x)
 
-    Perform the Durbin-Watson test for a one-dimensional numpy array (x). 
+    Perform the Durbin-Watson test for a one-dimensional numpy array (x).
+
+    TODO: Consider replacing with
+    https://www.statsmodels.org/dev/generated/statsmodels.stats.stattools.durbin_watson.html
 
     """
 

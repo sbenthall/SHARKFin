@@ -9,5 +9,5 @@ pytest
 pika
 pyyaml
 seaborn
-sklearn
+scikit-learn
 xarray
