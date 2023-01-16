@@ -3,12 +3,19 @@ from functools import partial
 from pprint import pprint
 from typing import NewType
 
-import HARK.ConsumptionSaving.ConsIndShockModel as cism
-import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 import numpy as np
 import pandas as pd
+from HARK.ConsumptionSaving.ConsIndShockModel import IndShockConsumerType
+from HARK.ConsumptionSaving.ConsPortfolioModel import SequentialPortfolioConsumerType
+from HARK.ConsumptionSaving.ConsRiskyAssetModel import RiskyAssetConsumerType
 from HARK.core import AgentType
-from HARK.distribution import Distribution, IndexDistribution, combine_indep_dstns
+from HARK.distribution import (
+    Bernoulli,
+    Distribution,
+    IndexDistribution,
+    Lognormal,
+    combine_indep_dstns,
+)
 from HARK.interpolation import BilinearInterpOnInterp1D, TrilinearInterpOnInterp1D
 from xarray import DataArray
 
@@ -263,17 +270,18 @@ class AgentPopulation:
 
             if self.stored_class_stats is None:
 
-                ## build an IndShockConsumerType "double" of this agent, with the same parameters
-                ind_shock_double = cism.IndShockConsumerType(**agent.parameters)
+                # build an IndShockConsumerType "double" of this agent, with the same parameters
+                ind_shock_double = IndShockConsumerType(**agent.parameters)
 
-                ## solve to get the mNrmStE value
-                ## that is, the Steady-state Equilibrium value of mNrm, for the IndShockModel
+                # solve to get the mNrmStE value
+                # that is, the Steady-state Equilibrium value of mNrm, for the IndShockModel
                 ind_shock_double.solve()
                 mNrmStE = ind_shock_double.solution[0].mNrmStE
 
                 agent.state_now["mNrm"][:] = mNrmStE
                 agent.mNrmStE = (
-                    mNrmStE  # saving this for later, in case we do the analysis.
+                    # saving this for later, in case we do the analysis.
+                    mNrmStE
                 )
             else:
                 idx = [agent.parameters[dp] for dp in self.dist_params]
@@ -459,7 +467,7 @@ class AgentPopulation:
             print("ERROR: Agent has share > 1 after macro update.")
             print(true_risky_expectations)
 
-        ## put back the expectations that include capital gains now
+        # put back the expectations that include capital gains now
         agent.assign_parameters(**true_risky_expectations)
 
         # Selling off shares if necessary to
@@ -519,7 +527,7 @@ class AgentPopulation:
                 )
                 print("Setting normalize assets and shares to 0.")
                 agent.state_now["aNrm"][(agent.state_now["aNrm"] < 0)] = 0.0
-                ## TODO: This change in shares needs to be registered with the Broker.
+                # TODO: This change in shares needs to be registered with the Broker.
                 agent.shares[(agent.state_now["aNrm"] == 0)] = 0
 
             # update non-normalized market assets
@@ -690,13 +698,108 @@ class AgentPopulationSolution:
         return self.solution_database
 
 
-class PortfolioSharkFinAgentType(cpm.SequentialPortfolioConsumerType):
+class PortfolioSharkFinAgentType(SequentialPortfolioConsumerType):
     """
     SHARKFin agent class extends HARK's SequentialPortfolioConsumerType class
     with SHARK features. In particular, it takes an external solution in the
     simulation step. This external solution can come from interpolated
     population solutions.
     """
+
+    def initialize_sim(self):
+        """
+        Initialize the state of simulation attributes.  Simply calls the same method
+        for IndShockConsumerType, then sets the type of AdjustNow to bool.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        # these need to be set because "post states",
+        # but are a control variable and shock, respectively
+        self.controls["Share"] = np.zeros(self.AgentCount)
+        RiskyAssetConsumerType.initialize_sim(self)
+
+    def transition(self):
+        pLvlPrev = self.state_prev["pLvl"]
+        aNrmPrev = self.state_prev["aNrm"]
+        RfreeNow = self.get_Rfree()
+
+        # Calculate new states: normalized market resources and permanent income level
+        # Updated permanent income level
+        pLvlNow = pLvlPrev * self.shocks["PermShk"]
+        # Updated aggregate permanent productivity level
+        PlvlAggNow = self.state_prev["PlvlAgg"] * self.PermShkAggNow
+        # "Effective" interest factor on normalized assets
+        ReffNow = RfreeNow / self.shocks["PermShk"]
+        bNrmNow = ReffNow * aNrmPrev  # Bank balances before labor income
+        # Market resources after income
+        mNrmNow = bNrmNow + self.shocks["TranShk"]
+
+        return pLvlNow, PlvlAggNow, bNrmNow, mNrmNow, None
+
+    def get_controls(self):
+        """
+        Calculates consumption cNrmNow and risky portfolio share ShareNow using
+        the policy functions in the attribute solution.  These are stored as attributes.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        cNrmNow = np.zeros(self.AgentCount) + np.nan
+        ShareNow = np.zeros(self.AgentCount) + np.nan
+
+        # Loop over each period of the cycle, getting controls separately depending on "age"
+        for t in range(self.T_cycle):
+            these = t == self.t_cycle
+
+            # Get controls for agents who *can* adjust their portfolio share
+            those = np.logical_and(these, self.shocks["Adjust"])
+            cNrmNow[those] = self.solution[t].cFuncAdj(self.state_now["mNrm"][those])
+            ShareNow[those] = self.solution[t].ShareFuncAdj(
+                self.state_now["mNrm"][those]
+            )
+
+            # Get Controls for agents who *can't* adjust their portfolio share
+            those = np.logical_and(these, np.logical_not(self.shocks["Adjust"]))
+            cNrmNow[those] = self.solution[t].cFuncFxd(
+                self.state_now["mNrm"][those], ShareNow[those]
+            )
+            ShareNow[those] = self.solution[t].ShareFuncFxd(
+                self.state_now["mNrm"][those], ShareNow[those]
+            )
+
+        # Store controls as attributes of self
+        self.controls["cNrm"] = cNrmNow
+        self.controls["Share"] = ShareNow
+
+    def get_poststates(self):
+        """
+        Calculates end-of-period assets for each consumer of this type.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        # should this be "Now", or "Prev"?!?
+        self.state_now["aNrm"] = self.state_now["mNrm"] - self.controls["cNrm"]
+        # Useful in some cases to precalculate asset level
+        self.state_now["aLvl"] = self.state_now["aNrm"] * self.state_now["pLvl"]
+
+        return None
 
     def get_Rfree(self):
         """
@@ -717,8 +820,128 @@ class PortfolioSharkFinAgentType(cpm.SequentialPortfolioConsumerType):
             will be mislabeled as "Rfree".
         """
 
-        Rfree = np.asarray(self.Rfree)
+        Rfree = np.array(self.Rfree)
         RfreeNow = Rfree[self.t_cycle - 1]
 
-        Rport = self.RiskyAvg * np.ones_like(RfreeNow)
+        Rport = (
+            self.controls["Share"] * self.shocks["Risky"]
+            + (1.0 - self.controls["Share"]) * RfreeNow
+        )
+        self.Rport = Rport
         return Rport
+
+    def get_Risky(self):
+        """
+        Sets the attribute Risky as a single draw from a lognormal distribution.
+        Uses the attributes RiskyAvgTrue and RiskyStdTrue if RiskyAvg is time-varying,
+        else just uses the single values from RiskyAvg and RiskyStd.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        if "RiskyDstn" in self.time_vary:
+            RiskyAvg = self.RiskyAvgTrue
+            RiskyStd = self.RiskyStdTrue
+        else:
+            RiskyAvg = self.RiskyAvg
+            RiskyStd = self.RiskyStd
+
+        self.shocks["Risky"] = Lognormal.from_mean_std(
+            RiskyAvg, RiskyStd, seed=self.RNG.randint(0, 2**31 - 1)
+        ).draw(1)
+
+    def get_Adjust(self):
+        """
+        Sets the attribute Adjust as a boolean array of size AgentCount, indicating
+        whether each agent is able to adjust their risky portfolio share this period.
+        Uses the attribute AdjustPrb to draw from a Bernoulli distribution.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        self.shocks["Adjust"] = IndexDistribution(
+            Bernoulli, {"p": self.AdjustPrb}, seed=self.RNG.randint(0, 2**31 - 1)
+        ).draw(self.t_cycle)
+
+    def get_shocks(self):
+        """
+        Draw idiosyncratic income shocks, just as for IndShockConsumerType, then draw
+        a single common value for the risky asset return.  Also draws whether each
+        agent is able to adjust their portfolio this period.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
+        IndShockConsumerType.get_shocks(self)
+        self.get_Risky()
+        self.get_Adjust()
+
+    def sim_birth(self, which_agents):
+        """
+        Create new agents to replace ones who have recently died; takes draws of
+        initial aNrm and pLvl, as in ConsIndShockModel, then sets Share and Adjust
+        to zero as initial values.
+        Parameters
+        ----------
+        which_agents : np.array
+            Boolean array of size AgentCount indicating which agents should be "born".
+
+        Returns
+        -------
+        None
+        """
+        IndShockConsumerType.sim_birth(self, which_agents)
+
+        self.controls["Share"][which_agents] = 0
+        # here a shock is being used as a 'post state'
+        self.shocks["Adjust"][which_agents] = False
+
+    def sim_death(self):
+        """
+        Determines which agents die this period and must be replaced.  Uses the sequence in LivPrb
+        to determine survival probabilities for each agent.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        which_agents : np.array(bool)
+            Boolean array of size AgentCount indicating which agents die.
+        """
+        # Determine who dies
+        DiePrb_by_t_cycle = 1.0 - np.asarray(self.LivPrb)
+        DiePrb = DiePrb_by_t_cycle[
+            self.t_cycle - 1 if self.cycles == 1 else self.t_cycle
+        ]  # Time has already advanced, so look back one
+
+        # In finite-horizon problems the previous line gives newborns the
+        # survival probability of the last non-terminal period. This is okay,
+        # however, since they will be instantly replaced by new newborns if
+        # they die.
+        # See: https://github.com/econ-ark/HARK/pull/981
+
+        DeathShks = Uniform(seed=self.RNG.randint(0, 2**31 - 1)).draw(
+            N=self.AgentCount
+        )
+        which_agents = DeathShks < DiePrb
+        if self.T_age is not None:  # Kill agents that have lived for too many periods
+            too_old = self.t_age >= self.T_age
+            which_agents = np.logical_or(which_agents, too_old)
+        return which_agents
