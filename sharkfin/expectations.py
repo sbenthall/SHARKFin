@@ -70,8 +70,10 @@ class AbstractExpectations(ABC):
 
 class UsualExpectations(AbstractExpectations):
     """
-    The "usual" expectations of the market.
-    Beliefs about the risky asset are constant.
+    The Lucas "usual" expectations of the market.
+    Beliefs about the risky asset are constant
+    and based on the dividend process driving the
+    market prices.
 
     This class still performs basic bookkeeping functions
     to fit the simulation interface.
@@ -104,10 +106,21 @@ class UsualExpectations(AbstractExpectations):
 
         self.prices = [self.starting_price]
 
-        if 'daily_ror' in options:
-            self.daily_ror = options['daily_ror']
-        if 'daily_std' in options:
-            self.daily_std = options['daily_std']
+        ### Expected daily ROR and SD assuming
+        ### 1. A constant price-to-dividend-ratio
+        ### 2. A constant mean dividend growth rate
+        ### 3. A (lognormal) random dividend walk
+        pdr = self.market.price_to_dividend_ratio
+        dgr = self.market.dividend_growth_rate
+        dsd = self.market.dividend_std
+
+        self.daily_ror = (pdr + 1) * dgr / pdr
+        self.daily_std = dsd * self.daily_ror
+
+        #if 'daily_ror' in options:
+        #    self.daily_ror = options['daily_ror']
+        #if 'daily_std' in options:
+        #    self.daily_std = options['daily_std']
 
         # self.ror_list = []
         self.expected_ror_list = []
