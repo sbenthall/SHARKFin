@@ -89,7 +89,7 @@ class AgentPopulation:
         for key in approx_params:
             if key in param_dict and isinstance(param_dict[key], Distribution):
                 discrete_points = approx_params[key]
-                discrete_distribution = param_dict[key].approx(discrete_points)
+                discrete_distribution = param_dict[key].discretize(discrete_points)
                 self.continuous_distributions[key] = param_dict[key]
                 self.discrete_distributions[key] = discrete_distribution
             else:
