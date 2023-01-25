@@ -383,27 +383,27 @@ class AgentPopulation:
 
         asset_normalized = agent.state_now["aNrm"]
 
-        if asset_normalized < 0:
-            print(f"ERROR: Agent has negative assets after compute demand.")
+        if np.any(asset_normalized < 0):
+            print(f"ERROR: An agent has negative assets after compute demand.")
 
         # ShareFuncAdj takes normalized market resources as argument
         # SequentialShareFuncAdj takes normalized assets as argument
         risky_share = agent.solution[0].SequentialShareFuncAdj(asset_normalized)
         # risky_share = np.clip(risky_share, 0, 1)
 
-        if risky_share < 0:
+        if np.any(risky_share < 0):
             print(
-                "Warning: Agent has negative risky share. Setting to 0. Need to fix solution!"
+                "Warning: An agent has negative risky share. Setting to 0. Need to fix solution!"
             )
             print(f"RiskyAvg: {agent.RiskyAvg}, RiskyStd: {agent.RiskyStd}")
-            risky_share = 0.0
+            risky_share[risky_share < 0] = 0.0
 
-        if risky_share > 1:
+        if np.any(risky_share > 1):
             print(
-                "Warning: Agent has risky share > 1.0. Setting to 1. Need to fix solution!"
+                "Warning: An agent has risky share > 1.0. Setting to 1. Need to fix solution!"
             )
             print(f"RiskyAvg: {agent.RiskyAvg}, RiskyStd: {agent.RiskyStd}")
-            risky_share = 1.0
+            risky_share[risky_share > 1] = 1.0
 
         # denormalize the risky share. See https://github.com/econ-ark/HARK/issues/986
         risky_asset_wealth = (
@@ -418,7 +418,7 @@ class AgentPopulation:
         if (np.isnan(shares)).any():
             print("ERROR: Agent desires nan shares")
 
-        if shares < 0:
+        if np.any(shares < 0):
             print("ERROR: Agent has negative share target")
 
         return shares
