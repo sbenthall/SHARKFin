@@ -2,17 +2,43 @@ import numpy as np
 from HARK.ConsumptionSaving.ConsPortfolioModel import SequentialPortfolioConsumerType
 from sharkfin.population import AgentPopulation, AgentPopulationSolution
 from simulate.parameters import (
-    agent_population_params,
-    approx_params,
-    continuous_dist_params,
+    WHITESHARK,
+    LUCAS0 
 )
 
-parameter_dict = agent_population_params | continuous_dist_params
+def test_lucas_agent_population():
 
-parameter_dict["AgentCount"] = 1
+    pop_DiscFac = 0.95
+    pop_CRRA = 5
 
+    parameter_dict = LUCAS0.copy()
 
-def test_agent_population():
+    parameter_dict['DiscFac'] = pop_DiscFac,
+    parameter_dict['CRRA'] = pop_CRRA
+
+    pop = AgentPopulation(
+        SequentialPortfolioConsumerType(),
+        parameter_dict,
+        rng = None,
+        dollars_per_hark_money_unit = 1500
+        )
+
+    if 'approx_params' in parameter_dict:
+        pop.approx_distributions(parameter_dict['approx_params'])
+    pop.parse_params()
+
+    pop.create_distributed_agents()
+    pop.create_database()
+    pop.solve_distributed_agents()
+
+    pop.solve(merge_by = parameter_dict['ex_post']) #merge_by=["RiskyAvg", "RiskyStd"])
+
+    # initialize population model
+    pop.init_simulation()
+
+    return pop
+
+def test_whiteshark_agent_population():
 
     seed = 14
     # Initializing an Agent Population
@@ -20,14 +46,14 @@ def test_agent_population():
     # Step 1 - create agent population with initial parameters
     ap = AgentPopulation(
         SequentialPortfolioConsumerType(),
-        parameter_dict,
+        WHITESHARK,
         rng=np.random.default_rng(seed),
     )
     # ADD PRINT LINE AFTER EVERY STEP
     print("created agent population")
 
     # Step 2 - provide approximation parameters
-    ap.approx_distributions(approx_params)
+    ap.approx_distributions(WHITESHARK['approx_params'])
     print("approximated continuous distributions")
 
     # Step 3 - parse all parameters to create distributed agent parameter dictionaries
@@ -51,7 +77,7 @@ def test_agent_population():
     print("initialized simulation")
 
     # Step 8 - create master solution as attribute of population
-    ap.solve(["RiskyAvg", "RiskyStd"])
+    ap.solve(WHITESHARK["ex_post"])
 
     # Creating Master Solution for agent Population separately
 
@@ -60,7 +86,7 @@ def test_agent_population():
     print("created solution object")
 
     # Step 2. provide parameters that will become state variables
-    solution.merge_solutions(["RiskyAvg", "RiskyStd"])
+    solution.merge_solutions(WHITESHARK["ex_post"])
     solution.merge_solutions(["CRRA", "RiskyAvg", "RiskyStd"])
     print("merged solutions")
 
