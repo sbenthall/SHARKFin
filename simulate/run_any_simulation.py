@@ -81,7 +81,7 @@ parser.add_argument('-r', '--rhost', help='RabbitMQ: rabbitmq server location', 
 # Expectations module
 parser.add_argument('--expectations',
     help='Expectations: name of Expectations class. Options: FinanceModel, UsualExpectations, AdaptiveExpectations',
-    default = "FinanceModel"
+    default = "UsualExpectations"
     )
 
 # Memory-based FinanceModel arguments

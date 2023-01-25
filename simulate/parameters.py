@@ -16,7 +16,7 @@ def build_population(agent_type, parameters, rng = None, dphm = 1500):
     pop.create_database()
     pop.solve_distributed_agents()
 
-    pop.solve(merge_by=["RiskyAvg", "RiskyStd"])
+    pop.solve(merge_by=parameters["ex_post"])
 
     # initialize population model
     pop.init_simulation()
@@ -62,6 +62,7 @@ whiteshark_approx_params = {"CRRA": 3, "DiscFac": 2, "RiskyAvg": 10, "RiskyStd":
 
 whiteshark_parameter_dict = whiteshark_agent_population_params | whiteshark_continuous_dist_params
 whiteshark_parameter_dict['approx_params'] = whiteshark_approx_params
+whiteshark_parameter_dict['ex_post'] = ["RiskyAvg", "RiskyStd"]
 whiteshark_parameter_dict["AgentCount"] = 1
 
 WHITESHARK = whiteshark_parameter_dict
@@ -84,9 +85,10 @@ lucas0_agent_population_params = {
     # Scaling from annual to quarterly
     "TranShkStd": [0],
     "PermShkStd": [0],
-    ###
+    ### These are placeholders that will be set when the system is set up.
     "CRRA" : 5,
     "DiscFac" : 0.96,
+    "ex_post" : None # ex post heterogeneous parameters over which to merge solutions
 }
 
 lucas0_parameter_dict = lucas0_agent_population_params
