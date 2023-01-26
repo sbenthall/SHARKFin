@@ -1,10 +1,8 @@
 import numpy as np
 from HARK.ConsumptionSaving.ConsPortfolioModel import SequentialPortfolioConsumerType
 from sharkfin.population import AgentPopulation, AgentPopulationSolution
-from simulate.parameters import (
-    WHITESHARK,
-    LUCAS0 
-)
+from simulate.parameters import WHITESHARK, LUCAS0
+
 
 def test_lucas_agent_population():
 
@@ -13,30 +11,31 @@ def test_lucas_agent_population():
 
     parameter_dict = LUCAS0.copy()
 
-    parameter_dict['DiscFac'] = pop_DiscFac,
-    parameter_dict['CRRA'] = pop_CRRA
+    parameter_dict["DiscFac"] = pop_DiscFac
+    parameter_dict["CRRA"] = pop_CRRA
 
     pop = AgentPopulation(
         SequentialPortfolioConsumerType(),
         parameter_dict,
-        rng = None,
-        dollars_per_hark_money_unit = 1500
-        )
+        rng=None,
+        dollars_per_hark_money_unit=1500,
+    )
 
-    if 'approx_params' in parameter_dict:
-        pop.approx_distributions(parameter_dict['approx_params'])
+    if "approx_params" in parameter_dict:
+        pop.approx_distributions(parameter_dict["approx_params"])
     pop.parse_params()
 
     pop.create_distributed_agents()
     pop.create_database()
     pop.solve_distributed_agents()
 
-    pop.solve(merge_by = parameter_dict['ex_post']) #merge_by=["RiskyAvg", "RiskyStd"])
+    pop.solve(merge_by=parameter_dict["ex_post"])  # merge_by=["RiskyAvg", "RiskyStd"])
 
     # initialize population model
     pop.init_simulation()
 
     return pop
+
 
 def test_whiteshark_agent_population():
 
@@ -53,7 +52,7 @@ def test_whiteshark_agent_population():
     print("created agent population")
 
     # Step 2 - provide approximation parameters
-    ap.approx_distributions(WHITESHARK['approx_params'])
+    ap.approx_distributions(WHITESHARK["approx_params"])
     print("approximated continuous distributions")
 
     # Step 3 - parse all parameters to create distributed agent parameter dictionaries
