@@ -536,7 +536,10 @@ class AgentPopulationSolution:
 
         if continuous_states is None or continuous_states == []:
 
-            self.solution_database = self.agent_database.set_index(self.dist_params)
+            if self.dist_params is None or self.dist_params == []:
+                self.solution_database = self.agent_database
+            else:
+                self.solution_database = self.agent_database.set_index(self.dist_params)
             self.ex_ante_hetero_params = []
 
         else:
