@@ -27,7 +27,6 @@ class AgentPopulation:
     dollars_per_hark_money_unit: float = 1500
 
     def __post_init__(self):
-
         self.time_var = self.agent_class.time_vary
         self.time_inv = self.agent_class.time_inv
 
@@ -45,12 +44,10 @@ class AgentPopulation:
         self.stored_class_stats = None
 
     def infer_counts(self):
-
         param_dict = self.parameter_dict
 
         # if agent_clas_count is not specified, infer from parameters
         if self.agent_class_count is None:
-
             agent_class_count = 1
             for key_param in param_dict:
                 parameter = param_dict[key_param]
@@ -63,7 +60,6 @@ class AgentPopulation:
             self.agent_class_count = agent_class_count
 
         if self.t_age is None:
-
             t_age = 1
             for key_param in param_dict:
                 parameter = param_dict[key_param]
@@ -79,7 +75,6 @@ class AgentPopulation:
         # return t_age and agent_class_count
 
     def approx_distributions(self, approx_params: dict):
-
         param_dict = self.parameter_dict
 
         self.continuous_distributions = {}
@@ -111,7 +106,6 @@ class AgentPopulation:
         self.infer_counts()
 
     def parse_params(self):
-
         param_dict = self.parameter_dict
 
         agent_dicts = []  # container for dictionaries of each agent subgroup
@@ -227,7 +221,6 @@ class AgentPopulation:
         return cs
 
     def create_distributed_agents(self):
-
         rng = self.rng if self.rng is not None else np.random.default_rng()
 
         self.agents = [
@@ -236,7 +229,6 @@ class AgentPopulation:
         ]
 
     def create_database(self):
-
         database = pd.DataFrame(self.agent_dicts)
         database["agents"] = self.agents
 
@@ -249,7 +241,6 @@ class AgentPopulation:
             agent.solve()
 
     def unpack_solutions(self):
-
         self.solution = [agent.solution for agent in self.agents]
 
     def init_simulation(self, T_sim=1000):
@@ -262,9 +253,10 @@ class AgentPopulation:
             agent.initialize_sim()
 
             if self.stored_class_stats is None:
-
                 ## build an IndShockConsumerType "double" of this agent, with the same parameters
-                ind_shock_double = cism.IndShockConsumerType(**agent.parameters)
+                parameters = agent.parameters.copy()
+                parameters["Rfree"] = parameters["Rfree"][0]
+                ind_shock_double = cism.IndShockConsumerType(**parameters)
 
                 ## solve to get the mNrmStE value
                 ## that is, the Steady-state Equilibrium value of mNrm, for the IndShockModel
@@ -290,7 +282,6 @@ class AgentPopulation:
             agent.state_now["aLvl"] = agent.state_now["aNrm"] * agent.state_now["pLvl"]
 
     def solve(self, merge_by=None):
-
         self.solve_distributed_agents()
 
         if merge_by is not None:
@@ -534,7 +525,6 @@ class AgentPopulationSolution:
         self.agent_database = self.agent_population.agent_database
 
     def merge_solutions(self, continuous_states):
-
         # check that continous states are in heterogeneous parameters
         for state in continuous_states:
             if state not in self.dist_params:
@@ -548,7 +538,6 @@ class AgentPopulationSolution:
             self._merge_solutions_3d(continuous_states)
 
     def _merge_solutions_2d(self, continuous_states):
-
         discrete_params = list(set(self.dist_params) - set(continuous_states))
         discrete_params.sort()
 
@@ -613,7 +602,6 @@ class AgentPopulationSolution:
         return self.solution_database
 
     def _merge_solutions_3d(self, continuous_states):
-
         discrete_params = list(set(self.dist_params) - set(continuous_states))
         discrete_params.sort()
 
