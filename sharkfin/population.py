@@ -284,10 +284,9 @@ class AgentPopulation:
     def solve(self, merge_by=None):
         self.solve_distributed_agents()
 
-        if merge_by is not None:
-            self.solution = AgentPopulationSolution(self)
-            self.solution.merge_solutions(continuous_states=merge_by)
-            self.ex_ante_hetero_params = self.solution.ex_ante_hetero_params
+        self.solution = AgentPopulationSolution(self)
+        self.solution.merge_solutions(continuous_states=merge_by)
+        self.ex_ante_hetero_params = self.solution.ex_ante_hetero_params
 
     def attend(self, agent, price, risky_expectations):
         """
@@ -525,17 +524,25 @@ class AgentPopulationSolution:
         self.agent_database = self.agent_population.agent_database
 
     def merge_solutions(self, continuous_states):
-        # check that continous states are in heterogeneous parameters
-        for state in continuous_states:
-            if state not in self.dist_params:
-                raise AttributeError(
-                    "{} is not an agent-varying parameter.".format(state)
-                )
+        if continuous_states is None or continuous_states == []:
+            if self.dist_params is None or self.dist_params == []:
+                self.solution_database = self.agent_database
+            else:
+                self.solution_database = self.agent_database.set_index(self.dist_params)
+            self.ex_ante_hetero_params = []
 
-        if len(continuous_states) == 2:
-            self._merge_solutions_2d(continuous_states)
-        elif len(continuous_states) == 3:
-            self._merge_solutions_3d(continuous_states)
+        else:
+            # check that continous states are in heterogeneous parameters
+            for state in continuous_states:
+                if state not in self.dist_params:
+                    raise AttributeError(
+                        "{} is not an agent-varying parameter.".format(state)
+                    )
+
+            if len(continuous_states) == 2:
+                self._merge_solutions_2d(continuous_states)
+            elif len(continuous_states) == 3:
+                self._merge_solutions_3d(continuous_states)
 
     def _merge_solutions_2d(self, continuous_states):
         discrete_params = list(set(self.dist_params) - set(continuous_states))
@@ -598,8 +605,6 @@ class AgentPopulationSolution:
         self.solution_database = pd.DataFrame(solution_database)
 
         self.solution_database = self.solution_database.set_index(discrete_params)
-
-        return self.solution_database
 
     def _merge_solutions_3d(self, continuous_states):
         discrete_params = list(set(self.dist_params) - set(continuous_states))
@@ -674,5 +679,3 @@ class AgentPopulationSolution:
         self.solution_database = pd.DataFrame(solution_database)
 
         self.solution_database = self.solution_database.set_index(discrete_params)
-
-        return self.solution_database
