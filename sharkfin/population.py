@@ -255,7 +255,9 @@ class AgentPopulation:
             if self.stored_class_stats is None:
                 ## build an IndShockConsumerType "double" of this agent, with the same parameters
                 parameters = agent.parameters.copy()
-                parameters["Rfree"] = parameters["Rfree"][0]
+                if "Rfree" in parameters and isinstance(parameters["Rfree"], list):
+                    # patch potential bug until HARK is updated
+                    parameters["Rfree"] = parameters["Rfree"][0]
                 ind_shock_double = cism.IndShockConsumerType(**parameters)
 
                 ## solve to get the mNrmStE value
