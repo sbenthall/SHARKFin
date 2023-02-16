@@ -6,10 +6,13 @@ from xarray import DataArray
 
 from sharkfin.population import AgentPopulation
 
-def build_population(agent_type, parameters, rng = None, dphm = 1500):
-    pop = AgentPopulation(agent_type(), parameters, rng = rng, dollars_per_hark_money_unit = dphm)
-    if 'approx_params' in parameters:
-        pop.approx_distributions(parameters['approx_params'])
+
+def build_population(agent_type, parameters, rng=None, dphm=1500):
+    pop = AgentPopulation(
+        agent_type(), parameters, rng=rng, dollars_per_hark_money_unit=dphm
+    )
+    if "approx_params" in parameters:
+        pop.approx_distributions(parameters["approx_params"])
     pop.parse_params()
 
     pop.create_distributed_agents()
@@ -60,9 +63,11 @@ whiteshark_approx_params = {"CRRA": 3, "DiscFac": 2, "RiskyAvg": 10, "RiskyStd":
 
 ### Configuring the agent population
 
-whiteshark_parameter_dict = whiteshark_agent_population_params | whiteshark_continuous_dist_params
-whiteshark_parameter_dict['approx_params'] = whiteshark_approx_params
-whiteshark_parameter_dict['ex_post'] = ["RiskyAvg", "RiskyStd"]
+whiteshark_parameter_dict = (
+    whiteshark_agent_population_params | whiteshark_continuous_dist_params
+)
+whiteshark_parameter_dict["approx_params"] = whiteshark_approx_params
+whiteshark_parameter_dict["ex_post"] = ["RiskyAvg", "RiskyStd"]
 whiteshark_parameter_dict["AgentCount"] = 1
 
 WHITESHARK = whiteshark_parameter_dict
@@ -76,23 +81,24 @@ WHITESHARK = whiteshark_parameter_dict
 ### TODO: Population generators that take parameters like CRRA, DisCFac
 
 lucas0_agent_population_params = {
+    "cycles": 0,  # issue 186
     "aNrmInitStd": 0.0,
     "LivPrb": 0.98**0.25,
     "PermGroFac": 1.0,
-    "pLvlInitMean": 0.0, ## Intention: Shut down income. But this might not do it.
+    "pLvlInitMean": 0.0,  ## Intention: Shut down income. But this might not do it.
     "pLvlInitStd": 0.0,
     "Rfree": 1.0,
     # Scaling from annual to quarterly
     "TranShkStd": [0],
     "PermShkStd": [0],
     ### These are placeholders that will be set when the system is set up.
-    "CRRA" : 5,
-    "DiscFac" : 0.96,
-    "ex_post" : None # ex post heterogeneous parameters over which to merge solutions
+    "CRRA": 5,
+    "DiscFac": 0.96,
+    "ex_post": None,  # ex post heterogeneous parameters over which to merge solutions
 }
 
 lucas0_parameter_dict = lucas0_agent_population_params
-lucas0_parameter_dict["AgentCount"] = 10 # TODO: What should this be?
+lucas0_parameter_dict["AgentCount"] = 10  # TODO: What should this be?
 
 
 LUCAS0 = lucas0_parameter_dict
