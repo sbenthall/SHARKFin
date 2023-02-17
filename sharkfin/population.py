@@ -200,20 +200,36 @@ class AgentPopulation:
         """
         agent_data = self.agent_data().drop(columns="agents")
 
-        cs = (
-            agent_data.groupby(self.ex_ante_hetero_params)
-            .aggregate(["mean", "std"])
-            .reset_index()
-        )
+        if self.ex_ante_hetero_params is None or len(self.ex_ante_hetero_params) == 0:
+            cs = agent_data.copy()
+            cs["aLvl_mean"] = agent_data["aLvl"]
+            cs["aLvl_std"] = 0
+            cs["mNrm_mean"] = agent_data["mNrm"]
+            cs["mNrm_std"] = 0
+            cs["cNrm_mean"] = agent_data["cNrm"]
+            cs["cNrm_std"] = 0
+            cs["mNrm_ratio_StE_mean"] = agent_data["mNrm_ratio_StE"]
+            cs["mNrm_ratio_StE_std"] = 0
+            cs["label"] = "all"
+        else:
+            cs = (
+                agent_data.groupby(self.ex_ante_hetero_params)
+                .aggregate(["mean", "std"])
+                .reset_index()
+            )
 
-        cs.columns = ["_".join(col).strip("_") for col in cs.columns.values]
+            label = ""
 
-        label = ""
+            for param in self.ex_ante_hetero_params:
+                label += round(cs[param], 2).apply(lambda x: f"{param}={x}, ")
 
-        for param in self.ex_ante_hetero_params:
-            label += round(cs[param], 2).apply(lambda x: f"{param}={x}, ")
+            cs["label"] = label.str[:-2]
 
-        cs["label"] = label.str[:-2]
+            cs.columns = ["_".join(col).strip("_") for col in cs.columns.values]
+
+        # print(cs.columns)
+
+        # print(cs.columns)
 
         if store:
             self.stored_class_stats = cs
@@ -314,7 +330,7 @@ class AgentPopulation:
         # NOTE: This mutates the agent
         agent.shares = target_shares
 
-        if agent.shares < 0:
+        if np.any(agent.shares < 0):
             print(f"ERROR: Agent has negative shares after attention.")
 
         return delta_shares
@@ -324,6 +340,9 @@ class AgentPopulation:
         Assign the respective solution to the agent using the master solution and
         the agent's perceptions of the market.
         """
+
+        if self.ex_ante_hetero_params is None or len(self.ex_ante_hetero_params) == 0:
+            return
 
         # assign solution before simulating
         # get master solution
@@ -440,14 +459,14 @@ class AgentPopulation:
         agent.assign_parameters(**macro_risky_params)
         agent.simulate(sim_periods=1)
 
-        if agent.state_now["aNrm"] < 0:
+        if np.any(agent.state_now["aNrm"]) < 0:
             print("ERROR: Agent has negative assets after macro update.")
 
-        if agent.controls["Share"] < 0:
+        if np.any(agent.controls["Share"]) < 0:
             print("ERROR: Agent has negative risky share after macro update.")
             print(true_risky_expectations)
 
-        if agent.controls["Share"] > 1:
+        if np.any(agent.controls["Share"]) > 1:
             print("ERROR: Agent has share > 1 after macro update.")
             print(true_risky_expectations)
 
