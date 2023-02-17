@@ -341,10 +341,13 @@ class MarketSimulation(AbstractSimulation):
             clean_log_returns = [r for r in self.market.log_return_list() if not np.isnan(r)]
 
             # stylized facts
-            sim_stats['log_return_autocorrelation_DW'] = stylized_facts.DW_test(
-                np.array([r for r in clean_log_returns])) - 2
-            sim_stats['log_return_squared_autocorrelation_DW'] = stylized_facts.DW_test(
-                np.array([r ** 2 for r in clean_log_returns])) - 2
+            sim_stats['log_return_DW_statistic'] = stylized_facts.DW_test(
+                np.array([r for r in clean_log_returns]))
+            sim_stats['log_return_squared_DW_statistic'] = stylized_facts.DW_test(
+                np.array([r ** 2 for r in clean_log_returns]))
+
+            sim_stats['log_return_autocorrelation_from_DW'] = 2 - sim_stats['log_return_DW_statistic']
+            sim_stats['log_return_squared_autocorrelation_from_DW'] = 2 - sim_stats['log_return_squared_DW_statistic']
 
             # TODO: Include less confusing autocorrelation values
             # Maybe https://www.statsmodels.org/stable/generated/statsmodels.tsa.stattools.acf.html
