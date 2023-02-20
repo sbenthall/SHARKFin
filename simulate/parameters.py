@@ -98,7 +98,7 @@ lucas0_agent_population_params = {
 }
 
 lucas0_parameter_dict = lucas0_agent_population_params
-lucas0_parameter_dict["AgentCount"] = 1  # TODO: What should this be?
+lucas0_parameter_dict["AgentCount"] = 10  # TODO: What should this be?
 
 
 LUCAS0 = lucas0_parameter_dict
