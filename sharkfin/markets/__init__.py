@@ -50,7 +50,7 @@ class AbstractMarket(ABC):
         pass
 
     @abstractmethod
-    def run_market(self) -> tuple([float, float]):
+    def run_market(self, run_args = None) -> tuple([float, float]):
         """
         Runs the market for one day and returns the price.
         """
@@ -193,7 +193,7 @@ class MockMarket(AbstractMarket):
 
         self.rng = rng if rng is not None else np.random.default_rng()
 
-    def run_market(self, seed=0, buy_sell=(0,0)):
+    def run_market(self, seed=0, buy_sell=(0,0), run_args = None):
         """
         Sample from a probability distribution
         """
@@ -201,6 +201,7 @@ class MockMarket(AbstractMarket):
         self.last_buy_sell = buy_sell
 
         print("run_market, buy_sell: " + str(buy_sell))
+        print(run_args)
 
         new_dividend = self.next_dividend()
         new_price = new_dividend * self.price_to_dividend_ratio

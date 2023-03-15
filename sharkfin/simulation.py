@@ -92,7 +92,7 @@ class MarketSimulation(AbstractSimulation):
     error_message = None
 
     def __init__(
-        self, q=1, r=None, market=None, days_per_quarter = 60
+        self, q=1, r=None, market=None, days_per_quarter = 60, broker_args = None
     ):
         """
         q - number of quarters
@@ -114,7 +114,7 @@ class MarketSimulation(AbstractSimulation):
         # Create the Market wrapper
         self.market = MockMarket() if market is None else market
 
-        self.broker = Broker(self.market)
+        self.broker = Broker(self.market, broker_args = broker_args)
 
         self.history = {}
         self.history['buy_sell'] = []
@@ -384,6 +384,7 @@ class MacroSimulation(MarketSimulation):
 
     def __init__(
         self, pop, Fm, q=1, r=None, market=None, days_per_quarter = 60,
+        broker_args = None,
         fm_args = {
             'p1' : 0.1,
             'p2' : 0.1,
@@ -408,7 +409,14 @@ class MacroSimulation(MarketSimulation):
 
         # 
         # Initialize a basic AgentType
-        MarketSimulation.__init__(self, q=q, r=r, market=market, days_per_quarter = days_per_quarter)
+        MarketSimulation.__init__(
+            self,
+            q=q,
+            r=r,
+            market=market,
+            days_per_quarter = days_per_quarter,
+            broker_args = broker_args
+            )
 
         self.pop = pop
 
@@ -700,9 +708,12 @@ class AttentionSimulation(MacroSimulation):
     ## upping this to make more agents engaged in trade
     attention_rate = None
 
-    def __init__(self, pop, fm, q=1, r=None, a=None, market=None, days_per_quarter = 60, rng = None, seed = None, fm_args = None):
+    def __init__(
+        self, pop, fm, q=1, r=None, a=None,
+        market=None, days_per_quarter = 60, rng = None,
+        seed = None, broker_args = None, fm_args = None):
 
-        super().__init__(pop, fm, q=q, r=r, market=market, days_per_quarter = days_per_quarter, fm_args = fm_args)
+        super().__init__(pop, fm, q=q, r=r, market=market, days_per_quarter = days_per_quarter, broker_args = broker_args, fm_args = fm_args)
 
         self.rng = rng if rng is not None else np.random.default_rng()
 

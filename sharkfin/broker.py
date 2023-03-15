@@ -7,6 +7,7 @@ class Broker:
     ----------
     market - a MarketPNL instance
     """
+    broker_args = None
 
     buy_limit = 0
     sell_limit = 0
@@ -22,10 +23,13 @@ class Broker:
 
     market = None
 
-    def __init__(self, market):
+    def __init__(self, market, broker_args = None):
         self.market = market
         self.buy_sell_history = []
         self.buy_sell_macro_history = []
+
+        if broker_args is not None:
+            self.broker_args = broker_args
 
     def transact(self, delta_shares, macro=False):
         """
@@ -71,7 +75,7 @@ class Broker:
 
         # print("Buy/Sell Limit: " + str(buy_sell))
 
-        price, dividend = self.market.run_market(buy_sell=buy_sell)
+        price, dividend = self.market.run_market(buy_sell=buy_sell, run_args = self.broker_args)
 
         # clear the local limits
         self.buy_limit = 0

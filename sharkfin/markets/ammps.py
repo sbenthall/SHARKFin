@@ -99,7 +99,7 @@ class ClientRPCMarket(AbstractMarket):
                 ## Moving forward, the body should be JSON.
                 self.response = json.loads(body)
 
-    def run_market(self, buy_sell=(0, 0)):
+    def run_market(self, buy_sell=(0, 0), run_args = None):
 
         self.last_buy_sell = buy_sell
 
@@ -112,6 +112,9 @@ class ClientRPCMarket(AbstractMarket):
             'dividend' : new_dividend,
             'end_simulation': False
             }
+
+        if run_args is not None:
+            data.update(run_args)
 
         self.response = None
 

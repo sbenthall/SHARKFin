@@ -78,6 +78,8 @@ parser.add_argument('--dividend_std', help='Market: daily standard deviation fo 
 parser.add_argument('-q', '--queue', help='RabbitMQ: name of rabbitmq queue', default='rpc_queue')
 parser.add_argument('-r', '--rhost', help='RabbitMQ: rabbitmq server location', default='localhost')
 
+parser.add_argument('--mba', help='A numerical argument to pass through to the AMMPS market broker', default='0')
+
 # Expectations module
 parser.add_argument('--expectations',
     help='Expectations: name of Expectations class. Options: FinanceModel, UsualExpectations, AdaptiveExpectations',
@@ -114,6 +116,7 @@ def run_attention_simulation(
     d1 = 60,
     d2 = 60,
     zeta = 0.5,
+    mba = 0,
     rng = None,
     pad = None,
     seed = None
@@ -135,7 +138,11 @@ def run_attention_simulation(
             'delta_t1' : d1,
             'delta_t2' : d2,
             'zeta' : zeta
-        })
+        },
+        broker_args = {
+            'market_broker_arg' : mba
+        }
+    )
     
     sim.simulate(burn_in = pad)
 
@@ -214,6 +221,10 @@ if __name__ == '__main__':
     host = args.rhost
     queue = args.queue
 
+    # market broker arg
+    # also, masters of business administration
+    mba = args.mba
+
     ## Chum parameters
     buysize = int(args.buysize)
     sellsize = int(args.sellsize)
@@ -241,6 +252,7 @@ if __name__ == '__main__':
         d1,
         d2,
         zeta,
+        mba,
         buysize,
         sellsize,
         pad
@@ -311,6 +323,7 @@ if __name__ == '__main__':
             d1 = d1,
             d2 = d2,
             zeta = zeta,
+            mba = mba,
             rng = rng,
             pad = pad,
             seed = seed
