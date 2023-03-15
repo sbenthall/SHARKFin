@@ -1050,7 +1050,7 @@ def visualize_simulation_data(data):
         figsize=(14,16),
     )
 
-    ax[0].plot(data['total_assets'], alpha=0.5, label='Total owned share')
+    ax[0].plot(data['total_assets'], alpha=0.5, label='Total assets')
     ax[0].plot([p * o for (p,o) in zip(data['prices'], data['owned'])], alpha=0.5, label='Owned share value')
     ax[0].plot([100 * o for (p,o) in zip(data['prices'], data['owned'])], alpha=0.5, label='Owned share quantity * price at time 0')
     ax[0].legend()
