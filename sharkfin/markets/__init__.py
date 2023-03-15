@@ -208,6 +208,7 @@ class MockMarket(AbstractMarket):
         self.prices.append(new_price) ## TODO: Should this be when the new rate of return is computed?
 
         print('price: ' + str(new_price))
+        print('dividend: ' + str(new_dividend))
 
         self.dividends.append(new_dividend)
 
