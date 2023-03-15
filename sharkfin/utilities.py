@@ -118,12 +118,13 @@ def combine_lognormal_rates(ror1, std1, ror2, std2):
 
 
 
-def price_dividend_ratio_random_walk(DiscFac, CRRA, dividend_std):
+def price_dividend_ratio_random_walk(DiscFac, CRRA, dividend_std, days_per_quarter = 60):
+    ## THIS IS NOT YET WORKING!!!! The notes below have been revised, and the code is not up to date
     ## From Equation 21 from the C. Carroll Lucas asset pricing notes:
     ## http://www.econ2.jhu.edu/people/ccarroll/public/lecturenotes/AssetPricing/LucasAssetPrice.pdf
 
     ## theta is discount rate (derived from discount factor)
-    theta = 1 / DiscFac - 1
+    theta = 1 / (DiscFac ** (1.0 / days_per_quarter)) - 1  # ( 1- DiscFac) / DiscFac
 
     ## Need to get the standard deviation of the underlying normal distribution
     div_psi_ror = 1
