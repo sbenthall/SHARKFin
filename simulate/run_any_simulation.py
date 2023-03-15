@@ -79,6 +79,7 @@ parser.add_argument('-q', '--queue', help='RabbitMQ: name of rabbitmq queue', de
 parser.add_argument('-r', '--rhost', help='RabbitMQ: rabbitmq server location', default='localhost')
 
 parser.add_argument('--mba', help='A numerical argument to pass through to the AMMPS market broker', default='0')
+parser.add_argument('--macro_price_field', help='The field of the AMMPS RPC response that corresponds to the "price" for macro agents', default='ClosingPrice')
 
 # Expectations module
 parser.add_argument('--expectations',
@@ -224,6 +225,7 @@ if __name__ == '__main__':
     # market broker arg
     # also, masters of business administration
     mba = args.mba
+    macro_price_field = args.macro_price_field
 
     ## Chum parameters
     buysize = int(args.buysize)
@@ -255,7 +257,8 @@ if __name__ == '__main__':
         mba,
         buysize,
         sellsize,
-        pad
+        pad,
+        macro_price_field
         ]]))
 
     # random number generator with seed
@@ -269,7 +272,7 @@ if __name__ == '__main__':
             pop_DiscFac,
             pop_CRRA,
             dividend_std
-            )
+            ),
     }
 
     market_class = None
@@ -280,6 +283,7 @@ if __name__ == '__main__':
         market_class = ClientRPCMarket
         market_args['queue_name'] = queue
         market_args['host'] = host
+        market_args['macro_price_field'] = macro_price_field
     else:
         print(f"{market_class_name} is not a known market class. Using MockMarket.")
         market_class = MockMarket

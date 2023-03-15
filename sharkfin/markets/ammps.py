@@ -23,6 +23,8 @@ class ClientRPCMarket(AbstractMarket):
 
     rng = None
 
+    macro_price_field = None
+
     def __init__(self,
         seed=None,
         queue_name='',
@@ -30,7 +32,8 @@ class ClientRPCMarket(AbstractMarket):
         dividend_growth_rate = 1.000628,
         dividend_std = 0.011988,
         price_to_dividend_ratio = 60 / 0.05,
-        rng = None
+        rng = None,
+        macro_price_field = None
         ):
 
         # discounted future value, divided by days per quarter
@@ -50,6 +53,10 @@ class ClientRPCMarket(AbstractMarket):
 
         self.rpc_queue_name = queue_name
         self.rpc_host_name = host
+
+        self.macro_price_field = macro_price_field \
+            if macro_price_field is not None \
+            else "ClosingPrice"
 
         self.init_rpc()
 
@@ -94,7 +101,7 @@ class ClientRPCMarket(AbstractMarket):
             try:
                 ## If the body is just a number, it's the closing price.
                 ## This is an option that will be deprecated one day
-                self.response = {"ClosingPrice" : float(body)}
+                self.response = { self.macro_price_field  : float(body)}
             except ValueError:
                 ## Moving forward, the body should be JSON.
                 self.response = json.loads(body)
@@ -139,8 +146,8 @@ class ClientRPCMarket(AbstractMarket):
 
         else:
 
-            self.latest_price = self.response['ClosingPrice']
-            self.prices.append(float(self.response['ClosingPrice']))
+            self.latest_price = self.response[ self.macro_price_field ]
+            self.prices.append(float(self.response[ self.macro_price_field ]))
         
             return self.latest_price, new_dividend
 
