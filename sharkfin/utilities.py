@@ -118,25 +118,37 @@ def combine_lognormal_rates(ror1, std1, ror2, std2):
 
 
 
-def price_dividend_ratio_random_walk(DiscFac, CRRA, dividend_std, days_per_quarter = 60):
-    ## THIS IS NOT YET WORKING!!!! The notes below have been revised, and the code is not up to date
-    ## From Equation 21 from the C. Carroll Lucas asset pricing notes:
+def price_dividend_ratio_random_walk(DiscFac, CRRA, dividend_growth_rate, dividend_std, days_per_quarter = 90):
+    ## From Equation 30 from the C. Carroll Lucas asset pricing notes:
     ## http://www.econ2.jhu.edu/people/ccarroll/public/lecturenotes/AssetPricing/LucasAssetPrice.pdf
 
     ## theta is discount rate (derived from discount factor)
-    theta = 1 / (DiscFac ** (1.0 / days_per_quarter)) - 1  # ( 1- DiscFac) / DiscFac
 
-    ## Need to get the standard deviation of the underlying normal distribution
-    div_psi_ror = 1
-    # target variance of the price distribution with no broker impact
-    div_psi_std = dividend_std
+    ## Let the 'subjective return' SR be: (maybe not a good name)
+    ## $\beta e^{(1 - \rho)(\gamma - \rho\sigma^2_d/2)$
+    ## or, equivalently
+    ## $\Gamma^{1-\rho} \beta (\sigma^2_\phi + 1)^{(\rho - 1)\rho /2}$
+    ## where
+    ## Gamma -- dividend_growth_rate (daily)
+    ## beta -- DiscFac (converted to daily)
+    ## rho -- CRRA
+    ## sigma_phi -- dividend_std
+    ##
+    ## "Impatience condition": SR < 1
+    ##
+    ## Price/dividend ratio = SR / (1 - SR)
+    ##
 
-    # mean of underlying normal distribution
-    exp_ror = np.log((div_psi_ror ** 2) / np.sqrt(div_psi_ror ** 2 + div_psi_std ** 2))
-    # standard deviation of underlying distribution
-    exp_std = np.sqrt(np.log(1 + div_psi_std ** 2 / div_psi_ror ** 2))
+    # Assuming DiscFac in argument in quarterly
+    DiscFac_daily = DiscFac ** (1.0 / days_per_quarter)
 
-    return 1.0 / (theta - (0.5 * CRRA * (CRRA - 1) * (exp_std ** 2)))
+    subjective_return = dividend_growth_rate ** (1 - CRRA) \
+        * DiscFac_daily * (dividend_std ** 2 + 1) ** (CRRA * (CRRA - 1))
+
+    assert subjective_return < 1
+    print("subjective_return: " + str(subjective_return))
+
+    return subjective_return / (1 - subjective_return)
 
 
 """

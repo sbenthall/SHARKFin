@@ -271,6 +271,7 @@ if __name__ == '__main__':
         'price_to_dividend_ratio' : price_dividend_ratio_random_walk(
             pop_DiscFac,
             pop_CRRA,
+            dividend_growth_rate,
             dividend_std
             ),
     }
