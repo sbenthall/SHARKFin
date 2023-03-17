@@ -1,3 +1,4 @@
+from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
 from pprint import pprint
@@ -180,7 +181,9 @@ class AgentPopulation:
         data_calls = {
             "aLvl": lambda a: a.state_now["aLvl"],
             "mNrm": lambda a: a.state_now["mNrm"],
-            "cNrm": lambda a: a.controls["cNrm"] if "cNrm" in a.controls else np.full(a.AgentCount, np.nan),
+            "cNrm": lambda a: a.controls["cNrm"]
+            if "cNrm" in a.controls
+            else np.full(a.AgentCount, np.nan),
             "mNrm_ratio_StE": lambda a: a.state_now["mNrm"] / a.mNrmStE,
         }
 
@@ -205,18 +208,13 @@ class AgentPopulation:
         if self.ex_ante_hetero_params is None or len(self.ex_ante_hetero_params) == 0:
             cs = agent_data.aggregate(["mean", "std"])
 
-            mean_data = cs.loc['mean'].to_dict()
-            std_data = cs.loc['std'].to_dict()
+            mean_data = cs.loc["mean"].to_dict()
+            std_data = cs.loc["std"].to_dict()
 
             # this collapse the data into one row with appropriate column names
-            all_data = {k + '_mean' : [mean_data[k]] for k in mean_data}
-            all_data.update({
-                k + '_std' : [std_data[k]]
-                for k
-                in std_data
-            })
-            all_data['label'] = ["all"]
-
+            all_data = {k + "_mean": [mean_data[k]] for k in mean_data}
+            all_data.update({k + "_std": [std_data[k]] for k in std_data})
+            all_data["label"] = ["all"]
 
             cs = pd.DataFrame.from_dict(all_data)
 
@@ -260,6 +258,22 @@ class AgentPopulation:
 
         for agent in self.agents:
             agent.solve()
+
+    def explode_agents(self, num):
+
+        exploded_agents = []
+        exploded_dicts = []
+
+        for i in enumerate(self.agents):
+            for j in range(num):
+                exploded_agents.append(deepcopy(self.agents[i]))
+                exploded_dicts.append(deepcopy(self.agent_dicts[i]))
+
+        self.agents = exploded_agents
+        self.agent_dicts = exploded_dicts
+
+        self.create_database()
+        self.unpack_solutions()
 
     def unpack_solutions(self):
         self.solution = [agent.solution for agent in self.agents]
