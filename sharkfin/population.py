@@ -264,16 +264,15 @@ class AgentPopulation:
         exploded_agents = []
         exploded_dicts = []
 
-        for i in enumerate(self.agents):
+        for i, agent in enumerate(self.agents):
             for j in range(num):
-                exploded_agents.append(deepcopy(self.agents[i]))
+                exploded_agents.append(deepcopy(agent))
                 exploded_dicts.append(deepcopy(self.agent_dicts[i]))
 
         self.agents = exploded_agents
         self.agent_dicts = exploded_dicts
 
         self.create_database()
-        self.unpack_solutions()
 
     def unpack_solutions(self):
         self.solution = [agent.solution for agent in self.agents]
