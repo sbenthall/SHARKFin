@@ -95,7 +95,6 @@ def test_macro_simulation():
         SequentialPortfolioConsumerType,
         WHITESHARK,
         rng=np.random.default_rng(1),
-        num_per_type=2,
     )
 
     # arguments to attention simulation
@@ -143,7 +142,6 @@ def test_attention_simulation():
         SequentialPortfolioConsumerType,
         WHITESHARK,
         rng=np.random.default_rng(1),
-        num_per_type=2,
     )
 
     # arguments to attention simulation
@@ -205,7 +203,6 @@ def test_lucas0_simulation():
         SequentialPortfolioConsumerType,
         LUCAS0,
         rng=np.random.default_rng(1),
-        num_per_type=100,
     )
 
     # arguments to attention simulation
