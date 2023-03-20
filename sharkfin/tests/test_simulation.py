@@ -1,12 +1,12 @@
+import numpy as np
 from HARK.ConsumptionSaving.ConsPortfolioModel import SequentialPortfolioConsumerType
+from pytest import approx
+
 from sharkfin.broker import *
 from sharkfin.expectations import *
 from sharkfin.population import *
 from sharkfin.simulation import *
-from simulate.parameters import WHITESHARK, build_population
-import numpy as np
-
-from pytest import approx
+from simulate.parameters import LUCAS0, WHITESHARK, build_population
 
 ## MARKET SIMULATIONS
 
@@ -194,3 +194,50 @@ def test_attention_simulation():
     ror_mean_2 = attsim.ror_mean()
 
     assert ror_mean_1 == approx(ror_mean_2)
+
+
+def test_lucas0_simulation():
+    """
+    Sets up and runs an simulation with an agent population.
+    """
+    # initialize population
+    pop = build_population(
+        SequentialPortfolioConsumerType,
+        LUCAS0,
+        rng=np.random.default_rng(1),
+        num_per_type=100,
+    )
+
+    # arguments to attention simulation
+
+    # a = 0.2
+    q = 1
+    r = 30
+    market = None
+
+    days_per_quarter = 30
+
+    attsim = MacroSimulation(
+        pop,
+        FinanceModel,
+        # a=a,
+        q=q,
+        r=r,
+        market=market,
+        days_per_quarter=days_per_quarter,
+    )
+    attsim.simulate(burn_in=20)
+
+    ## testing for existence of this class stat
+    attsim.pop.class_stats()["mNrm_ratio_StE_mean"]
+
+    attsim.daily_data()["sell_macro"]
+
+    attsim.sim_stats()
+
+    assert attsim.days_per_quarter == days_per_quarter
+    assert attsim.fm.days_per_quarter == days_per_quarter
+
+    data = attsim.daily_data()
+
+    assert len(data["prices"]) == 30
