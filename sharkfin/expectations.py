@@ -114,7 +114,7 @@ class UsualExpectations(AbstractExpectations):
         dgr = self.market.dividend_growth_rate
         dsd = self.market.dividend_std
 
-        self.daily_ror = (pdr + 1) * dgr / pdr
+        self.daily_ror = (pdr + 1) * dgr / pdr - 1
         self.daily_std = dsd * self.daily_ror
 
         #if 'daily_ror' in options:
