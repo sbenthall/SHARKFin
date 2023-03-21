@@ -69,7 +69,7 @@ parser.add_argument('--simulation', help='Which simulation. Options: Attention, 
 # Choose which population
 parser.add_argument('--population', help='Which simulation. Options: WHITESHARK, LUCAS0', default = "LUCAS0")
 parser.add_argument('--pop_CRRA', help='Mean population CRRA. Used for MockMarket and LUCAS0 population.', default = "5")
-parser.add_argument('--pop_DiscFac', help='Mean population CRRA. Used for MockMarket and LUCAS0 population.', default = "0.96")
+parser.add_argument('--pop_DiscFac', help='Mean population CRRA. Used for MockMarket and LUCAS0 population.', default = "0.99")
 
 parser.add_argument('--dividend_growth_rate', help='Market: daily average growth rate of the dividend', default = 1.000628)
 parser.add_argument('--dividend_std', help='Market: daily standard deviation fo the dividend', default = 0.011988)

@@ -59,7 +59,7 @@ whiteshark_agent_population_params = {
 
 whiteshark_continuous_dist_params = {
     "CRRA": Uniform(bot=2, top=10),
-    "DiscFac": Uniform(bot=0.936, top=0.978),
+    "DiscFac": Uniform(bot=0.984, top=0.994),
     "RiskyAvg": Uniform(bot=0.9, top=1.5),
     "RiskyStd": Uniform(bot=-0.07, top=0.37),
 }
@@ -98,7 +98,7 @@ lucas0_agent_population_params = {
     "PermShkStd": [0],
     ### These are placeholders that will be set when the system is set up.
     "CRRA": 5,
-    "DiscFac": 0.96,
+    "DiscFac": 0.99,
     "ex_post": None,  # ex post heterogeneous parameters over which to merge solutions
 }
 
