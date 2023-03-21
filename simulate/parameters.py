@@ -8,6 +8,9 @@ from sharkfin.population import AgentPopulation
 
 
 def build_population(agent_type, parameters, rng=None, dphm=1500):
+
+    num_per_type = parameters.get("num_per_type", 1)
+
     pop = AgentPopulation(
         agent_type(), parameters, rng=rng, dollars_per_hark_money_unit=dphm
     )
@@ -20,6 +23,8 @@ def build_population(agent_type, parameters, rng=None, dphm=1500):
     pop.solve_distributed_agents()
 
     pop.solve(merge_by=parameters["ex_post"])
+
+    pop.explode_agents(num_per_type)
 
     # initialize population model
     pop.init_simulation()
@@ -99,6 +104,6 @@ lucas0_agent_population_params = {
 
 lucas0_parameter_dict = lucas0_agent_population_params
 lucas0_parameter_dict["AgentCount"] = 10  # TODO: What should this be?
-
+lucas0_parameter_dict["num_per_type"] = 10
 
 LUCAS0 = lucas0_parameter_dict
