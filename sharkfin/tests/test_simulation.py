@@ -205,6 +205,8 @@ def test_lucas0_simulation():
         rng=np.random.default_rng(1),
     )
 
+    assert len(pop.agent_database.index) == LUCAS0["num_per_type"]
+
     # arguments to attention simulation
 
     # a = 0.2
