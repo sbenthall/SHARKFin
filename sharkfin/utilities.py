@@ -143,10 +143,10 @@ def price_dividend_ratio_random_walk(DiscFac, CRRA, dividend_growth_rate, divide
     DiscFac_daily = DiscFac ** (1.0 / days_per_quarter)
 
     subjective_return = dividend_growth_rate ** (1 - CRRA) \
-        * DiscFac_daily * (dividend_std ** 2 + 1) ** (CRRA * (CRRA - 1))
+        * DiscFac_daily * (dividend_std ** 2 + 1) ** (CRRA * (CRRA - 1) / 2)
 
-    assert subjective_return < 1
     print("subjective_return: " + str(subjective_return))
+    assert subjective_return < 1
 
     return subjective_return / (1 - subjective_return)
 
