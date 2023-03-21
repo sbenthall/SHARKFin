@@ -296,8 +296,8 @@ class AgentPopulation:
 
                 ## solve to get the mNrmStE value
                 ## that is, the Steady-state Equilibrium value of mNrm, for the IndShockModel
-                ind_shock_double.solve()
-                mNrmStE = ind_shock_double.solution[0].mNrmStE
+                ### COMMENTED OUT FOR PERFORMANCE REASONS: ind_shock_double.solve()
+                mNrmStE = 0 #### COMMENTED OUT FOR PERFORMANCE REASONS:ind_shock_double.solution[0].mNrmStE
 
                 agent.state_now["mNrm"][:] = mNrmStE
                 agent.mNrmStE = (
