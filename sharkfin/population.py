@@ -324,7 +324,7 @@ class AgentPopulation:
         self.solution.merge_solutions(continuous_states=merge_by)
         self.ex_ante_hetero_params = self.solution.ex_ante_hetero_params
 
-    def attend(self, agent, price, risky_expectations):
+    def attend(self, agent, price, risky_expectations, day = None):
         """
         Cause the agent to attend to the financial model.
 
@@ -335,7 +335,19 @@ class AgentPopulation:
         Return the delta of risky asset shares ordered through the brokers.
 
         NOTE: This MUTATES the agents with their new target share amounts.
+
+        Params
+        ------
+        day: None or int -- If int, then record the day on the agent.
         """
+        # It's a little weird using assign_parameters for this but...
+        if day is not None and 'attention_days' in agent.parameters:
+            attention_days = agent.parameters['attention_days']
+            attention_days.append(day)
+            agent.assign_parameters(**{'attention_days' : attention_days})
+        elif day is not None:
+            agent.assign_parameters(**{'attention_days' : [day]})
+
         # Note: this mutates the underlying agent
         # we should also assign their solution
         agent.assign_parameters(**risky_expectations)
