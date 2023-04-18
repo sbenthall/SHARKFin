@@ -116,7 +116,7 @@ def combine_lognormal_rates(ror1, std1, ror2, std2):
 
 ##### Lucas Pricing Equations
 
-
+import math
 
 def price_dividend_ratio_random_walk(DiscFac, CRRA, dividend_growth_rate, dividend_std, days_per_quarter = 90):
     ## From Equation 30 from the C. Carroll Lucas asset pricing notes:
@@ -142,8 +142,10 @@ def price_dividend_ratio_random_walk(DiscFac, CRRA, dividend_growth_rate, divide
     # Assuming DiscFac in argument in quarterly
     DiscFac_daily = DiscFac ** (1.0 / days_per_quarter)
 
+    dividend_shock_std = dividend_std / math.sqrt(dividend_growth_rate)
+
     subjective_return = dividend_growth_rate ** (1 - CRRA) \
-        * DiscFac_daily * (dividend_std ** 2 + 1) ** (CRRA * (CRRA - 1) / 2)
+        * DiscFac_daily * (dividend_shock_std ** 2 + 1) ** (CRRA * (CRRA - 1) / 2)
 
     print("subjective_return: " + str(subjective_return))
     assert subjective_return < 1
