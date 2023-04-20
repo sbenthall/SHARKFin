@@ -20,7 +20,7 @@ import numpy as np
 import os
 import pandas as pd
 
-from sharkfin.expectations import AdaptiveExpectations, FinanceModel, UsualExpectations
+from sharkfin.expectations import InferentialExpectations, FinanceModel, UsualExpectations
 from sharkfin.markets import MockMarket
 from sharkfin.markets.ammps import ClientRPCMarket
 from sharkfin.population import AgentPopulation

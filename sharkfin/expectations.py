@@ -338,7 +338,7 @@ class FinanceModel(AbstractExpectations):
         self.expected_std_list = []
 
 
-class AdaptiveExpectations(FinanceModel):
+class InferentialExpectations(FinanceModel):
     """
     An expectations model that reports either the UsualExpectations
     or the expectations based on the chartist FinanceModel with probability
