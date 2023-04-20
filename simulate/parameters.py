@@ -90,7 +90,7 @@ lucas0_agent_population_params = {
     "aNrmInitStd": 0.0,
     "LivPrb": 0.98**0.25,
     "PermGroFac": 1.0,
-    "pLvlInitMean": 0.0,  ## Intention: Shut down income. But this might not do it.
+    "pLvlInitMean": 0.0,  ## This is the _log_ of the pLvl. So there is a quarterly income of 1.
     "pLvlInitStd": 0.0,
     "Rfree": 1.0,
     # Scaling from annual to quarterly
@@ -103,7 +103,7 @@ lucas0_agent_population_params = {
 }
 
 lucas0_parameter_dict = lucas0_agent_population_params
-lucas0_parameter_dict["AgentCount"] = 10  # TODO: What should this be?
-lucas0_parameter_dict["num_per_type"] = 10
+lucas0_parameter_dict["AgentCount"] = 1  # TODO: What should this be?
+lucas0_parameter_dict["num_per_type"] = 1000
 
 LUCAS0 = lucas0_parameter_dict
