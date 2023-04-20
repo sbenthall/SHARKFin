@@ -835,7 +835,6 @@ class AttentionSimulation(MacroSimulation):
         self.end_day = day
 
     def sim_stats(self):
-
         sim_stats = super().sim_stats()
 
         sim_stats['attention'] = self.attention_rate
