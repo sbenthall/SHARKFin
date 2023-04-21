@@ -53,11 +53,16 @@ class AbstractExpectations(ABC):
         pass
 
     @abstractmethod
-    def risky_expectations(self):
+    def risky_expectations(self, agent = None):
         """
         Return quarterly expectations for the risky asset.
         These are the average and standard deviation for the asset
         including both capital gains and dividends.
+
+        Params
+        -------
+
+        agent: AgentType -- the agent for whom the risky expectations are being taken.
         """
         pass
 
@@ -155,7 +160,7 @@ class UsualExpectations(AbstractExpectations):
         """
         return self.market.prices[-1]
 
-    def risky_expectations(self):
+    def risky_expectations(self, agent = None):
         """
         Return quarterly expectations for the risky asset.
         These will be constant.
@@ -312,7 +317,7 @@ class FinanceModel(AbstractExpectations):
         """
         return self.market.prices[-1]
 
-    def risky_expectations(self):
+    def risky_expectations(self, agent = None):
         """
         Return quarterly expectations for the risky asset.
         These are the average and standard deviation for the asset
@@ -379,7 +384,7 @@ class InferentialExpectations(FinanceModel):
         if 'zeta' in options:
             self.zeta = options['zeta']
 
-    def risky_expectations(self):
+    def risky_expectations(self, agent = None):
         """
         Return quarterly expectations for the risky asset.
         
@@ -389,32 +394,46 @@ class InferentialExpectations(FinanceModel):
         parameter.
         """
 
-        usual_ror = self.daily_ror
-        usual_std = self.daily_std
+        # this assumes daily_ror is actually the daily price change.
+        # need to double check this math.
+        adjuster = ((1 + self.daily_ror) + (1 + self.daily_ror) / self.market.price_to_dividend_ratio)
+
+        usual_ror = adjuster  - 1
+        usual_std = self.daily_std * adjuster
+        usual_dist = scipy_stats_lognorm_from_mean_std(1 + usual_ror, usual_std)
+
+        observed_ror = None
+        if 'attention_days' in agent.parameters:
+            observed_ror = np.array(self.market.ror_list())[agent.parameters['attention_days']] + 1
 
         strange_ror = self.expected_ror_list[-1]
         strange_std = self.expected_std_list[-1]
-        
-        usual_dist = scipy_stats_lognorm_from_mean_std(1 + usual_ror, usual_std)
-        strange_dist = scipy_stats_lognorm_from_mean_std(1 + strange_ror, strange_std)
+        #strange_dist = scipy_stats_lognorm_from_mean_std(1 + strange_ror, strange_std)
 
-        try:
-            # weird hard-coded value that does influence the zeta / p threshold.
-            ksd = ks_1samp(strange_dist.rvs(10), usual_dist.cdf)
-        except Exception as e:
-            print(f"strange_ror: {strange_ror}, strange_std: {strange_std}")
-            print(strange_dist.kwds)
-            print(e)
-            raise e
+        if observed_ror is not None:
+            try:
+                # weird hard-coded value that does influence the zeta / p threshold.
 
-        if ksd.pvalue > self.zeta:
-            print(f"USUAL: p: {ksd.pvalue} > zeta = {self.zeta}")
+                ## TODO: get the ror's from the market or something, then use those as the sample.
+                ksd = ks_1samp(observed_ror, usual_dist.cdf)
+            except Exception as e:
+                print(f"observed_ror: {observed_ror}")
+                print(e)
+                raise e
+
+            if ksd.pvalue < self.zeta:
+                print(f"STRANGE: observed_ror: {observed_ror}, p: {ksd.pvalue} <= zeta = {self.zeta}")
+                ## TODO: Add noise to this to prevent herding....
+                ror = strange_ror
+                std = strange_std
+            else:
+                ror = usual_ror
+                std = usual_std
+
+        else:
+            # with no observations assume usual
             ror = usual_ror
             std = usual_std
-        else:
-            print(f"STRANGE: p: {ksd.pvalue} <= zeta = {self.zeta}")
-            ror = strange_ror
-            std = strange_std
 
         # expected capital gains quarterly
         ex_cg_q_ror = ror_quarterly( ror , self.days_per_quarter)

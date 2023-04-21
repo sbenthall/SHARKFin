@@ -774,7 +774,7 @@ class AttentionSimulation(MacroSimulation):
                         self.broker.transact(self.pop.attend(
                             agent,
                             self.market.prices[-1],
-                            self.fm.risky_expectations(),
+                            self.fm.risky_expectations(agent),
                             day = day
                             )
                         )
