@@ -20,7 +20,7 @@ import numpy as np
 import os
 import pandas as pd
 
-from sharkfin.expectations import AdaptiveExpectations, FinanceModel, UsualExpectations
+from sharkfin.expectations import InferentialExpectations, FinanceModel, UsualExpectations
 from sharkfin.markets import MockMarket
 from sharkfin.markets.ammps import ClientRPCMarket
 from sharkfin.population import AgentPopulation
@@ -83,7 +83,7 @@ parser.add_argument('--macro_price_field', help='The field of the AMMPS RPC resp
 
 # Expectations module
 parser.add_argument('--expectations',
-    help='Expectations: name of Expectations class. Options: FinanceModel, UsualExpectations, AdaptiveExpectations',
+    help='Expectations: name of Expectations class. Options: FinanceModel, UsualExpectations, InferentialExpectations',
     default = "UsualExpectations"
     )
 
@@ -93,8 +93,8 @@ parser.add_argument('--p2', help='FinanceModel: memory parameter p2', default=0.
 parser.add_argument('--d1', help='FinanceModel: memory parameter d1', default=60)
 parser.add_argument('--d2', help='FinanceModel: memory parameter d2', default=60)
 
-# AdaptiveExpectations parameters
-parser.add_argument('--zeta', help='AdaptiveExpectations: sensitivity parameter. 0.0 <= zeta <= 1.0', default=0.5)
+# InferentialExpectations parameters
+parser.add_argument('--zeta', help='InferentialExpectations: sensitivity parameter. 0.0 <= zeta <= 1.0', default=0.5)
 
 # Chum parameters
 parser.add_argument('--buysize', help='Chum: buy size to shock', default=0)
@@ -215,7 +215,7 @@ if __name__ == '__main__':
     d1 = float(args.d1)
     d2 = float(args.d2)
 
-    # AdaptiveExpectations argument
+    # InferentialExpectations argument
     zeta = float(args.zeta)
 
     # Specific to RabbitMQ AMMPS Market 
@@ -297,8 +297,8 @@ if __name__ == '__main__':
         expectations_class = FinanceModel
     elif expectations_class_name == "UsualExpectations":
         expectations_class = UsualExpectations
-    elif expectations_class_name == "AdaptiveExpectations":
-        expectations_class = AdaptiveExpectations
+    elif expectations_class_name == "InferentialExpectations":
+        expectations_class = InferentialExpectations
     else:
         print(f"{expectations_class_name} is not a known Expectations class. Using UsualExpectations.")
         expectations_class = UsualExpectations

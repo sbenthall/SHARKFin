@@ -53,11 +53,16 @@ class AbstractExpectations(ABC):
         pass
 
     @abstractmethod
-    def risky_expectations(self):
+    def risky_expectations(self, agent = None):
         """
         Return quarterly expectations for the risky asset.
         These are the average and standard deviation for the asset
         including both capital gains and dividends.
+
+        Params
+        -------
+
+        agent: AgentType -- the agent for whom the risky expectations are being taken.
         """
         pass
 
@@ -78,6 +83,10 @@ class UsualExpectations(AbstractExpectations):
     This class still performs basic bookkeeping functions
     to fit the simulation interface.
     """
+    # These are the S&P500 numbers but see how in __init__
+    # these are being replaced by numbers derived from the Market.
+    # That is better design; we need to make sure the Market is getting
+    # the right values.
     daily_ror = 0.000628
     daily_std = 0.011988
 
@@ -96,7 +105,7 @@ class UsualExpectations(AbstractExpectations):
         self,
         market,
         days_per_quarter = None,
-        options = {'daily_ror' : 0.000628, 'daily_std' : 0.011988}
+        options = None
     ):
 
         self.market = market
@@ -112,15 +121,14 @@ class UsualExpectations(AbstractExpectations):
         ### 3. A (lognormal) random dividend walk
         pdr = self.market.price_to_dividend_ratio
         dgr = self.market.dividend_growth_rate
-        dsd = self.market.dividend_std
+        dsd = self.market.dividend_shock_std
 
-        self.daily_ror = (pdr + 1) * dgr / pdr - 1
-        self.daily_std = dsd * self.daily_ror
+        # this assumes daily_ror is actually the daily price change.
+        # need to double check this math.
+        adjuster = ((1 + dgr) + (1 + dgr) / pdr)
 
-        #if 'daily_ror' in options:
-        #    self.daily_ror = options['daily_ror']
-        #if 'daily_std' in options:
-        #    self.daily_std = options['daily_std']
+        self.daily_ror = adjuster - 2
+        self.daily_std = dsd * adjuster
 
         # self.ror_list = []
         self.expected_ror_list = []
@@ -155,7 +163,7 @@ class UsualExpectations(AbstractExpectations):
         """
         return self.market.prices[-1]
 
-    def risky_expectations(self):
+    def risky_expectations(self, agent = None):
         """
         Return quarterly expectations for the risky asset.
         These will be constant.
@@ -312,7 +320,7 @@ class FinanceModel(AbstractExpectations):
         """
         return self.market.prices[-1]
 
-    def risky_expectations(self):
+    def risky_expectations(self, agent = None):
         """
         Return quarterly expectations for the risky asset.
         These are the average and standard deviation for the asset
@@ -338,7 +346,7 @@ class FinanceModel(AbstractExpectations):
         self.expected_std_list = []
 
 
-class AdaptiveExpectations(FinanceModel):
+class InferentialExpectations(FinanceModel):
     """
     An expectations model that reports either the UsualExpectations
     or the expectations based on the chartist FinanceModel with probability
@@ -349,7 +357,10 @@ class AdaptiveExpectations(FinanceModel):
     daily_ror = 0.000628
     daily_std = 0.011988
 
-    # acceptance threshold for using 'usual' expectations.
+    # p-level threshold of rejection of null-hypothesis (USUAL)
+    # 1 - confidence level.
+    # zeta = 0 -> always use usual expectations
+    # zeta = 1 -> always use strange expectations.
     zeta = 0.0
 
     market = None
@@ -359,8 +370,6 @@ class AdaptiveExpectations(FinanceModel):
         market,
         days_per_quarter = None,
         options = {
-            'daily_ror' : 0.000628,
-            'daily_std' : 0.011988,
             'p1' : None,
             'p2' : None,
             'delta_t1' : None,
@@ -371,15 +380,15 @@ class AdaptiveExpectations(FinanceModel):
 
         super().__init__(market=market, days_per_quarter = days_per_quarter, options = options)
 
-        if 'daily_ror' in options:
-            self.daily_ror = options['daily_ror']
-        if 'daily_std' in options:
-            self.daily_std = options['daily_std']
+        usual = UsualExpectations(market, days_per_quarter, options)
+
+        self.daily_ror = usual.daily_ror
+        self.daily_std = usual.daily_std
 
         if 'zeta' in options:
             self.zeta = options['zeta']
 
-    def risky_expectations(self):
+    def risky_expectations(self, agent = None):
         """
         Return quarterly expectations for the risky asset.
         
@@ -392,34 +401,45 @@ class AdaptiveExpectations(FinanceModel):
         usual_ror = self.daily_ror
         usual_std = self.daily_std
 
+        usual_dist = scipy_stats_lognorm_from_mean_std(1 + usual_ror, usual_std)
+
+        observed_ror = None
+        if 'attention_days' in agent.parameters:
+            observed_ror = np.array(self.market.ror_list())[agent.parameters['attention_days']] + 1
+
         strange_ror = self.expected_ror_list[-1]
         strange_std = self.expected_std_list[-1]
-        
-        usual_dist = scipy_stats_lognorm_from_mean_std(1 + usual_ror, usual_std)
-        strange_dist = scipy_stats_lognorm_from_mean_std(1 + strange_ror, strange_std)
+        #strange_dist = scipy_stats_lognorm_from_mean_std(1 + strange_ror, strange_std)
 
-        try:
-            # weird hard-coded value that does influence the zeta / p threshold.
-            ksd = ks_1samp(strange_dist.rvs(10), usual_dist.cdf)
-        except Exception as e:
-            print(f"strange_ror: {strange_ror}, strange_std: {strange_std}")
-            print(strange_dist.kwds)
-            print(e)
-            raise e
+        if observed_ror is not None:
+            try:
 
-        if ksd.pvalue > self.zeta:
-            print(f"USUAL: p: {ksd.pvalue} > zeta = {self.zeta}")
+                ksd = ks_1samp(observed_ror, usual_dist.cdf)
+                #print(ksd)
+            except Exception as e:
+                print(f"observed_ror: {observed_ror}")
+                print(f"usual dist: {usual_dist.mean()}. {usual_dist.std()}")
+                print(e)
+                raise e
+
+            if ksd.pvalue < self.zeta:
+                #print(f"STRANGE: observed_ror: {observed_ror}, p: {ksd.pvalue} <= zeta = {self.zeta}")
+                ## TODO: Add noise to this to prevent herding....
+                ror = strange_ror
+                std = strange_std
+            else:
+                ror = usual_ror
+                std = usual_std
+
+        else:
+            # with no observations assume usual
             ror = usual_ror
             std = usual_std
-        else:
-            print(f"STRANGE: p: {ksd.pvalue} <= zeta = {self.zeta}")
-            ror = strange_ror
-            std = strange_std
 
-        # expected capital gains quarterly
-        ex_cg_q_ror = ror_quarterly( ror , self.days_per_quarter)
-        ex_cg_q_std = sig_quarterly( std , self.days_per_quarter)
+        # expected quarterly returns
+        q_ror = ror_quarterly( ror , self.days_per_quarter)
+        q_std = sig_quarterly( std , self.days_per_quarter)
 
-        market_risky_params = {'RiskyAvg': 1 + ex_cg_q_ror, 'RiskyStd': ex_cg_q_std}
+        market_risky_params = {'RiskyAvg': 1 + q_ror, 'RiskyStd': q_std}
 
         return market_risky_params

@@ -1,5 +1,6 @@
 from sharkfin.utilities import *
 from sharkfin.markets import AbstractMarket
+import math
 import numpy as np
 import json
 import pika
@@ -15,7 +16,7 @@ class ClientRPCMarket(AbstractMarket):
 
     dividend_growth_rate = None
     
-    dividend_std = None
+    dividend_shock_std = None
     
     dividends = None
     
@@ -40,7 +41,7 @@ class ClientRPCMarket(AbstractMarket):
         self.price_to_dividend_ratio = price_to_dividend_ratio
 
         self.dividend_growth_rate = dividend_growth_rate
-        self.dividend_std = dividend_std
+        self.dividend_shock_std = dividend_std / math.sqrt(dividend_growth_rate)
 
         self.simulation_price_scale = 1
         self.default_sim_price = 100

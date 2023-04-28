@@ -332,7 +332,7 @@ class MarketSimulation(AbstractSimulation):
             print(e)
 
         sim_stats['dividend_growth_rate'] = self.market.dividend_growth_rate
-        sim_stats['dividend_std'] = self.market.dividend_std
+        sim_stats['dividend_shock_std'] = self.market.dividend_shock_std
 
         sim_stats['seconds'] = (self.end_time - self.start_time).seconds
         sim_stats['end_day'] = self.end_day
@@ -774,7 +774,8 @@ class AttentionSimulation(MacroSimulation):
                         self.broker.transact(self.pop.attend(
                             agent,
                             self.market.prices[-1],
-                            self.fm.risky_expectations()
+                            self.fm.risky_expectations(agent),
+                            day = day
                             )
                         )
 
@@ -834,7 +835,6 @@ class AttentionSimulation(MacroSimulation):
         self.end_day = day
 
     def sim_stats(self):
-
         sim_stats = super().sim_stats()
 
         sim_stats['attention'] = self.attention_rate

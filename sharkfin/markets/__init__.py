@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import math
 import numpy as np
 from typing import Tuple
 
@@ -29,15 +30,15 @@ class AbstractMarket(ABC):
     @abstractmethod
     def dividend_growth_rate(self):
         """
-        A list of prices, beginning with the default price.
+        The growth factor of the dividend.
         """
         pass
 
     @property
     @abstractmethod
-    def dividend_std(self):
+    def dividend_shock_std(self):
         """
-        A list of prices, beginning with the default price.
+        The standard deviation of the lognormal dividend shock.
         """
         pass
 
@@ -136,7 +137,7 @@ class AbstractMarket(ABC):
 
         div_psi_ror = 1
         # target variance of the price distribution with no broker impact
-        div_psi_std = self.dividend_std
+        div_psi_std = self.dividend_shock_std
 
         # mean of underlying normal distribution
         exp_ror = np.log((div_psi_ror ** 2) / np.sqrt(div_psi_ror ** 2 + div_psi_std ** 2))
@@ -169,7 +170,7 @@ class MockMarket(AbstractMarket):
     dividends = None
 
     dividend_growth_rate = None
-    dividend_std = None
+    dividend_shock_std = None
 
     rng = None
 
@@ -186,7 +187,7 @@ class MockMarket(AbstractMarket):
         self.price_to_dividend_ratio = price_to_dividend_ratio
 
         self.dividend_growth_rate = dividend_growth_rate
-        self.dividend_std = dividend_std
+        self.dividend_shock_std = dividend_std  / math.sqrt(dividend_growth_rate)
 
         self.prices = [self.default_sim_price]
         self.dividends = [self.default_sim_price / self.price_to_dividend_ratio]
