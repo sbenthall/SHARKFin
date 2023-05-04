@@ -51,8 +51,8 @@ whiteshark_agent_population_params = {
     "pLvlInitStd": 0.0,
     "Rfree": 1.0,
     # Scaling from annual to quarterly
-    "TranShkStd": DataArray([ssvp["TranShkStd"][idx_40] / 2], dims="age"),
-    "PermShkStd": DataArray([ssvp["PermShkStd"][idx_40] ** 0.25], dims="age"),
+    "TranShkStd": [ssvp["TranShkStd"][idx_40] / 2],
+    "PermShkStd": [ssvp["PermShkStd"][idx_40] ** 0.25],
 }
 
 whiteshark_continuous_distributed_params = {
