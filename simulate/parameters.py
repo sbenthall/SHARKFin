@@ -4,19 +4,17 @@ from HARK.Calibration.Income.IncomeTools import sabelhaus_song_var_profile
 from HARK.distribution import Uniform
 from xarray import DataArray
 
-from sharkfin.population import AgentPopulation
+from sharkfin.population import SharkPopulation
 
 
 def build_population(agent_type, parameters, rng=None, dphm=1500):
-
     num_per_type = parameters.get("num_per_type", 1)
 
-    pop = AgentPopulation(
+    pop = SharkPopulation(
         agent_type(), parameters, rng=rng, dollars_per_hark_money_unit=dphm
     )
     if "approx_params" in parameters:
         pop.approx_distributions(parameters["approx_params"])
-    pop.parse_params()
 
     pop.create_distributed_agents()
     pop.create_database()
@@ -57,7 +55,7 @@ whiteshark_agent_population_params = {
     "PermShkStd": DataArray([ssvp["PermShkStd"][idx_40] ** 0.25], dims="age"),
 }
 
-whiteshark_continuous_dist_params = {
+whiteshark_continuous_distributed_params = {
     "CRRA": Uniform(bot=2, top=10),
     "DiscFac": Uniform(bot=0.984, top=0.994),
     "RiskyAvg": Uniform(bot=0.9, top=1.5),
@@ -69,7 +67,7 @@ whiteshark_approx_params = {"CRRA": 3, "DiscFac": 2, "RiskyAvg": 10, "RiskyStd":
 ### Configuring the agent population
 
 whiteshark_parameter_dict = (
-    whiteshark_agent_population_params | whiteshark_continuous_dist_params
+    whiteshark_agent_population_params | whiteshark_continuous_distributed_params
 )
 whiteshark_parameter_dict["approx_params"] = whiteshark_approx_params
 whiteshark_parameter_dict["ex_post"] = ["RiskyAvg", "RiskyStd"]

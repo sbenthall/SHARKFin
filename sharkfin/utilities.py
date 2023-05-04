@@ -5,6 +5,7 @@ import numpy as np
 import random
 from itertools import chain
 
+
 # Distribution Utilities
 def update_return(dict1, dict2):
     """
@@ -17,7 +18,7 @@ def update_return(dict1, dict2):
     return dict3
 
 
-def distribute(agents, dist_params):
+def distribute(agents, distributed_params):
     """
     Distribue the discount rate among a set of agents according
     the distribution from Carroll et al., "Distribution of Wealth"
@@ -29,7 +30,7 @@ def distribute(agents, dist_params):
     agents: list of AgentType
         A list of AgentType
 
-    dist_params:
+    distributed_params:
 
     Returns
     -------
@@ -38,13 +39,16 @@ def distribute(agents, dist_params):
 
     # This is hacky. Should streamline this in HARK.
 
-    for param in dist_params:
+    for param in distributed_params:
         agents_distributed = [
             distribute_params(
                 agent,
                 param,
-                dist_params[param]['n'],
-                Uniform(bot=dist_params[param]['bot'], top=dist_params[param]['top']),
+                distributed_params[param]["n"],
+                Uniform(
+                    bot=distributed_params[param]["bot"],
+                    top=distributed_params[param]["top"],
+                ),
             )
             for agent in agents
         ]
@@ -114,11 +118,15 @@ def combine_lognormal_rates(ror1, std1, ror2, std2):
 
     return ror3, sigma3
 
+
 ##### Lucas Pricing Equations
 
 import math
 
-def price_dividend_ratio_random_walk(DiscFac, CRRA, dividend_growth_rate, dividend_std, days_per_quarter = 90):
+
+def price_dividend_ratio_random_walk(
+    DiscFac, CRRA, dividend_growth_rate, dividend_std, days_per_quarter=90
+):
     ## From Equation 30 from the C. Carroll Lucas asset pricing notes:
     ## http://www.econ2.jhu.edu/people/ccarroll/public/lecturenotes/AssetPricing/LucasAssetPrice.pdf
 
@@ -144,8 +152,11 @@ def price_dividend_ratio_random_walk(DiscFac, CRRA, dividend_growth_rate, divide
 
     dividend_shock_std = dividend_std / math.sqrt(dividend_growth_rate)
 
-    subjective_return = dividend_growth_rate ** (1 - CRRA) \
-        * DiscFac_daily * (dividend_shock_std ** 2 + 1) ** (CRRA * (CRRA - 1) / 2)
+    subjective_return = (
+        dividend_growth_rate ** (1 - CRRA)
+        * DiscFac_daily
+        * (dividend_shock_std**2 + 1) ** (CRRA * (CRRA - 1) / 2)
+    )
 
     print("subjective_return: " + str(subjective_return))
     assert subjective_return < 1

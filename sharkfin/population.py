@@ -5,13 +5,10 @@ from pprint import pprint
 from typing import NewType
 
 import HARK.ConsumptionSaving.ConsIndShockModel as cism
-import HARK.ConsumptionSaving.ConsPortfolioModel as cpm
 import numpy as np
 import pandas as pd
-from HARK.core import AgentType
-from HARK.distribution import Distribution, IndexDistribution, combine_indep_dstns
+from HARK.core import AgentPopulation
 from HARK.interpolation import BilinearInterpOnInterp1D, TrilinearInterpOnInterp1D
-from xarray import DataArray
 
 from sharkfin.utilities import *
 
@@ -19,148 +16,12 @@ ParameterDict = NewType("ParameterDict", dict)
 
 
 @dataclass
-class AgentPopulation:
-    agent_class: AgentType
-    parameter_dict: ParameterDict
-    t_age: int = None
-    agent_class_count: int = None
-    rng: np.random.Generator = None  # random number generator
+class SharkPopulation(AgentPopulation):
     dollars_per_hark_money_unit: float = 1500
 
     def __post_init__(self):
-        self.time_var = self.agent_class.time_vary
-        self.time_inv = self.agent_class.time_inv
-
-        self.dist_params = []
-        param_dict = self.parameter_dict
-        for key_param in param_dict:
-            parameter = param_dict[key_param]
-            if (
-                isinstance(parameter, DataArray) and parameter.dims[0] == "agent"
-            ) or isinstance(parameter, Distribution):
-                self.dist_params.append(key_param)
-
-        self.infer_counts()
-
+        super().__post_init__()
         self.stored_class_stats = None
-
-    def infer_counts(self):
-        param_dict = self.parameter_dict
-
-        # if agent_clas_count is not specified, infer from parameters
-        if self.agent_class_count is None:
-            agent_class_count = 1
-            for key_param in param_dict:
-                parameter = param_dict[key_param]
-                if isinstance(parameter, DataArray) and parameter.dims[0] == "agent":
-                    agent_class_count = max(agent_class_count, parameter.shape[0])
-                elif isinstance(parameter, (Distribution, IndexDistribution)):
-                    agent_class_count = None
-                    break
-
-            self.agent_class_count = agent_class_count
-
-        if self.t_age is None:
-            t_age = 1
-            for key_param in param_dict:
-                parameter = param_dict[key_param]
-                if isinstance(parameter, DataArray) and parameter.dims[-1] == "age":
-                    t_age = max(t_age, parameter.shape[-1])
-                    # there may not be a good use for this feature yet as time varying distributions
-                    # are entered as list of moments (Avg, Std, Count, etc)
-                elif isinstance(parameter, (Distribution, IndexDistribution)):
-                    t_age = None
-                    break
-            self.t_age = t_age
-
-        # return t_age and agent_class_count
-
-    def approx_distributions(self, approx_params: dict):
-        param_dict = self.parameter_dict
-
-        self.continuous_distributions = {}
-
-        self.discrete_distributions = {}
-
-        for key in approx_params:
-            if key in param_dict and isinstance(param_dict[key], Distribution):
-                discrete_points = approx_params[key]
-                discrete_distribution = param_dict[key].discretize(discrete_points)
-                self.continuous_distributions[key] = param_dict[key]
-                self.discrete_distributions[key] = discrete_distribution
-            else:
-                print(
-                    "Warning: parameter {} is not a Distribution found in agent class {}".format(
-                        key, self.agent_class
-                    )
-                )
-
-        if len(self.discrete_distributions) > 1:
-            joint_dist = combine_indep_dstns(
-                *list(self.discrete_distributions.values())
-            )
-
-        keys = list(self.discrete_distributions.keys())
-        for i in range(len(self.discrete_distributions)):
-            param_dict[keys[i]] = DataArray(joint_dist.atoms[i], dims=("agent"))
-
-        self.infer_counts()
-
-    def parse_params(self):
-        param_dict = self.parameter_dict
-
-        agent_dicts = []  # container for dictionaries of each agent subgroup
-        for agent in range(self.agent_class_count):
-            agent_params = {}
-
-            for key_param in param_dict:
-                parameter = param_dict[key_param]
-
-                if key_param in self.time_var:
-                    # parameters that vary over time have to be repeated
-                    parameter_per_t = []
-                    for t in range(self.t_age):
-                        if isinstance(parameter, DataArray):
-                            if parameter.dims[0] == "agent":
-                                if parameter.dims[-1] == "age":
-                                    # if the parameter is a list, it's agent and time
-                                    parameter_per_t.append(parameter[agent][t].item())
-                                else:
-                                    parameter_per_t.append(parameter[agent].item())
-                            elif parameter.dims[0] == "age":
-                                # if kind is time, it applies to all agents but varies over time
-                                parameter_per_t.append(parameter[t].item())
-                        elif isinstance(parameter, (int, float)):
-                            # if kind is fixed, it applies to all agents at all times
-                            parameter_per_t.append(parameter)
-
-                    agent_params[key_param] = parameter_per_t
-
-                elif key_param in self.time_inv:
-                    if (
-                        isinstance(parameter, DataArray)
-                        and parameter.dims[0] == "agent"
-                    ):
-                        agent_params[key_param] = parameter[agent].item()
-                    elif isinstance(parameter, (int, float)):
-                        agent_params[key_param] = parameter
-
-                else:
-                    if isinstance(parameter, DataArray):
-                        if parameter.dims[0] == "agent":
-                            if parameter.dims[-1] == "age":
-                                # if the parameter is a list, it's agent and time
-                                agent_params[key_param] = list(parameter[agent].item())
-                            else:
-                                agent_params[key_param] = list(parameter[agent].item())
-                        elif parameter.dims[0] == "age":
-                            agent_params[key_param] = [parameter.item()]
-                    elif isinstance(parameter, (int, float)):
-                        agent_params[key_param] = parameter
-
-            agent_dicts.append(agent_params)
-
-        self.agent_dicts = agent_dicts
 
     def agent_data(self):
         """
@@ -239,20 +100,6 @@ class AgentPopulation:
 
         return cs
 
-    def create_distributed_agents(self):
-        rng = self.rng if self.rng is not None else np.random.default_rng()
-
-        self.agents = [
-            self.agent_class.__class__(seed=rng.integers(0, 2**31 - 1), **agent_dict)
-            for agent_dict in self.agent_dicts
-        ]
-
-    def create_database(self):
-        database = pd.DataFrame(self.agent_dicts)
-        database["agents"] = self.agents
-
-        self.agent_database = database
-
     def solve_distributed_agents(self):
         # see Market class for an example of how to solve distributed agents in parallel
 
@@ -260,7 +107,6 @@ class AgentPopulation:
             agent.solve()
 
     def explode_agents(self, num):
-
         exploded_agents = []
         exploded_dicts = []
 
@@ -273,9 +119,6 @@ class AgentPopulation:
         self.agent_dicts = exploded_dicts
 
         self.create_database()
-
-    def unpack_solutions(self):
-        self.solution = [agent.solution for agent in self.agents]
 
     def init_simulation(self, T_sim=1000):
         """
@@ -292,22 +135,22 @@ class AgentPopulation:
                 if "Rfree" in parameters and isinstance(parameters["Rfree"], list):
                     # patch potential bug until HARK is updated
                     parameters["Rfree"] = parameters["Rfree"][0]
-                ind_shock_double = cism.IndShockConsumerType(**parameters)
+                cism.IndShockConsumerType(**parameters)
 
                 ## solve to get the mNrmStE value
                 ## that is, the Steady-state Equilibrium value of mNrm, for the IndShockModel
                 ### COMMENTED OUT FOR PERFORMANCE REASONS: ind_shock_double.solve()
-                mNrmStE = 0 #### COMMENTED OUT FOR PERFORMANCE REASONS:ind_shock_double.solution[0].mNrmStE
+                mNrmStE = 0  #### COMMENTED OUT FOR PERFORMANCE REASONS:ind_shock_double.solution[0].mNrmStE
 
                 agent.state_now["mNrm"][:] = mNrmStE
                 agent.mNrmStE = (
                     mNrmStE  # saving this for later, in case we do the analysis.
                 )
             else:
-                idx = [agent.parameters[dp] for dp in self.dist_params]
+                idx = [agent.parameters[dp] for dp in self.distributed_params]
                 mNrm = (
                     self.stored_class_stats.copy()
-                    .set_index([dp for dp in self.dist_params])
+                    .set_index([dp for dp in self.distributed_params])
                     .xs((idx))["mNrm"]["mean"]
                 )
                 agent.state_now["mNrm"][:] = mNrm
@@ -320,11 +163,11 @@ class AgentPopulation:
     def solve(self, merge_by=None):
         self.solve_distributed_agents()
 
-        self.solution = AgentPopulationSolution(self)
+        self.solution = SharkPopulationSolution(self)
         self.solution.merge_solutions(continuous_states=merge_by)
         self.ex_ante_hetero_params = self.solution.ex_ante_hetero_params
 
-    def attend(self, agent, price, risky_expectations, day = None):
+    def attend(self, agent, price, risky_expectations, day=None):
         """
         Cause the agent to attend to the financial model.
 
@@ -341,12 +184,12 @@ class AgentPopulation:
         day: None or int -- If int, then record the day on the agent.
         """
         # It's a little weird using assign_parameters for this but...
-        if day is not None and 'attention_days' in agent.parameters:
-            attention_days = agent.parameters['attention_days']
+        if day is not None and "attention_days" in agent.parameters:
+            attention_days = agent.parameters["attention_days"]
             attention_days.append(day)
-            agent.assign_parameters(**{'attention_days' : attention_days})
+            agent.assign_parameters(**{"attention_days": attention_days})
         elif day is not None:
-            agent.assign_parameters(**{'attention_days' : [day]})
+            agent.assign_parameters(**{"attention_days": [day]})
 
         # Note: this mutates the underlying agent
         # we should also assign their solution
@@ -361,7 +204,7 @@ class AgentPopulation:
         agent.shares = target_shares
 
         if np.any(agent.shares < 0):
-            print(f"ERROR: Agent has negative shares after attention.")
+            print("ERROR: Agent has negative shares after attention.")
 
         return delta_shares
 
@@ -417,7 +260,7 @@ class AgentPopulation:
         asset_normalized = agent.state_now["aNrm"]
 
         if np.any(asset_normalized < 0):
-            print(f"ERROR: An agent has negative assets after compute demand.")
+            print("ERROR: An agent has negative assets after compute demand.")
 
         # ShareFuncAdj takes normalized market resources as argument
         # SequentialShareFuncAdj takes normalized assets as argument
@@ -567,25 +410,27 @@ class AgentPopulation:
             agent.state_now["aLvl"] = agent.state_now["aNrm"] * agent.state_now["pLvl"]
 
 
-class AgentPopulationSolution:
+class SharkPopulationSolution:
     def __init__(self, agent_population):
         self.agent_population = agent_population
 
-        self.dist_params = self.agent_population.dist_params
+        self.distributed_params = self.agent_population.distributed_params
         self.agent_database = self.agent_population.agent_database
 
     def merge_solutions(self, continuous_states):
         if continuous_states is None or continuous_states == []:
-            if self.dist_params is None or self.dist_params == []:
+            if self.distributed_params is None or self.distributed_params == []:
                 self.solution_database = self.agent_database
             else:
-                self.solution_database = self.agent_database.set_index(self.dist_params)
+                self.solution_database = self.agent_database.set_index(
+                    self.distributed_params
+                )
             self.ex_ante_hetero_params = []
 
         else:
             # check that continous states are in heterogeneous parameters
             for state in continuous_states:
-                if state not in self.dist_params:
+                if state not in self.distributed_params:
                     raise AttributeError(
                         "{} is not an agent-varying parameter.".format(state)
                     )
@@ -596,7 +441,7 @@ class AgentPopulationSolution:
                 self._merge_solutions_3d(continuous_states)
 
     def _merge_solutions_2d(self, continuous_states):
-        discrete_params = list(set(self.dist_params) - set(continuous_states))
+        discrete_params = list(set(self.distributed_params) - set(continuous_states))
         discrete_params.sort()
 
         self.ex_ante_hetero_params = discrete_params
@@ -658,7 +503,7 @@ class AgentPopulationSolution:
         self.solution_database = self.solution_database.set_index(discrete_params)
 
     def _merge_solutions_3d(self, continuous_states):
-        discrete_params = list(set(self.dist_params) - set(continuous_states))
+        discrete_params = list(set(self.distributed_params) - set(continuous_states))
         discrete_params.sort()
 
         self.ex_ante_hetero_params = discrete_params
