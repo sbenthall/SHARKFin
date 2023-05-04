@@ -94,7 +94,7 @@ def test_macro_simulation():
     pop = build_population(
         SequentialPortfolioConsumerType,
         WHITESHARK,
-        rng=np.random.default_rng(1),
+        seed=1,
     )
 
     # arguments to attention simulation
@@ -141,7 +141,7 @@ def test_attention_simulation():
     pop = build_population(
         SequentialPortfolioConsumerType,
         WHITESHARK,
-        rng=np.random.default_rng(1),
+        seed=1,
     )
 
     # arguments to attention simulation
@@ -202,7 +202,7 @@ def test_lucas0_simulation():
     pop = build_population(
         SequentialPortfolioConsumerType,
         LUCAS0,
-        rng=np.random.default_rng(1),
+        seed=1,
     )
 
     assert len(pop.agent_database.index) == LUCAS0["num_per_type"]

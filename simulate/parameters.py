@@ -7,11 +7,11 @@ from xarray import DataArray
 from sharkfin.population import SharkPopulation
 
 
-def build_population(agent_type, parameters, rng=None, dphm=1500):
+def build_population(agent_type, parameters, seed=None, dphm=1500):
     num_per_type = parameters.get("num_per_type", 1)
 
     pop = SharkPopulation(
-        agent_type(), parameters, rng=rng, dollars_per_hark_money_unit=dphm
+        agent_type, parameters, seed=seed, dollars_per_hark_money_unit=dphm
     )
     if "approx_params" in parameters:
         pop.approx_distributions(parameters["approx_params"])
