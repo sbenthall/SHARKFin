@@ -113,10 +113,10 @@ class SharkPopulation(AgentPopulation):
         for i, agent in enumerate(self.agents):
             for j in range(num):
                 exploded_agents.append(deepcopy(agent))
-                exploded_dicts.append(deepcopy(self.agent_dicts[i]))
+                exploded_dicts.append(deepcopy(self.population_parameters[i]))
 
         self.agents = exploded_agents
-        self.agent_dicts = exploded_dicts
+        self.population_parameters = exploded_dicts
 
         self.create_database()
 
