@@ -674,6 +674,9 @@ class MacroSimulation(MarketSimulation):
         sim_stats.update(self.fm.options)
         sim_stats["dollars_per_hark_money_unit"] = self.pop.dollars_per_hark_money_unit
 
+        slope, intercept, r, p, se = stats.linregress(self.market.prices[1:], self.market.dividends[1:])
+        sim_stats["price dividend r^2"] = r**2
+
         return sim_stats
 
 

@@ -180,7 +180,7 @@ def run_attention_simulation(
 ):
     # initialize population
     pop = build_population(
-        SequentialPortfolioConsumerType, agent_parameters, rng=rng, dphm=dphm
+        SequentialPortfolioConsumerType, agent_parameters, seed=seed, dphm=dphm
     )
 
     sim = AttentionSimulation(
