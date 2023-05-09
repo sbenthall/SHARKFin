@@ -20,6 +20,7 @@ class SharkPopulation(AgentPopulation):
     dollars_per_hark_money_unit: float = 1500
 
     def __post_init__(self):
+        self.parameters = deepcopy(self.parameters)
         super().__post_init__()
         self.stored_class_stats = None
 

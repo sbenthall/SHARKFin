@@ -45,7 +45,7 @@ def test_whiteshark_agent_population():
     ap = SharkPopulation(
         SequentialPortfolioConsumerType,
         WHITESHARK,
-        seed=14,
+        seed=seed,
     )
     # ADD PRINT LINE AFTER EVERY STEP
     print("created agent population")
