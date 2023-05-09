@@ -1,11 +1,10 @@
 import numpy as np
 from HARK.ConsumptionSaving.ConsPortfolioModel import SequentialPortfolioConsumerType
-from sharkfin.population import AgentPopulation, AgentPopulationSolution
+from sharkfin.population import SharkPopulation, SharkPopulationSolution
 from simulate.parameters import WHITESHARK, LUCAS0
 
 
 def test_lucas_agent_population():
-
     pop_DiscFac = 0.95
     pop_CRRA = 5
 
@@ -14,16 +13,17 @@ def test_lucas_agent_population():
     parameter_dict["DiscFac"] = pop_DiscFac
     parameter_dict["CRRA"] = pop_CRRA
 
-    pop = AgentPopulation(
-        SequentialPortfolioConsumerType(),
+    pop = SharkPopulation(
+        SequentialPortfolioConsumerType,
         parameter_dict,
-        rng=None,
         dollars_per_hark_money_unit=1500,
     )
 
     if "approx_params" in parameter_dict:
         pop.approx_distributions(parameter_dict["approx_params"])
-    pop.parse_params()
+    else:
+        pop.continuous_distributions = {}
+        pop.discrete_distributions = {}
 
     pop.create_distributed_agents()
     pop.create_database()
@@ -38,15 +38,14 @@ def test_lucas_agent_population():
 
 
 def test_whiteshark_agent_population():
-
     seed = 14
     # Initializing an Agent Population
 
     # Step 1 - create agent population with initial parameters
-    ap = AgentPopulation(
-        SequentialPortfolioConsumerType(),
+    ap = SharkPopulation(
+        SequentialPortfolioConsumerType,
         WHITESHARK,
-        rng=np.random.default_rng(seed),
+        seed=seed,
     )
     # ADD PRINT LINE AFTER EVERY STEP
     print("created agent population")
@@ -56,7 +55,6 @@ def test_whiteshark_agent_population():
     print("approximated continuous distributions")
 
     # Step 3 - parse all parameters to create distributed agent parameter dictionaries
-    ap.parse_params()
     print("parsed parameters")
 
     # Step 4 - create distributed agents and put them in a list
@@ -81,7 +79,7 @@ def test_whiteshark_agent_population():
     # Creating Master Solution for agent Population separately
 
     # Step 1. create Agent Population Solution (must follow 1-6 above before this)
-    solution = AgentPopulationSolution(ap)
+    solution = SharkPopulationSolution(ap)
     print("created solution object")
 
     # Step 2. provide parameters that will become state variables
@@ -95,7 +93,6 @@ def test_whiteshark_agent_population():
     # test solutions
 
     for agent in ap.agents:
-
         # before assigning master solution
 
         cFuncAdj = agent.solution[0].cFuncAdj
