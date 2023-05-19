@@ -123,12 +123,11 @@ class UsualExpectations(AbstractExpectations):
         dgr = self.market.dividend_growth_rate
         dsd = self.market.dividend_shock_std
 
-        # this assumes daily_ror is actually the daily price change.
-        # need to double check this math.
-        adjuster = ((1 + dgr) + (1 + dgr) / pdr)
+        adjuster = (1 + pdr) / pdr
 
-        self.daily_ror = adjuster - 2
-        self.daily_std = dsd * adjuster
+        # expected daily ror is (1 + pdr) gamma / pdr
+        self.daily_ror = adjuster * dgr - 1
+        self.daily_std = dsd * adjuster * dgr
 
         # self.ror_list = []
         self.expected_ror_list = []
@@ -168,6 +167,7 @@ class UsualExpectations(AbstractExpectations):
         Return quarterly expectations for the risky asset.
         These will be constant.
         """
+
         # expected capital gains quarterly
         ex_cg_q_ror = ror_quarterly(self.expected_ror_list[-1], self.days_per_quarter)
         ex_cg_q_std = sig_quarterly(self.expected_std_list[-1], self.days_per_quarter)
