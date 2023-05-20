@@ -86,6 +86,7 @@ WHITESHARK = whiteshark_parameter_dict
 lucas0_agent_population_params = {
     "cycles": 0,  # issue 186
     "aNrmInitStd": 0.0,
+    "aNrmInitMean": 6, # simulations show mNrm to be rather steady here
     "LivPrb": 0.98**0.25,
     "PermGroFac": 1.0,
     "pLvlInitMean": 0.0,  ## This is the _log_ of the pLvl. So there is a quarterly income of 1.
