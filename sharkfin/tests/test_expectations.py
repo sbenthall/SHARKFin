@@ -80,7 +80,7 @@ class TestInferentialExpectations(unittest.TestCase):
 
         print(fm.daily_ror)
         
-        fm.zeta = 0.45
+        fm.zeta = 0.35
 
         fm.market.run_market()
         fm.calculate_risky_expectations()
@@ -98,7 +98,7 @@ class TestInferentialExpectations(unittest.TestCase):
         rng = np.random.default_rng(seed = 20230424)
         fm = InferentialExpectations(MockMarket(rng = rng), days_per_quarter = 30)
 
-        fm.zeta = 0.5
+        fm.zeta = 0.45
 
         fm.market.run_market()
         fm.calculate_risky_expectations()
