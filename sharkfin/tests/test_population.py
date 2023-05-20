@@ -1,7 +1,8 @@
 import numpy as np
 from HARK.ConsumptionSaving.ConsPortfolioModel import SequentialPortfolioConsumerType
+
 from sharkfin.population import SharkPopulation, SharkPopulationSolution
-from simulate.parameters import WHITESHARK, LUCAS0
+from simulate.parameters import LUCAS0, WHITESHARK
 
 
 def test_lucas_agent_population():
@@ -111,3 +112,37 @@ def test_whiteshark_agent_population():
         after = agent.solution[0].ShareFuncAdj(10)
 
         assert np.allclose(before, after)
+
+
+def test_random_seeds():
+    parameter_dict = LUCAS0.copy()
+
+    pop = SharkPopulation(
+        SequentialPortfolioConsumerType,
+        parameter_dict,
+        dollars_per_hark_money_unit=1500,
+    )
+
+    if "approx_params" in parameter_dict:
+        pop.approx_distributions(parameter_dict["approx_params"])
+    else:
+        pop.continuous_distributions = {}
+        pop.discrete_distributions = {}
+
+    pop.create_distributed_agents()
+    pop.create_database()
+    pop.solve_distributed_agents()
+
+    pop.solve(merge_by=parameter_dict["ex_post"])  # merge_by=["RiskyAvg", "RiskyStd"])
+
+    pop.explode_agents(100)
+
+    # initialize population model
+    pop.init_simulation()
+
+    pop.simulate()
+
+    assert (
+        pop.agent_database["agents"].map(lambda a: a.history["mNrm"][100]).std()
+        > 0.00000001
+    )
