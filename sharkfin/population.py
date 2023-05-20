@@ -111,9 +111,13 @@ class SharkPopulation(AgentPopulation):
         exploded_agents = []
         exploded_dicts = []
 
+        rng = np.random.default_rng(self.seed)
+
         for i, agent in enumerate(self.agents):
             for j in range(num):
-                exploded_agents.append(deepcopy(agent))
+                double_agent = deepcopy(agent)
+                double_agent.seed = rng.integers(0, 2**31 - 1)
+                exploded_agents.append(double_agent)
                 exploded_dicts.append(deepcopy(self.population_parameters[i]))
 
         self.agents = exploded_agents
