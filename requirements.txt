@@ -1,4 +1,4 @@
-git+https://github.com/econ-ark/HARK@master#egg=econ-ark
+git+https://github.com/alanlujan91/HARK.git@approx_population
 azure-storage-blob
 jpype1
 matplotlib
