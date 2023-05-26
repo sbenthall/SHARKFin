@@ -58,11 +58,16 @@ whiteshark_agent_population_params = {
 whiteshark_continuous_distributed_params = {
     "CRRA": Uniform(bot=2, top=10),
     "DiscFac": Uniform(bot=0.984, top=0.994),
-    "RiskyAvg": Uniform(bot=0.9, top=1.5),
-    "RiskyStd": Uniform(bot=-0.07, top=0.37),
+    "RiskyAvg": Uniform(bot=1, top=1.5),
+    "RiskyStd": Uniform(bot=0, top=0.3),
 }
 
-whiteshark_approx_params = {"CRRA": 3, "DiscFac": 2, "RiskyAvg": 10, "RiskyStd": 10}
+whiteshark_approx_params = {
+    "CRRA": {"N": 3, "method": "equiprobable", "endpoints": True},
+    "DiscFac": {"N": 2, "method": "equiprobable", "endpoints": True},
+    "RiskyAvg": {"N": 5, "method": "equiprobable", "endpoints": True},
+    "RiskyStd": {"N": 3, "method": "equiprobable", "endpoints": True},
+}
 
 ### Configuring the agent population
 
@@ -86,7 +91,7 @@ WHITESHARK = whiteshark_parameter_dict
 lucas0_agent_population_params = {
     "cycles": 0,  # issue 186
     "aNrmInitStd": 0.0,
-    "aNrmInitMean": 6, # simulations show mNrm to be rather steady here
+    "aNrmInitMean": 6,  # simulations show mNrm to be rather steady here
     "LivPrb": 0.98**0.25,
     "PermGroFac": 1.0,
     "pLvlInitMean": 0.0,  ## This is the _log_ of the pLvl. So there is a quarterly income of 1.
