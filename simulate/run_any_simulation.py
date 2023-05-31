@@ -104,12 +104,12 @@ parser.add_argument(
 parser.add_argument(
     "--dividend_growth_rate",
     help="Market: daily average growth rate of the dividend",
-    default=1.000628,
+    default=1.000203,
 )
 parser.add_argument(
     "--dividend_std",
     help="Market: daily standard deviation fo the dividend",
-    default=0.011988,
+    default=0.011983,
 )
 
 # Specific to RabbitMQ AMMPS Market
