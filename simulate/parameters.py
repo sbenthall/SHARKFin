@@ -96,7 +96,7 @@ lucas0_agent_population_params = {
     "TranShkStd": [0],
     "PermShkStd": [0],
     ### These are placeholders that will be set when the system is set up.
-    "CRRA": 5,
+    "CRRA": 3,
     "DiscFac": 0.99,
     "ex_post": None,  # ex post heterogeneous parameters over which to merge solutions
 }

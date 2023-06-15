@@ -93,12 +93,17 @@ parser.add_argument(
 parser.add_argument(
     "--pop_CRRA",
     help="Mean population CRRA. Used for MockMarket and LUCAS0 population.",
-    default="5",
+    default="3",
 )
 parser.add_argument(
     "--pop_DiscFac",
     help="Mean population CRRA. Used for MockMarket and LUCAS0 population.",
     default="0.99",
+)
+parser.add_argument(
+    "--pop_aNrmInitMean",
+    help="Log of initial mean asset levels for LUCAS0 population.",
+    default="6",
 )
 
 parser.add_argument(
@@ -253,6 +258,7 @@ if __name__ == "__main__":
     population_name = str(args.population)
     pop_CRRA = float(args.pop_CRRA)
     pop_DiscFac = float(args.pop_DiscFac)
+    pop_aNrmInitMean = float(args.pop_aNrmInitMean)
 
     expectations_class_name = str(args.expectations)
     dividend_growth_rate = float(args.dividend_growth_rate)
@@ -369,6 +375,7 @@ if __name__ == "__main__":
         parameter_dict = LUCAS0
         parameter_dict["DiscFac"] = (pop_DiscFac,)
         parameter_dict["CRRA"] = pop_CRRA
+        parameter_dict["aNrmInitMean"] = pop_aNrmInitMean
     else:
         raise Exception(f"No valid population named! Got {population_name}. Panic!")
 
