@@ -34,6 +34,7 @@ from sharkfin.simulation import *
 from simulate.parameters import (
     agent_population_params,
     approx_params,
+    build_population,
     continuous_distributed_params,
 )
 
@@ -51,24 +52,24 @@ timestamp_start = datetime.now().strftime("%Y-%b-%d_%H:%M")
 parameter_dict = agent_population_params | continuous_distributed_params
 parameter_dict["AgentCount"] = 1
 
-
-def build_population(agent_type, parameters, rng=None, dphm=1500):
-    pop = SharkPopulation(
-        agent_type(), parameters, rng=rng, dollars_per_hark_money_unit=dphm
-    )
-    pop.approx_distributions(approx_params)
-    pop.parse_params()
-
-    pop.create_distributed_agents()
-    pop.create_database()
-    pop.solve_distributed_agents()
-
-    pop.solve(merge_by=["RiskyAvg", "RiskyStd"])
-
-    # initialize population model
-    pop.init_simulation()
-
-    return pop
+# DEPRECATED, use parameters.build_population
+#def build_population(agent_type, parameters, rng=None, dphm=1500):
+#    pop = SharkPopulation(
+#        agent_type(), parameters, rng=rng, dollars_per_hark_money_unit=dphm
+#    )
+#    pop.approx_distributions(approx_params)
+#    pop.parse_params()
+#
+#    pop.create_distributed_agents()
+#    pop.create_database()
+#    pop.solve_distributed_agents()
+#
+#    pop.solve(merge_by=["RiskyAvg", "RiskyStd"])
+#
+#    # initialize population model
+#    pop.init_simulation()
+#
+#    return pop
 
 
 def run_simulation(
