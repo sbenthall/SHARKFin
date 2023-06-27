@@ -750,6 +750,12 @@ class AttentionSimulation(MacroSimulation):
         for agent in self.pop.agents:
             agent.macro_day = self.rng.integers(self.days_per_quarter)
 
+        # Additional daily values tracked.
+        self.history["RiskyAvg_mean"] = []
+        self.history["RiskyAvg_std"] = []
+        self.history["RiskyStd_mean"] = []
+        self.history["RiskyStd_std"] = []
+
     def simulate(self, quarters=None, start=True, burn_in=None):
         """
         Workhorse method that runs the simulation.
@@ -870,6 +876,12 @@ class AttentionSimulation(MacroSimulation):
         if self.seed is not None:
             sim_stats["seed"] = self.seed
 
+
+        sim_stats['Expectations_RiskyAvg_mean_final'] = self.history["RiskyAvg_mean"][-1]
+        sim_stats["Expectations_RiskyAvg_std_final"] = self.history["RiskyAvg_std"][-1]
+        sim_stats["Expectations_RiskyStd_mean_final"] = self.history["RiskyStd_mean"][-1]
+        sim_stats["Expectations_RiskyStd_std_final"] = self.history["RiskyStd_std"][-1]
+
         return sim_stats
 
     def report_class_stats(self, stat="aLvl", stat_history=None):
@@ -884,6 +896,22 @@ class AttentionSimulation(MacroSimulation):
         ax = sns.lineplot(data=data, x="time", y="aLvl_mean", hue="label")
         ax.set_title("mean aLvl by class subpopulation")
 
+    def track(self, day, time_delta=0):
+        """
+        Tracks the current state of agent's total assets and owned shares
+        """
+        super().track(
+            day,
+            time_delta
+        )
+
+        RiskyAvg_all_agents = np.array([agent.parameters['RiskyAvg'] for agent in self.pop.agents])
+        RiskyStd_all_agents = np.array([agent.parameters['RiskyStd'] for agent in self.pop.agents])
+
+        self.history["RiskyAvg_mean"].append(np.mean(RiskyAvg_all_agents))
+        self.history["RiskyAvg_std"].append(np.std(RiskyAvg_all_agents))
+        self.history["RiskyStd_mean"].append(np.mean(RiskyStd_all_agents))
+        self.history["RiskyStd_std"].append(np.std(RiskyStd_all_agents))
 
 class CalibrationSimulation(MarketSimulation):
     """
