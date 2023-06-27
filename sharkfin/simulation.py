@@ -769,12 +769,20 @@ class AttentionSimulation(MacroSimulation):
         if start:
             self.start_simulation(burn_in)
 
+        day = 0
+
+        for agent in self.pop.agents:
+            self.pop.attend(
+                agent,
+                self.market.prices[-1],
+                self.fm.risky_expectations(agent),
+                day=day,
+            )
+
         self.track(-1)
 
         if quarters is None:
             quarters = self.quarters_per_simulation
-
-        day = 0
 
         # Main loop
         for quarter in range(quarters):

@@ -404,7 +404,7 @@ class InferentialExpectations(FinanceModel):
         usual_dist = scipy_stats_lognorm_from_mean_std(1 + usual_ror, usual_std)
 
         observed_ror = None
-        if 'attention_days' in agent.parameters:
+        if 'attention_days' in agent.parameters and len(self.market.ror_list()) > 0:
             observed_ror = np.array(self.market.ror_list())[agent.parameters['attention_days']] + 1
 
         strange_ror = self.expected_ror_list[-1]
