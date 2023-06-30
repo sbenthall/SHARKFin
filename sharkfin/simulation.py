@@ -677,8 +677,12 @@ class MacroSimulation(MarketSimulation):
         slope, intercept, r, p, se = stats.linregress(self.market.prices[1:], self.market.dividends[1:])
         sim_stats["price_dividend_r_squared"] = r**2
 
-        p_res = stats.pearsonr(self.market.prices[1:], self.market.dividends[1:])
-        sim_stats["price_dividend_pearsonr"] = p_res.statistic
+        ## Doing some work to clean up in case of a missing price due to market failure.
+        pd_df = pd.DataFrame({
+            'p' : self.market.prices[1:],
+            'd' :  self.market.dividends[1:]
+        }).dropna()
+        sim_stats["price_dividend_pearsonr"] = pd_df.corr()['p']['d']
 
         return sim_stats
 
