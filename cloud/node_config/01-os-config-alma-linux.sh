@@ -3,7 +3,6 @@ date -u
 echo "Begin setup script...."
 echo "Starting dnf update"
 dnf check-update
-export GPG_KEY=E3FF2839C048B25C084DEBE9B26995E310250568
 sudo -H yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 sudo -H yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 sudo -H yum repolist
@@ -38,7 +37,7 @@ echo "Cloning HARK binaries"
 sudo -H git clone https://github.com/econ-ark/HARK.git /usr/simulation/harkrepo
 sudo -H cp -Rf /usr/simulation/harkrepo/HARK/ /shared/home/ammpssharkfin/.local/lib/python3.9/site-packages/
 echo "Cloning ammps binaries"
-sudo -H git clone https://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@github.com/mesalas/ammps_sharkfin_container.git /usr/simulation/ammps_container
+sudo -H git clone https://<INSERT PERSONAL ACCESS TOKEN>@github.com/mesalas/ammps_sharkfin_container.git /usr/simulation/ammps_container
 sudo -H cp -Rf /usr/simulation/ammps_container/container_contents/ammps_bin/ /usr/simulation/
 sudo chmod -R 777 /usr/simulation
 echo "Installing Requirements using pip"

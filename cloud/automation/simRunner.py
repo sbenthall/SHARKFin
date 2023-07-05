@@ -158,7 +158,6 @@ def get_entities(parameterGrid):
 
 
 def getSim(experimentName, PartitionKey):
-    CONN_STRING = "DefaultEndpointsProtocol=https;AccountName=sbsimulationdata;AccountKey=KG8uTvfQinDCQoJYycZ+PvB+jw5/ovAp7ZfPaMLaCU53wKtg4QThAJ2IowOqd60+tr32kLD96lkt+AStExWHNQ==;EndpointSuffix=core.windows.net"
     vaultName = 'sharkfinkv'
     connectionName = 'simulationdataConnectionString'
     simTable = simulationGrid(experimentName, vaultName, connectionName)

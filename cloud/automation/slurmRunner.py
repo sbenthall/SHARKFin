@@ -216,7 +216,7 @@ def startSingleSim(experimentName,simID):
 
 vaultName = 'sharkfinkv'
 connectionName = 'simulationdataConnectionString'
-CONN_STRING = "DefaultEndpointsProtocol=https;AccountName=sbsimulationdata;AccountKey=KG8uTvfQinDCQoJYycZ+PvB+jw5/ovAp7ZfPaMLaCU53wKtg4QThAJ2IowOqd60+tr32kLD96lkt+AStExWHNQ==;EndpointSuffix=core.windows.net"
+CONN_STRING = get_azSecrect(vaultName,connectionName)
 
 if __name__ == "__main__":
     experimentName = sys.argv[1]
