@@ -200,9 +200,11 @@ class FinanceModel(AbstractExpectations):
     Contains data structures for tracking ROR and STD over time.
     """
 
-    # Empirical data
-    sp500_ror = 0.000628
-    sp500_std = 0.011988
+    # Used to be Empirical data,
+    # but now this is anchored in the current calibration.
+    # Hard-coding these values is BAD.
+    sp500_ror = 0.00029
+    sp500_std = 0.011985
 
     # Simulation parameter
     days_per_quarter = 60
