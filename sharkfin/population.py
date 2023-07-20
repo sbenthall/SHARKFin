@@ -142,28 +142,23 @@ class SharkPopulation(AgentPopulation):
                     parameters["Rfree"] = parameters["Rfree"][0]
                 cism.IndShockConsumerType(**parameters)
 
-                ## solve to get the mNrmStE value
-                ## that is, the Steady-state Equilibrium value of mNrm, for the IndShockModel
-                ### COMMENTED OUT FOR PERFORMANCE REASONS: ind_shock_double.solve()
-                mNrmStE = 0  #### COMMENTED OUT FOR PERFORMANCE REASONS:ind_shock_double.solution[0].mNrmStE
-
-                agent.state_now["mNrm"][:] = mNrmStE
-                agent.mNrmStE = (
-                    mNrmStE  # saving this for later, in case we do the analysis.
-                )
+                ###
+                agent.mNrmStE = 0
+                ###
+                ###
             else:
                 idx = [agent.parameters[dp] for dp in self.distributed_params]
-                mNrm = (
+                aNrm = (
                     self.stored_class_stats.copy()
                     .set_index([dp for dp in self.distributed_params])
-                    .xs((idx))["mNrm"]["mean"]
+                    .xs((idx))["aNrm"]["mean"]
                 )
-                agent.state_now["mNrm"][:] = mNrm
+                agent.state_now["aNrm"][:] = aNrm
 
-            agent.state_now["aNrm"] = agent.state_now["mNrm"] - agent.solution[
-                0
-            ].cFuncAdj(agent.state_now["mNrm"])
-            agent.state_now["aLvl"] = agent.state_now["aNrm"] * agent.state_now["pLvl"]
+            #agent.state_now["aNrm"] = agent.state_now["mNrm"] - agent.solution[
+            #    0
+            #].cFuncAdj(agent.state_now["mNrm"])
+            #agent.state_now["aLvl"] = agent.state_now["aNrm"] * agent.state_now["pLvl"]
 
     def solve(self, merge_by=None):
         self.solve_distributed_agents()
