@@ -30,15 +30,22 @@ ue = UsualExpectations(MockMarket(**market_args))
 ue.calculate_risky_expectations()
 risky_expectations = ue.risky_expectations()
 
+ue.daily_ror
+
+ue.daily_std
+
 risky_expectations
+
+(risky_expectations['RiskyAvg'] * LUCAS0['DiscFac']) ** (1 / LUCAS0['CRRA'])
 
 parameter_dict = LUCAS0.copy()
 
-parameter_dict['aNrmInitMean'] = 10
+parameter_dict['aNrmInitMean'] = 5
+parameter_dict['aNrmInitStd'] = 5
 
 parameter_dict.update(risky_expectations)
 
-parameter_dict['T_sim'] = 1500
+parameter_dict['T_sim'] = 4000
 
 parameter_dict
 
@@ -60,10 +67,11 @@ pop.solve_distributed_agents()
 
 pop.solve(merge_by=parameter_dict["ex_post"])  # merge_by=["RiskyAvg", "RiskyStd"])
 
-pop.explode_agents(40)
+pop.explode_agents(30)
 
 for ag in pop.agent_database['agents']:
     ag.track_vars += ['aNrm', "TranShk"]
+    ag.assign_parameters(sim_common_Rrisky = False)
 
 a0h = pop.agent_database['agents'][0]
 
@@ -76,25 +84,45 @@ pop.simulate()
 
 assert pop.agent_database['agents'].map(lambda a: a.history['mNrm'][100]).std() > 0.00000001
 
-history_mNrm = np.stack(pop.agent_database['agents'].map(lambda a: np.log(a.history['mNrm'])).values)
-
-plt.plot(history_mNrm.mean(axis=0))
-plt.xlabel("t - time")
-plt.ylabel("mean log mNrm")
-plt.show()
-
-history_cNrm = np.stack(pop.agent_database['agents'].map(lambda a: np.log(a.history['cNrm'])).values)
-
-plt.plot(history_mNrm.mean(axis=0))
-plt.xlabel("t - time")
-plt.ylabel("mean log cNrm")
-plt.show()
-
-history_aNrm = np.stack(pop.agent_database['agents'].map(lambda a: np.log(a.history['aNrm'])).values)
-
-plt.plot(history_mNrm.mean(axis=0))
-plt.xlabel("t - time")
-plt.ylabel("mean log aNrm")
-plt.show()
 
 
+# +
+import pandas as pd
+
+hist = pop.agent_database['agents'][0].history
+
+data = pd.concat([
+    pd.DataFrame(
+        {var : np.log(agent.history[var].flatten())
+         for var in agent.history}).reset_index()
+    for agent
+    in pop.agent_database['agents']
+    
+])
+# -
+
+data.shape
+
+# +
+import seaborn as sns
+
+sns.lineplot(
+    data = data,
+    x = 'index',
+    y = 'mNrm'
+)
+# -
+
+sns.lineplot(
+    data = data,
+    x = 'index',
+    y = 'cNrm'
+)
+
+data.columns
+
+sns.lineplot(
+    data = data[data['index'] < 100],
+    x = 'index',
+    y = 'Risky'
+)
