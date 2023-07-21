@@ -40,8 +40,8 @@ risky_expectations
 
 parameter_dict = LUCAS0.copy()
 
-parameter_dict['aNrmInitMean'] = 5
-parameter_dict['aNrmInitStd'] = 5
+parameter_dict['aNrmInitMean'] = 1
+parameter_dict['aNrmInitStd'] = 0.1
 
 parameter_dict.update(risky_expectations)
 
@@ -126,3 +126,76 @@ sns.lineplot(
     x = 'index',
     y = 'Risky'
 )
+
+# ## Single AgentType testing (should be faster)
+
+# +
+PARAMS = a0h.parameters
+
+PARAMS['aNrmInitMean'] = 1
+PARAMS['aNrmInitStd'] = 0.01
+
+# +
+at = SequentialPortfolioConsumerType(**PARAMS)
+at.assign_parameters(AgentCount = 25000)
+
+at.track_vars += ['aNrm', 'cNrm', 'Risky', 'Share', 'aLvl']
+at.solve()
+at.initialize_sim()
+at.simulate()
+
+# +
+agent_histories = []
+
+for a in range(3):
+    df = pd.DataFrame(
+        {'log_' + var : np.log(at.history[var][:, a].flatten())
+         for var in at.history}).reset_index()
+    df = df.rename(columns={'index' : 't'})
+    df['agent'] = a
+    agent_histories.append(df)
+
+data = pd.concat(agent_histories)
+# -
+
+sns.lineplot(
+    data = data,
+    x = 't',
+    y = 'log_aLvl'
+)
+
+sns.lineplot(
+    data = data,
+    x = 't',
+    y = 'log_aNrm'
+)
+
+np.log(4000)
+
+data[data['t'] > 3000]['log_aNrm'].mean()
+
+np.exp(data[data['t'] > 3000]['log_aNrm'].mean())
+
+sns.lineplot(
+    data = data,
+    x = 't',
+    y = 'log_Risky'
+)
+
+sns.lineplot(
+    data = data,
+    x = 't',
+    y = 'log_cNrm'
+)
+
+sns.lineplot(
+    data = data,
+    x = 't',
+    y = 'log_Share'
+)
+
+
+
+
+
+
