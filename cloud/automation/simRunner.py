@@ -108,7 +108,6 @@ def get_azKey(keyVaultName, keyName):
         print(f"Key with name '{retrieved_key_obj.name}' and saved as '{keyName}.pem'")
         return public_pem
 
-        
 def create_table(tableName, vaultName, connectionName):
     conn_str = get_azSecrect(vaultName, connectionName)
     print('Creating Table Client')

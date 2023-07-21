@@ -69,7 +69,7 @@ def startSingleSim(experimentName,simID):
 			create_ammps_config = subprocess.Popen(shlex.split(create_ammps_config_command), stdout=ammps_conf_out, stderr=ammps_conf_err, universal_newlines=True)
 			create_ammps_config.wait() # Wait for config to be created
 			print("Generation of AMMPS Configuration file Completed....Starting AMMPS")
-		except Expection as e:
+		except Exception as e:
 			print(f"failed to generate ammps config file - {e.message}")
 			simulation['status'] = 'failed to create ammps configuration file'
 			simulation['startTime'] = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
