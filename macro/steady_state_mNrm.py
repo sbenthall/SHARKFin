@@ -134,10 +134,11 @@ PARAMS = a0h.parameters
 
 PARAMS['aNrmInitMean'] = 1
 PARAMS['aNrmInitStd'] = 0.01
+PARAMS['T_sim'] = 20000
 
 # +
 at = SequentialPortfolioConsumerType(**PARAMS)
-at.assign_parameters(AgentCount = 25000)
+at.assign_parameters(AgentCount = 15000)
 
 at.track_vars += ['aNrm', 'cNrm', 'Risky', 'Share', 'aLvl']
 at.solve()
