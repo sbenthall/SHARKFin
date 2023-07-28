@@ -85,7 +85,7 @@ WHITESHARK = whiteshark_parameter_dict
 
 lucas0_agent_population_params = {
     "cycles": 0,  # issue 186
-    "aNrmInitStd": 0.0,
+    "aNrmInitStd": 2.0,
     "aNrmInitMean": 6, # simulations show mNrm to be rather steady here
     "LivPrb": [0.98**0.25],
     "PermGroFac": 1.0,
