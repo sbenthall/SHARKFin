@@ -8,6 +8,36 @@ from simulate.parameters import WHITESHARK, LUCAS0
 from sharkfin.expectations import UsualExpectations
 from sharkfin.markets import MockMarket
 
+# ## Using the solution functions
+
+cFunc = at.solution[0].cFuncAdj
+ShareFunc = at.solution[0].ShareFuncAdj
+
+
+def expected_increase(mNrm):
+    share = ShareFunc(mNrm)
+    
+    aNrm = mNrm - cFunc(mNrm)
+    
+    mNrm_next = aNrm * (share * at.parameters['RiskyAvg'] + (1 - share) * at.parameters['Rfree']) + 1
+    
+    gain = mNrm_next - aNrm
+    
+    return gain
+
+
+# +
+mNrm = np.linspace(0, 100, 1000)
+
+plt.plot(mNrm, cFunc(mNrm), label ='c')
+
+plt.plot(mNrm, expected_increase(mNrm), label = 'gain')
+
+plt.legend()
+# -
+
+# ## Simulating with SharkPopulation
+
 LUCAS0
 
 # +
@@ -134,11 +164,11 @@ PARAMS = a0h.parameters
 
 PARAMS['aNrmInitMean'] = 1
 PARAMS['aNrmInitStd'] = 0.01
-PARAMS['T_sim'] = 20000
+PARAMS['T_sim'] = 2000
 
 # +
 at = SequentialPortfolioConsumerType(**PARAMS)
-at.assign_parameters(AgentCount = 15000)
+at.assign_parameters(AgentCount = 1500)
 
 at.track_vars += ['aNrm', 'cNrm', 'Risky', 'Share', 'aLvl']
 at.solve()
@@ -194,9 +224,3 @@ sns.lineplot(
     x = 't',
     y = 'log_Share'
 )
-
-
-
-
-
-
