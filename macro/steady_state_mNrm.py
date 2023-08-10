@@ -8,35 +8,7 @@ from simulate.parameters import WHITESHARK, LUCAS0
 from sharkfin.expectations import UsualExpectations
 from sharkfin.markets import MockMarket
 
-# ## Using the solution functions
-
-cFunc = at.solution[0].cFuncAdj
-ShareFunc = at.solution[0].ShareFuncAdj
-
-
-def expected_increase(mNrm):
-    share = ShareFunc(mNrm)
-    
-    aNrm = mNrm - cFunc(mNrm)
-    
-    mNrm_next = aNrm * (share * at.parameters['RiskyAvg'] + (1 - share) * at.parameters['Rfree']) + 1
-    
-    gain = mNrm_next - aNrm
-    
-    return gain
-
-
-# +
-mNrm = np.linspace(0, 100, 1000)
-
-plt.plot(mNrm, cFunc(mNrm), label ='c')
-
-plt.plot(mNrm, expected_increase(mNrm), label = 'gain')
-
-plt.legend()
-# -
-
-# ## Simulating with SharkPopulation
+# ## Setup
 
 LUCAS0
 
@@ -60,14 +32,6 @@ ue = UsualExpectations(MockMarket(**market_args))
 ue.calculate_risky_expectations()
 risky_expectations = ue.risky_expectations()
 
-ue.daily_ror
-
-ue.daily_std
-
-risky_expectations
-
-(risky_expectations['RiskyAvg'] * LUCAS0['DiscFac']) ** (1 / LUCAS0['CRRA'])
-
 parameter_dict = LUCAS0.copy()
 
 parameter_dict['aNrmInitMean'] = 1
@@ -76,8 +40,6 @@ parameter_dict['aNrmInitStd'] = 0.1
 parameter_dict.update(risky_expectations)
 
 parameter_dict['T_sim'] = 4000
-
-parameter_dict
 
 pop = SharkPopulation(
     SequentialPortfolioConsumerType,
@@ -104,6 +66,61 @@ for ag in pop.agent_database['agents']:
     ag.assign_parameters(sim_common_Rrisky = False)
 
 a0h = pop.agent_database['agents'][0]
+
+# +
+PARAMS = a0h.parameters
+
+PARAMS['aNrmInitMean'] = 1
+PARAMS['aNrmInitStd'] = 0.01
+PARAMS['T_sim'] = 2000
+
+at = SequentialPortfolioConsumerType(**PARAMS)
+at.assign_parameters(AgentCount = 1500)
+
+at.track_vars += ['aNrm', 'cNrm', 'Risky', 'Share', 'aLvl']
+at.solve()
+# -
+
+# ## Using the solution functions
+
+cFunc = at.solution[0].cFuncAdj
+ShareFunc = at.solution[0].ShareFuncAdj
+
+
+def expected_increase(mNrm):
+    share = ShareFunc(mNrm)
+    
+    aNrm = mNrm - cFunc(mNrm)
+    
+    mNrm_next = aNrm * (share * at.parameters['RiskyAvg'] + (1 - share) * at.parameters['Rfree']) + 1
+    
+    gain = mNrm_next - aNrm
+    
+    return gain
+
+
+# +
+mNrm = np.linspace(7.5, 30, 1000)
+
+plt.plot(mNrm, cFunc(mNrm), label ='c')
+
+plt.plot(mNrm, expected_increase(mNrm), label = 'gain')
+
+plt.legend()
+
+# +
+mNrm = np.linspace(0, 50, 1000)
+
+plt.plot(mNrm, cFunc(mNrm), label ='c')
+
+plt.plot(mNrm, expected_increase(mNrm), label = 'gain')
+
+plt.legend()
+# -
+
+expected_increase(mNrm) > cFunc(mNrm)
+
+# ## Simulating with SharkPopulation
 
 a0h.parameters
 
