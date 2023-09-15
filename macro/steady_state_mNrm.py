@@ -39,6 +39,8 @@ parameter_dict['aNrmInitStd'] = 0.1
 
 parameter_dict.update(risky_expectations)
 
+parameter_dict
+
 parameter_dict['T_sim'] = 4000
 
 pop = SharkPopulation(
@@ -66,6 +68,8 @@ for ag in pop.agent_database['agents']:
     ag.assign_parameters(sim_common_Rrisky = False)
 
 a0h = pop.agent_database['agents'][0]
+
+a0h
 
 # +
 PARAMS = a0h.parameters
@@ -119,6 +123,9 @@ plt.legend()
 # -
 
 expected_increase(mNrm) > cFunc(mNrm)
+
+plt.plot(mNrm, cFunc(mNrm) - expected_increase(mNrm), label ='c - gain ')
+
 
 # ## Simulating with SharkPopulation
 
@@ -241,3 +248,11 @@ sns.lineplot(
     x = 't',
     y = 'log_Share'
 )
+
+
+
+
+
+
+
+
