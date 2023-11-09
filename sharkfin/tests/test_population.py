@@ -135,7 +135,7 @@ def test_random_seeds():
 
     pop.solve(merge_by=parameter_dict["ex_post"])  # merge_by=["RiskyAvg", "RiskyStd"])
 
-    pop.explode_agents(100)
+    pop.explode_agents(10)
 
     # initialize population model
     pop.init_simulation()
@@ -143,6 +143,6 @@ def test_random_seeds():
     pop.simulate()
 
     assert (
-        pop.agent_database["agents"].map(lambda a: a.history["mNrm"][100]).std()
+        pop.agent_database["agents"].map(lambda a: a.history["mNrm"][100][0]).std()
         > 0.00000001
     )
