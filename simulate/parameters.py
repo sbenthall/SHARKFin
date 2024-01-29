@@ -1,4 +1,5 @@
 from HARK.Calibration.Income.IncomeTools import sabelhaus_song_var_profile
+from HARK.ConsumptionSaving.ConsPortfolioModel import init_portfolio
 
 ### Configuring the agent population
 from HARK.distribution import Uniform
@@ -83,24 +84,20 @@ WHITESHARK = whiteshark_parameter_dict
 
 ### TODO: Population generators that take parameters like CRRA, DisCFac
 
-lucas0_agent_population_params = {
+lucas0_agent_population_params = init_portfolio.copy()
+
+lucas0_agent_population_params.update({
     "cycles": 0,  # issue 186
-    "aNrmInitStd": 1.0,
-    "aNrmInitMean": 6, # simulations show mNrm to be rather steady here
-    "LivPrb": [0.98**0.25],
+    "aNrmInitStd": 0.28901524, # calculated using dashboard from default init_portfolio stats
+    #"aNrmInitMean": 6
+    # "LivPrb": [0.98**0.25], -- Should this be adjusted?
     "PermGroFac": 1.0,
-    "pLvlInitMean": 0.0,  ## This is the _log_ of the pLvl. So there is a quarterly income of 1.
-    "pLvlInitStd": 0.0,
     "Rfree": 1.0,
-    # Scaling from annual to quarterly
-    "TranShkStd": [0],
-    "PermShkStd": [0],
-    'UnempPrb': 0.0,
     ### These are placeholders that will be set when the system is set up.
-    "CRRA": 3,
-    "DiscFac": 0.99,
+    "CRRA": 6,
+    "DiscFac": 0.90,
     "ex_post": None,  # ex post heterogeneous parameters over which to merge solutions
-}
+})
 
 lucas0_parameter_dict = lucas0_agent_population_params
 lucas0_parameter_dict["AgentCount"] = 1  # TODO: What should this be?
