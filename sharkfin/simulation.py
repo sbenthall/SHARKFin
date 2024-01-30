@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from statistics import mean
+from statistics import mean, stdev
 from scipy import stats
 from sharkfin.markets import MockMarket
 from sharkfin.markets.ammps import (
@@ -432,6 +432,8 @@ class MacroSimulation(MarketSimulation):
         self.history["owned_shares"] = []
         self.history["total_assets"] = []
         self.history["mean_income_level"] = []
+        self.history["mean_log_income_level"] = []
+        self.history["stdev_log_income_level"] = []
         self.history["total_consumption_level"] = []
         self.history["permshock_std"] = []
         self.history["class_stats"] = []
@@ -478,6 +480,8 @@ class MacroSimulation(MarketSimulation):
             "owned": self.history["owned_shares"][-days_ran:],
             "total_assets": self.history["total_assets"][-days_ran:],
             "mean_income": self.history["mean_income_level"][-days_ran:],
+            "mean_log_income": self.history["mean_log_income_level"][-days_ran:],
+            "stdev_log_income": self.history["stdev_log_income_level"][-days_ran:],
             "total_consumption": self.history["total_consumption_level"][-days_ran:],
             #'permshock_std': self.history['permshock_std'][1:],
             "expected_ror": self.fm.expected_ror_list[-days_ran:],
@@ -593,6 +597,16 @@ class MacroSimulation(MarketSimulation):
             * self.pop.dollars_per_hark_money_unit
         )
 
+        mlpl = (
+            mean([np.log(agent.state_now["pLvl"].mean() * self.pop.dollars_per_hark_money_unit)
+                  for agent in self.pop.agents])
+        )
+
+        slpl = (
+            stdev([np.log(agent.state_now["pLvl"].mean() * self.pop.dollars_per_hark_money_unit)
+                   for agent in self.pop.agents])
+        )
+
         tcl = (
             sum(
                 [
@@ -616,6 +630,8 @@ class MacroSimulation(MarketSimulation):
         self.history["owned_shares"].append(os)
         self.history["total_assets"].append(tal)
         self.history["mean_income_level"].append(mpl)
+        self.history["mean_log_income_level"].append(mlpl)
+        self.history["stdev_log_income_level"].append(slpl)
         self.history["total_consumption_level"].append(tcl)
         # self.history['permshock_std'].append(permshock_std)
         self.history["class_stats"].append(self.pop.class_stats(store=False))
@@ -1114,7 +1130,7 @@ def visualize_simulation_data(data):
     )
 
     fig, ax = plt.subplots(
-        4,
+        5,
         sharex="col",
         figsize=(14, 16),
     )
@@ -1145,13 +1161,22 @@ def visualize_simulation_data(data):
 
     ax[3].plot(data["prices"], alpha=0.5, label="Price of asset")
     ax[3].legend()
+    ax[4].errorbar(
+        data.index,
+        data['mean_log_income'],
+        yerr=data['stdev_log_income'],
+        alpha=0.05,
+        fmt='-o',
+        label="Mean log permanent income levels, 1 stdev error bar"
+    )
+    ax[4].legend()
 
     ax[0].set_title("Simulation History")
     ax[0].set_ylabel("Dollars")
     ax[1].set_ylabel("Shares")
     ax[2].set_ylabel("Rate of change")
     ax[3].set_ylabel("Dollars")
-    ax[3].set_xlabel("Time in Days")
+    ax[4].set_xlabel("Time in Days")
 
     plt.tight_layout()
     plt.savefig("asset_bubble_run_long.png")
