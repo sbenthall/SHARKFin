@@ -700,6 +700,16 @@ class MacroSimulation(MarketSimulation):
         }).dropna()
         sim_stats["price_dividend_pearsonr"] = pd_df.corr()['p']['d']
 
+
+        sim_stats["ranges_mean"] = mean(self.market.ranges)
+        sim_stats["ranges_stdev"] = stdev(self.market.ranges)
+        sim_stats["ranges_min"] = min(self.market.ranges)
+        sim_stats["ranges_max"] = max(self.market.ranges)
+
+        ranges_zscore = stats.zscore(np.array(self.market.ranges))
+
+        sim_stats["ranges_zs_max"] = ranges_zscore.max()
+
         return sim_stats
 
 

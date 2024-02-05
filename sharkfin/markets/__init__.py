@@ -168,6 +168,7 @@ class MockMarket(AbstractMarket):
 
     prices = None
     dividends = None
+    ranges = None
 
     dividend_growth_rate = None
     dividend_shock_std = None
@@ -191,6 +192,7 @@ class MockMarket(AbstractMarket):
 
         self.prices = [self.default_sim_price]
         self.dividends = [self.default_sim_price / self.price_to_dividend_ratio]
+        self.ranges = []
 
         self.rng = rng if rng is not None else np.random.default_rng()
 
@@ -213,6 +215,7 @@ class MockMarket(AbstractMarket):
         print('dividend: ' + str(new_dividend))
 
         self.dividends.append(new_dividend)
+        self.ranges.append(new_price / 10) # entirely arbitrary value for now.
 
         return new_price, new_dividend
 

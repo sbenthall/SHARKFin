@@ -25,6 +25,7 @@ class ClientRPCMarket(AbstractMarket):
     rng = None
 
     macro_price_field = None
+    range_field = None
 
     def __init__(self,
         seed=None,
@@ -34,7 +35,8 @@ class ClientRPCMarket(AbstractMarket):
         dividend_std = 0.011988,
         price_to_dividend_ratio = 60 / 0.05,
         rng = None,
-        macro_price_field = None
+        macro_price_field = None,
+        range_field = None
         ):
 
         # discounted future value, divided by days per quarter
@@ -51,6 +53,7 @@ class ClientRPCMarket(AbstractMarket):
         self.latest_price = None
         self.prices = [self.default_sim_price]
         self.dividends = [self.default_sim_price / self.price_to_dividend_ratio]
+        self.ranges = []
 
         self.rpc_queue_name = queue_name
         self.rpc_host_name = host
@@ -58,6 +61,10 @@ class ClientRPCMarket(AbstractMarket):
         self.macro_price_field = macro_price_field \
             if macro_price_field is not None \
             else "ClosingPrice"
+
+        self.range_field = range_field \
+            if range_field is not None \
+            else "DailyRange"
 
         self.init_rpc()
 
@@ -142,6 +149,7 @@ class ClientRPCMarket(AbstractMarket):
 
             self.latest_price = np.nan
             self.prices.append(np.nan)
+            self.ranges.append(np.nan)
 
             raise MarketFailureError(f"AMMPS Market Failure: {self.response['MarketState']}")
 
@@ -149,6 +157,7 @@ class ClientRPCMarket(AbstractMarket):
 
             self.latest_price = self.response[ self.macro_price_field ]
             self.prices.append(float(self.response[ self.macro_price_field ]))
+            self.ranges.append(float(self.response[self.range_field]))
         
             return self.latest_price, new_dividend
 
