@@ -96,7 +96,7 @@ lucas0_agent_population_params = init_portfolio.copy()
 lucas0_agent_population_params.update(
     {
         "cycles": 0,  # issue 186
-        "aNrmInitStd": 0.28901524,  # calculated using dashboard from default init_portfolio stats
+        "aNrmInitMean": 0.28901524,  # calculated using dashboard from default init_portfolio stats
         # "aNrmInitMean": 6
         # "LivPrb": [0.98**0.25], -- Should this be adjusted?
         "PermGroFac": 1.0,
