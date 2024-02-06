@@ -254,7 +254,7 @@ if __name__ == "__main__":
 
     # General market arguments
     market_class_name = str(args.market)
-
+    days_per_quater = runs
     population_name = str(args.population)
     pop_CRRA = float(args.pop_CRRA)
     pop_DiscFac = float(args.pop_DiscFac)
@@ -334,7 +334,7 @@ if __name__ == "__main__":
         "dividend_std": dividend_std,
         "rng": rng,
         "price_to_dividend_ratio": price_dividend_ratio_random_walk(
-            pop_DiscFac, pop_CRRA, dividend_growth_rate, dividend_std
+            pop_DiscFac, pop_CRRA, dividend_growth_rate, dividend_std, days_per_quater
         ),
     }
 
