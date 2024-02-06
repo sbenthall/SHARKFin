@@ -54,7 +54,7 @@ parser.add_argument(
 # General simulation arguments
 parser.add_argument("-d", "--seed", help="random seed", default=0)
 parser.add_argument("--quarters", help="number of quarters", default=2)
-parser.add_argument("--runs", help="runs per simulation", default=60)
+parser.add_argument("--days", help="days per quarter", default=60)
 
 # Population parameters
 parser.add_argument(
@@ -93,17 +93,17 @@ parser.add_argument(
 parser.add_argument(
     "--pop_CRRA",
     help="Mean population CRRA. Used for MockMarket and LUCAS0 population.",
-    default="3",
+    default="5",
 )
 parser.add_argument(
     "--pop_DiscFac",
     help="Mean population CRRA. Used for MockMarket and LUCAS0 population.",
-    default="0.99",
+    default="0.90",
 )
 parser.add_argument(
     "--pop_aNrmInitMean",
     help="Log of initial mean asset levels for LUCAS0 population.",
-    default="6",
+    default="0.5",
 )
 
 parser.add_argument(
@@ -169,7 +169,7 @@ def run_attention_simulation(
     agent_parameters,
     a=None,
     q=None,
-    r=1,
+    r=1, ############ALERT##########################
     market=None,
     fm=None,
     dphm=1500,
@@ -193,7 +193,7 @@ def run_attention_simulation(
         fm,
         a=a,
         q=q,
-        r=r,
+        r=r, ############ALERT##########################
         market=market,
         rng=rng,
         seed=seed,
@@ -210,7 +210,7 @@ def run_chum_simulation(
     agent_parameters,
     a=None,
     q=None,
-    r=1,
+    r=1, ############ALERT##########################
     fm=None,
     market=None,
     dphm=1500,
@@ -224,7 +224,7 @@ def run_chum_simulation(
         SequentialPortfolioConsumerType, agent_parameters, dphm=dphm, rng=rng
     )
 
-    sim = CalibrationSimulation(a=a, q=q, r=r, market=market)
+    sim = CalibrationSimulation(a=a, q=q, r=r, market=market) ############ALERT##########################
 
     sim.simulate(burn_in=pad, buy_sell_shock=(buy, sell))
 
@@ -250,11 +250,12 @@ if __name__ == "__main__":
     seed = int(args.seed)
     popn = int(args.popn)
     quarters = int(args.quarters)
-    runs = int(args.runs)
+    days_per_quarter = int(args.days)
+    runs = days_per_quarter # variable runs per quarter is an artifact of an earlier version
+                            # and should be deprecated
 
     # General market arguments
     market_class_name = str(args.market)
-
     population_name = str(args.population)
     pop_CRRA = float(args.pop_CRRA)
     pop_DiscFac = float(args.pop_DiscFac)
@@ -301,7 +302,7 @@ if __name__ == "__main__":
                     seed,
                     popn,
                     quarters,
-                    runs,
+                    days_per_quarter,
                     market_class_name,
                     expectations_class_name,
                     population_name,
@@ -334,7 +335,7 @@ if __name__ == "__main__":
         "dividend_std": dividend_std,
         "rng": rng,
         "price_to_dividend_ratio": price_dividend_ratio_random_walk(
-            pop_DiscFac, pop_CRRA, dividend_growth_rate, dividend_std
+            pop_DiscFac, pop_CRRA, dividend_growth_rate, dividend_std, days_per_quarter
         ),
     }
 
@@ -384,7 +385,8 @@ if __name__ == "__main__":
             parameter_dict,
             a=attention,
             q=quarters,
-            r=runs,
+            # days_per_quarter is current hard-coded at 60.
+            r=runs, #############ALERT###########################
             market=market,
             fm=expectations_class,
             dphm=dphm,
@@ -403,7 +405,8 @@ if __name__ == "__main__":
             parameter_dict,
             a=attention,
             q=quarters,
-            r=runs,
+             # days_per_quarter is current hard-coded at 60.
+            r=runs, #############ALERT###########################
             market=market,
             dphm=dphm,
             buy=buysize,

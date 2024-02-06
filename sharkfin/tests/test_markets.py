@@ -49,7 +49,7 @@ class TestMarketErrors(unittest.TestCase):
         dividend_growth_rate = 1.000628
         dividend_std = 0.011988
 
-        pdr = price_dividend_ratio_random_walk(0.95, 5, dividend_growth_rate, dividend_std)
+        pdr = price_dividend_ratio_random_walk(0.95, 5, dividend_growth_rate, dividend_std, 90)
 
         market = MockMarket(
             dividend_growth_rate = 1.000628,

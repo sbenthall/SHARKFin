@@ -125,7 +125,7 @@ import math
 
 
 def price_dividend_ratio_random_walk(
-    DiscFac, CRRA, dividend_growth_rate, dividend_std, days_per_quarter=90
+    DiscFac, CRRA, dividend_growth_rate, dividend_std, days_per_quarter
 ):
     ## From Equation 30 from the C. Carroll Lucas asset pricing notes:
     ## http://www.econ2.jhu.edu/people/ccarroll/public/lecturenotes/AssetPricing/LucasAssetPrice.pdf
