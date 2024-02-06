@@ -146,3 +146,8 @@ def test_random_seeds():
         pop.agent_database["agents"].map(lambda a: a.history["mNrm"][100][0]).std()
         > 0.00000001
     )
+
+    assert (
+        pop.agent_database["agents"].map(lambda a: a.history["pLvl"][100][0]).std()
+        > 0.00000001
+    )
