@@ -710,6 +710,18 @@ class MacroSimulation(MarketSimulation):
 
         sim_stats["ranges_zs_max"] = ranges_zscore.max()
 
+        absolute_price_change = np.absolute(
+            np.array(self.market.prices[1:]) - np.array(self.market.prices[:-1]))
+
+        rp_process = np.log1p(self.market.ranges) - np.log1p(absolute_price_change)
+
+        sim_stats["rpp_mean"] = mean(rp_process)
+        sim_stats["rpp_stdev"] = stdev(rp_process)
+        sim_stats["rpp_min"] = min(rp_process)
+        sim_stats["rpp_max"] = max(rp_process)
+
+        import pdb; pdb.set_trace()
+
         return sim_stats
 
 
