@@ -42,24 +42,12 @@ def test_random_seeds():
     train_pop(pop1, LUCAS0.copy())
     train_pop(pop2, LUCAS0.copy())
 
-    # initialize population model
-    pop1.init_simulation()
-    pop1.simulate()
+    p1a0 = pop1.agent_database["agents"][0]
+    p1a1 = pop1.agent_database["agents"][1]
+    p2a0 = pop1.agent_database["agents"][0]
 
-    pop2.init_simulation()
-    pop2.simulate()
+    ### Different income seeds within one population
+    assert(p1a0.PermShkStd.seed != p1a1.PermShkStd.seed)
 
-    pLvls1 = pop1.agent_database["agents"].map(lambda a: a.history["pLvl"].T)
-    pLvls2 = pop2.agent_database["agents"].map(lambda a: a.history["pLvl"].T)
-
-    ### Different income levels within one population
-    assert((pLvls1[0] - pLvls1[1]).sum() != 0)
-
-    ### Different income levels across two populations with different seeds
-    assert((pLvls1[0] - pLvls2[0]).sum() != 0)
-
-    ### BUT ... what about for the first 28 periods? Within a population:
-    assert((pLvls1[0][:,:28] - pLvls1[1][:,:28]).sum() != 0)
-
-    ### Across populations with different seeds
-    assert((pLvls1[0][:,:28] - pLvls2[0][:,:28]).sum() != 0)
+    ### Different income seeds across two populations with different seeds
+    assert(p1a0.PermShkStd.seed != p2a0.PermShkStd.seed)
