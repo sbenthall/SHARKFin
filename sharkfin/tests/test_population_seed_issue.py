@@ -47,7 +47,7 @@ def test_random_seeds():
     p2a0 = pop1.agent_database["agents"][0]
 
     ### Different income seeds within one population
-    assert(p1a0.PermShkStd.seed != p1a1.PermShkStd.seed)
+    assert(p1a0.PermShkDstn.seed != p1a1.PermShkDstn.seed)
 
     ### Different income seeds across two populations with different seeds
-    assert(p1a0.PermShkStd.seed != p2a0.PermShkStd.seed)
+    assert(p1a0.PermShkDstn.seed != p2a0.PermShkDstn.seed)

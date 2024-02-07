@@ -117,6 +117,8 @@ class SharkPopulation(AgentPopulation):
             for j in range(num):
                 double_agent = deepcopy(agent)
                 double_agent.seed = rng.integers(0, 2**31 - 1)
+                double_agent.reset_rng()
+                double_agent.update_income_process()
                 exploded_agents.append(double_agent)
                 exploded_dicts.append(deepcopy(self.population_parameters[i]))
 
