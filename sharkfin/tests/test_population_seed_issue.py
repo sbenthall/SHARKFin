@@ -13,13 +13,13 @@ def train_pop(pop, parameter_dict):
         pop.discrete_distributions = {}
 
     pop.create_distributed_agents()
+
     pop.create_database()
     pop.solve_distributed_agents()
 
     pop.solve(merge_by=parameter_dict["ex_post"])  # merge_by=["RiskyAvg", "RiskyStd"])
 
     pop.explode_agents(3)
-
 
 
 def test_random_seeds():
@@ -39,15 +39,19 @@ def test_random_seeds():
         seed = 1776
     )
 
-    train_pop(pop1, LUCAS0.copy())
-    train_pop(pop2, LUCAS0.copy())
+    train_pop(pop1, LUCAS0)
+    train_pop(pop2, LUCAS0)
 
     p1a0 = pop1.agent_database["agents"][0]
     p1a1 = pop1.agent_database["agents"][1]
-    p2a0 = pop1.agent_database["agents"][0]
+    p2a0 = pop2.agent_database["agents"][0]
 
     ### Different income seeds within one population
     assert(p1a0.PermShkDstn.seed != p1a1.PermShkDstn.seed)
+
+    assert(pop1.seed != pop2.seed)
+
+    assert(p1a0.seed != p2a0.seed)
 
     ### Different income seeds across two populations with different seeds
     assert(p1a0.PermShkDstn.seed != p2a0.PermShkDstn.seed)
