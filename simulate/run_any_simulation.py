@@ -379,6 +379,8 @@ if __name__ == "__main__":
         parameter_dict["aNrmInitMean"] = pop_aNrmInitMean
     else:
         raise Exception(f"No valid population named! Got {population_name}. Panic!")
+    
+    bigseed = rng.integers(0, 2**31 - 1)
 
     if args.simulation == "Attention":
         data, sim_stats, history, class_stats = run_attention_simulation(
@@ -398,7 +400,7 @@ if __name__ == "__main__":
             mba=mba,
             rng=rng,
             pad=pad,
-            seed=seed,
+            seed=bigseed,
         )
     elif args.simulation == "Calibration":
         data, sim_stats, history, class_stats = run_chum_simulation(
@@ -412,7 +414,7 @@ if __name__ == "__main__":
             buy=buysize,
             sell=sellsize,
             pad=pad,
-            seed=seed,
+            seed=bigseed,
         )
     else:
         print(

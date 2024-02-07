@@ -766,12 +766,12 @@ class AttentionSimulation(MacroSimulation):
             fm_args=fm_args,
         )
 
-        self.rng = rng if rng is not None else np.random.default_rng()
-
         if seed:
             self.seed = seed
         elif hasattr(rng, "seed"):
             self.seed = rng.seed
+
+        self.rng = rng if rng is not None else np.random.default_rng(seed)
 
         # TODO: Make this more variable.
         if a is not None:
