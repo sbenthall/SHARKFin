@@ -84,20 +84,30 @@ WHITESHARK = whiteshark_parameter_dict
 
 ### TODO: Population generators that take parameters like CRRA, DisCFac
 
+init_portfolio["cycles"] = 0  # NEED THIS FOR INFINITE HORIZON
+init_portfolio["PermGroFac"] = [1.0]  # no drift in perm income
+# risk free return, set to 1 to focus on equity premium
+init_portfolio["Rfree"] = 1.0
+init_portfolio["RiskyAvg"] = 1.05  # eq_prem is RiskyAvg - Rfree = 0.05
+init_portfolio["LivPrb"] = [1.0]  # no death
+
 lucas0_agent_population_params = init_portfolio.copy()
 
-lucas0_agent_population_params.update({
-    "cycles": 0,  # issue 186
-    "aNrmInitStd": 0.28901524, # calculated using dashboard from default init_portfolio stats
-    #"aNrmInitMean": 6
-    # "LivPrb": [0.98**0.25], -- Should this be adjusted?
-    "PermGroFac": 1.0,
-    "Rfree": 1.0,
-    ### These are placeholders that will be set when the system is set up.
-    "CRRA": 6,
-    "DiscFac": 0.90,
-    "ex_post": None,  # ex post heterogeneous parameters over which to merge solutions
-})
+lucas0_agent_population_params.update(
+    {
+        "cycles": 0,  # issue 186
+        # ln(16.35182266895578) from Numerical Buffer Stock notebook using default params
+        "aNrmInitMean": 2.79433936935,  # calculated using dashboard from default init_portfolio stats
+        # "aNrmInitMean": 6
+        # "LivPrb": [0.98**0.25], -- Should this be adjusted?
+        "PermGroFac": 1.0,
+        "Rfree": 1.0,
+        ### These are placeholders that will be set when the system is set up.
+        "CRRA": 5,
+        "DiscFac": 0.90,
+        "ex_post": None,  # ex post heterogeneous parameters over which to merge solutions
+    }
+)
 
 lucas0_parameter_dict = lucas0_agent_population_params
 lucas0_parameter_dict["AgentCount"] = 1  # TODO: What should this be?
