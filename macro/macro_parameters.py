@@ -37,6 +37,12 @@ quarterly_params["PermShkStd"] = list(np.asarray(annual_params["PermShkStd"]) / 
 quarterly_params["TranShkStd"] = list(4 * np.asarray(annual_params["TranShkStd"]))
 quarterly_params["aXtraMax"] = 4 * annual_params["aXtraMax"]
 
+""
+quarterly_params["RiskyAvg"]
+
+""
+quarterly_params["RiskyStd"]
+
 ###############################################################################
 # --- Computing the risky expectations from the dividend statistics
 
@@ -62,10 +68,51 @@ def expected_quarterly_returns(dgr, dst):
 
 
 ""
-expected_quarterly_returns(1.0000882, 0.00258)
+expected_quarterly_returns(1.0002, 0.011)
 
 ""
+n = 100
 
+dgr_grid = np.linspace(1.000, 1.0005, n)
+dst_grid = np.linspace(0.007, 0.015, n)
+
+rors = np.zeros((n,n))
+sigs = np.zeros((n,n))
+
+for i in range(n):
+    for j in range(n):
+        try:
+            ror, sig = expected_quarterly_returns(dgr_grid[i], dst_grid[j])
+            rors[i,j] = ror - 0.0123
+            sigs[i,j] = sig - 0.1
+        except:
+            rors[i,j] = np.nan
+            sigs[i,j] = np.nan
+
+
+
+""
+rors[:20, :]
+
+""
+import matplotlib.pyplot as plt
+
+""
+error = np.absolute(ror) + np.absolute(sigs)
+
+""
+plt.imshow(error)
+plt.colorbar()
+
+###############################################################################
+# Looking for '0' on both of these plots below. Notice how close that puts us to the boundary.
+
+plt.imshow(rors)
+plt.colorbar()
+
+""
+plt.imshow(sigs)
+plt.colorbar()
 
 ""
 
