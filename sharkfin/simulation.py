@@ -720,8 +720,6 @@ class MacroSimulation(MarketSimulation):
         sim_stats["rpp_min"] = min(rp_process)
         sim_stats["rpp_max"] = max(rp_process)
 
-        import pdb; pdb.set_trace()
-
         return sim_stats
 
 

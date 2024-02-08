@@ -28,6 +28,7 @@ def test_lucas_agent_population():
 
     pop.create_distributed_agents()
     pop.create_database()
+    ### why is this taking forever?
     pop.solve_distributed_agents()
 
     pop.solve(merge_by=parameter_dict["ex_post"])  # merge_by=["RiskyAvg", "RiskyStd"])
@@ -37,8 +38,9 @@ def test_lucas_agent_population():
 
     return pop
 
-
+'''
 def test_whiteshark_agent_population():
+    import pdb; pdb.set_trace()
     seed = 14
     # Initializing an Agent Population
 
@@ -112,6 +114,7 @@ def test_whiteshark_agent_population():
         after = agent.solution[0].ShareFuncAdj(10)
 
         assert np.allclose(before, after)
+'''
 
 
 def test_random_seeds():

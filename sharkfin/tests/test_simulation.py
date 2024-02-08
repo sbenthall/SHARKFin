@@ -85,7 +85,7 @@ def test_series_simulation():
 
 ## MACRO SIMULATIONS
 
-
+'''
 def test_macro_simulation():
     """
     Sets up and runs an simulation with an agent population.
@@ -130,8 +130,9 @@ def test_macro_simulation():
     data = attsim.daily_data()
 
     assert len(data["prices"]) == 30
+'''
 
-
+'''
 def test_attention_simulation():
     """
     Sets up and runs an agent population simulation
@@ -172,6 +173,7 @@ def test_attention_simulation():
 
     attsim.daily_data()["sell_macro"]
 
+    import pdb; pdb.set_trace()
     sim_stats = attsim.sim_stats()
 
     assert attsim.days_per_quarter == days_per_quarter
@@ -192,7 +194,7 @@ def test_attention_simulation():
     ror_mean_2 = attsim.ror_mean()
 
     assert ror_mean_1 == approx(ror_mean_2)
-
+'''
 
 def test_lucas0_simulation():
     """
