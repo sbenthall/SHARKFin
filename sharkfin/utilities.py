@@ -163,19 +163,16 @@ def price_dividend_ratio_random_walk(
 
     return subjective_return / (1 - subjective_return)
 
+def lucas_expected_rate_of_return(pdr, dgr, dsd):
+    ### Expected daily ROR and SD assuming
+    ### 1. pdr - A constant price-to-dividend-ratio
+    ### 2. dgr - A constant mean dividend growth rate
+    ### 3. dsd - A (lognormal) random dividend walk
 
-"""
-TODO
+    adjuster = (1 + pdr) / pdr
 
-def lucas_expected_rate_of_return():
+    # expected daily ror is (1 + pdr) gamma / pdr
+    daily_ror = adjuster * dgr - 1
+    daily_std = dsd * adjuster * dgr
 
-    pdr # price-dividend ratio
-
-    d_growth_rate # dividend mean rate of return
-    d_std # dividend standard deviation
-
-    p_growth_rate = pdr * d_growth_rate #?
-    p_std = pdr * d_std #?
-
-    ror = ((d_1 + p_1)   / p_0)
-"""
+    return daily_ror, daily_std
