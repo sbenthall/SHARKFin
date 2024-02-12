@@ -26,8 +26,14 @@ from sharkfin.markets import MockMarket
 from sharkfin.markets.ammps import ClientRPCMarket
 from sharkfin.population import SharkPopulation
 from sharkfin.simulation import AttentionSimulation, CalibrationSimulation
-from sharkfin.utilities import price_dividend_ratio_random_walk
+from sharkfin.utilities import (
+    price_dividend_ratio_random_walk,
+    lucas_expected_rate_of_return,
+    expected_quarterly_returns,
+    compute_target_wealth
+)
 
+from macro_parameters import quarterly_params
 
 class NpEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -103,7 +109,7 @@ parser.add_argument(
 parser.add_argument(
     "--pop_aNrmInitMean",
     help="Log of initial mean asset levels for LUCAS0 population.",
-    default="0.5",
+    default=None,
 )
 
 parser.add_argument(
@@ -242,6 +248,34 @@ def run_chum_simulation(
 def env_param(name, default):
     return os.environ[name] if name in os.environ else default
 
+def target_log_wealth(
+        pop_CRRA,
+        pop_DiscFac,
+        dividend_growth_rate,
+        dividend_std,
+        days_per_quarter
+):
+    
+    ror, sig = expected_quarterly_returns(
+        pop_DiscFac,
+        pop_CRRA,
+        dividend_growth_rate,
+        dividend_std,
+        days_per_quarter
+        )
+    
+    solved, linear_roots, log_linear_roots, cubic_spline_roots = compute_target_wealth(
+        CRRA=pop_CRRA,
+        DiscFac=pop_DiscFac,
+        RiskyAvg=ror,
+        RiskyStd=sig,
+        PermShkStd=quarterly_params["PermShkStd"],
+        PermGroFac=quarterly_params["PermGroFac"],
+        UnempPrb=quarterly_params["UnempPrb"]
+    )
+
+    return np.log(linear_roots)[0]
+
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -259,7 +293,7 @@ if __name__ == "__main__":
     population_name = str(args.population)
     pop_CRRA = float(args.pop_CRRA)
     pop_DiscFac = float(args.pop_DiscFac)
-    pop_aNrmInitMean = float(args.pop_aNrmInitMean)
+    pop_aNrmInitMean = float(args.pop_aNrmInitMean) if args.pop_aNrmInitMean is not None else None
 
     expectations_class_name = str(args.expectations)
     dividend_growth_rate = float(args.dividend_growth_rate)
@@ -268,6 +302,10 @@ if __name__ == "__main__":
     # Specific to AttentionSimulation
     attention = float(args.attention)
     dphm = int(args.dphm)
+
+    if pop_aNrmInitMean is None:
+        pop_aNrmInitMean = target_log_wealth(pop_CRRA, pop_DiscFac, dividend_growth_rate, dividend_std, days_per_quarter)
+        print(f"Computed target wealth: {pop_aNrmInitMean}")
 
     # Memory-based FinanceModel arguments
     p1 = float(args.p1)
@@ -330,13 +368,15 @@ if __name__ == "__main__":
     # random number generator with seed
     rng = np.random.default_rng(seed)
 
+    pdr = price_dividend_ratio_random_walk(
+            pop_DiscFac, pop_CRRA, dividend_growth_rate, dividend_std, days_per_quarter
+        )
+
     market_args = {
         "dividend_growth_rate": dividend_growth_rate,
         "dividend_std": dividend_std,
         "rng": rng,
-        "price_to_dividend_ratio": price_dividend_ratio_random_walk(
-            pop_DiscFac, pop_CRRA, dividend_growth_rate, dividend_std, days_per_quarter
-        ),
+        "price_to_dividend_ratio": pdr,
     }
 
     market_class = None
@@ -437,6 +477,9 @@ if __name__ == "__main__":
 
     with open(f"{filename}_sim_stats.txt", "w+") as f:
         sim_stats["filename"] = filename
+        sim_stats["dividend_std"] = dividend_std
+        sim_stats["pop_aNrmInitMean"] = pop_aNrmInitMean
+        sim_stats["price_dividend_ratio"] = pdr
         f.write(json.dumps(sim_stats, cls=NpEncoder))
 
     try:

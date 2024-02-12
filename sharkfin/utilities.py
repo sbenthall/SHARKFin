@@ -1,9 +1,13 @@
 from HARK.core import distribute_params
 from HARK.distribution import Uniform
+from HARK.ConsumptionSaving.ConsPortfolioModel import SequentialPortfolioConsumerType
 import math
 import numpy as np
 import random
 from itertools import chain
+
+from scipy.interpolate import CubicSpline
+from scipy.optimize import fsolve
 
 
 # Distribution Utilities
@@ -119,6 +123,12 @@ def combine_lognormal_rates(ror1, std1, ror2, std2):
     return ror3, sigma3
 
 
+def interp_func(x,y):
+    def func(z):
+        return np.interp(z, x, y)
+    
+    return func
+
 ##### Lucas Pricing Equations
 
 import math
@@ -177,17 +187,108 @@ def lucas_expected_rate_of_return(pdr, dgr, dsd):
 
     return daily_ror, daily_std
 
-def expected_quarterly_returns(dgr, dst):
+def expected_quarterly_returns(DiscFac, CRRA, dgr, dst, days_per_quarter):
+    # DiscFac - quarterly discount factor
+    # CRRA - CRRA
     # dgr - daily dividend growth rate
     # dst - daily dividend standard deviation
 
     pdr = price_dividend_ratio_random_walk(
-        quarterly_params["DiscFac"],
-        annual_params["CRRA"],
+        DiscFac,
+        CRRA,
         dgr,
         dst,
-        60
+        days_per_quarter
     )
     
     (ror, sig) = lucas_expected_rate_of_return(pdr, dgr, dst)
-    return ror_quarterly(ror, 60), sig_quarterly(sig, 60)
+    return ror_quarterly(ror, days_per_quarter), sig_quarterly(sig, days_per_quarter)
+
+
+## Computing the target wealth
+
+def compute_target_wealth(
+    CRRA=6.0,
+    DiscFac=0.9,
+    RiskyAvg=1.08,
+    RiskyStd=0.20,
+    PermShkStd=[0.0],
+    PermGroFac=[1.0001],
+    UnempPrb=0.00
+):
+    agent_parameters = {}
+
+    agent_parameters["CRRA"] = CRRA
+    agent_parameters["DiscFac"] = DiscFac
+    agent_parameters["RiskyAvg"] = RiskyAvg
+    agent_parameters["RiskyStd"] = RiskyStd
+    agent_parameters["PermShkStd"] = PermShkStd
+    agent_parameters["PermGroFac"] = PermGroFac
+    agent_parameters["UnempPrb"] = UnempPrb
+    agent_parameters["LivPrb"] = [1.0]
+    
+    agent = SequentialPortfolioConsumerType(**agent_parameters)
+    
+    linear_roots, log_linear_roots, cubic_spline_roots = [], [], []
+    
+    try:
+        agent.solve()
+        solved = True
+    except Exception as e:
+        solved = False
+        
+        return solved, linear_roots, log_linear_roots, cubic_spline_roots
+
+    cFunc = agent.solution[0].cFuncAdj
+    ShareFunc = agent.solution[0].ShareFuncAdj
+
+    def expected_increase(ShareFunc, cFunc, mNrm):
+        share = ShareFunc(mNrm)
+        aNrm = mNrm - cFunc(mNrm)
+
+        mNrm_next = (
+            aNrm
+            * (
+                share * agent.parameters["RiskyAvg"]
+                + (1 - share) * agent.parameters["Rfree"]
+            )
+            + 1
+        )
+
+        gain = mNrm_next - aNrm
+        return gain
+
+    def expected_m_next(mNrm):
+        share = ShareFunc(mNrm)
+        aNrm = mNrm - cFunc(mNrm)
+        mNrm_next = (
+            aNrm
+            * (
+                share * agent.parameters["RiskyAvg"]
+                + (1 - share) * agent.parameters["Rfree"]
+            )
+            + 1
+        )
+
+        return mNrm_next
+
+    mNrm = np.linspace(0, 5, 1000)
+
+    # plt.plot(mNrm, cFunc(mNrm), label="c")
+
+    #plt.plot(mNrm, mNrm - expected_m_next(mNrm), label="m - E[m']")
+
+    linear_roots = fsolve(interp_func(mNrm, mNrm - expected_m_next(mNrm)), [mNrm[0]])
+    log_linear_roots = np.log(fsolve(interp_func(mNrm, mNrm - expected_m_next(mNrm)), [mNrm[0]]))
+    cubic_spline_roots = CubicSpline(mNrm,  mNrm - expected_m_next(mNrm)).roots()
+    print(f"m - E[m] linear interp roots: {linear_roots}")
+    print(f"m - E[m] log roots: {log_linear_roots}")
+    print(f"m - E[m] CubicSpine roots: {cubic_spline_roots}")
+
+    #plt.plot(mNrm, np.zeros_like(mNrm), label="0")
+
+    #plt.plot(mNrm, (mNrm - cFunc(mNrm)) * ShareFunc(mNrm), label ="wealth-into-market" )
+
+    #plt.legend()
+    
+    return solved, linear_roots, log_linear_roots, cubic_spline_roots
