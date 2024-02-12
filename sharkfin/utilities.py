@@ -176,3 +176,18 @@ def lucas_expected_rate_of_return(pdr, dgr, dsd):
     daily_std = dsd * adjuster * dgr
 
     return daily_ror, daily_std
+
+def expected_quarterly_returns(dgr, dst):
+    # dgr - daily dividend growth rate
+    # dst - daily dividend standard deviation
+
+    pdr = price_dividend_ratio_random_walk(
+        quarterly_params["DiscFac"],
+        annual_params["CRRA"],
+        dgr,
+        dst,
+        60
+    )
+    
+    (ror, sig) = lucas_expected_rate_of_return(pdr, dgr, dst)
+    return ror_quarterly(ror, 60), sig_quarterly(sig, 60)

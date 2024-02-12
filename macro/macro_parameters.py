@@ -43,32 +43,24 @@ quarterly_params["RiskyAvg"]
 ""
 quarterly_params["RiskyStd"]
 
+""
+quarterly_params
+
 ###############################################################################
 # --- Computing the risky expectations from the dividend statistics
 
-from sharkfin.utilities import price_dividend_ratio_random_walk, lucas_expected_rate_of_return, ror_quarterly, sig_quarterly
+from sharkfin.utilities import expected_quarterly_returns
 
 
 ""
-def expected_quarterly_returns(dgr, dst):
-    # dgr - daily dividend growth rate
-    # dst - daily dividend standard deviation
-
-    pdr = price_dividend_ratio_random_walk(
-        quarterly_params["DiscFac"],
-        annual_params["CRRA"],
-        dgr,
-        dst,
-        60
-    )
-    
-    (ror, sig) = lucas_expected_rate_of_return(pdr, dgr, dst)
-    return ror_quarterly(ror, 60), sig_quarterly(sig, 60)
 
 
 
 ""
 expected_quarterly_returns(1.0002, 0.011)
+
+""
+1.013848  ** 4
 
 ""
 n = 100
